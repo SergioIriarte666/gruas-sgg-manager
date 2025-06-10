@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Servicio } from "@/types";
 
@@ -81,17 +80,28 @@ export const serviciosApi = {
   },
 
   generateFolio: async () => {
-    console.log('Generando folio...');
-    const { data: folioData, error: folioError } = await supabase
-      .rpc('generate_folio', { prefix: 'SV' });
-    
-    if (folioError) {
-      console.error('Error al generar folio:', folioError);
-      throw new Error('Error al generar el folio del servicio');
-    }
+    console.log('serviciosApi.generateFolio: Generando folio...');
+    try {
+      const { data: folioData, error: folioError } = await supabase
+        .rpc('generate_folio', { prefix: 'SV' });
+      
+      if (folioError) {
+        console.error('serviciosApi.generateFolio: Error al generar folio:', folioError);
+        // Fallback: generar folio manual temporal
+        const fallbackFolio = `SV${String(Date.now()).slice(-6)}`;
+        console.log('serviciosApi.generateFolio: Usando folio temporal:', fallbackFolio);
+        return fallbackFolio;
+      }
 
-    console.log('Folio generado:', folioData);
-    return folioData;
+      console.log('serviciosApi.generateFolio: Folio generado exitosamente:', folioData);
+      return folioData;
+    } catch (error) {
+      console.error('serviciosApi.generateFolio: Error inesperado:', error);
+      // Fallback: generar folio manual temporal
+      const fallbackFolio = `SV${String(Date.now()).slice(-6)}`;
+      console.log('serviciosApi.generateFolio: Usando folio temporal:', fallbackFolio);
+      return fallbackFolio;
+    }
   },
 
   create: async (servicio: {
@@ -111,57 +121,66 @@ export const serviciosApi = {
     estado: 'en_curso' | 'cerrado' | 'facturado';
     observaciones?: string;
   }, folio: string) => {
-    const fechaFormatted = servicio.fecha.toISOString().split('T')[0];
-    console.log('Fecha formateada:', fechaFormatted);
+    console.log('serviciosApi.create: Iniciando creación de servicio');
+    console.log('serviciosApi.create: Datos recibidos:', servicio);
+    console.log('serviciosApi.create: Folio:', folio);
 
-    const insertData = {
-      folio: folio,
-      fecha: fechaFormatted,
-      cliente_id: servicio.clienteId,
-      orden_compra: servicio.ordenCompra || null,
-      marca_vehiculo: servicio.marcaVehiculo,
-      modelo_vehiculo: servicio.modeloVehiculo,
-      patente: servicio.patente.toUpperCase(),
-      ubicacion_origen: servicio.ubicacionOrigen,
-      ubicacion_destino: servicio.ubicacionDestino,
-      valor: servicio.valor,
-      grua_id: servicio.gruaId,
-      operador_id: servicio.operadorId,
-      tipo_servicio_id: servicio.tipoServicioId,
-      estado: servicio.estado,
-      observaciones: servicio.observaciones || null
-    };
+    try {
+      const fechaFormatted = servicio.fecha.toISOString().split('T')[0];
+      console.log('serviciosApi.create: Fecha formateada:', fechaFormatted);
 
-    console.log('Datos para insertar:', insertData);
+      const insertData = {
+        folio: folio,
+        fecha: fechaFormatted,
+        cliente_id: servicio.clienteId,
+        orden_compra: servicio.ordenCompra || null,
+        marca_vehiculo: servicio.marcaVehiculo,
+        modelo_vehiculo: servicio.modeloVehiculo,
+        patente: servicio.patente.toUpperCase(),
+        ubicacion_origen: servicio.ubicacionOrigen,
+        ubicacion_destino: servicio.ubicacionDestino,
+        valor: servicio.valor,
+        grua_id: servicio.gruaId,
+        operador_id: servicio.operadorId,
+        tipo_servicio_id: servicio.tipoServicioId,
+        estado: servicio.estado,
+        observaciones: servicio.observaciones || null
+      };
 
-    const { data, error } = await supabase
-      .from('servicios')
-      .insert(insertData)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error al insertar servicio:', error);
-      console.error('Detalles del error:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
+      console.log('serviciosApi.create: Datos para insertar:', insertData);
+
+      const { data, error } = await supabase
+        .from('servicios')
+        .insert(insertData)
+        .select()
+        .single();
       
-      if (error.code === '23505') {
-        throw new Error('Ya existe un servicio con este folio');
-      } else if (error.code === '23503') {
-        throw new Error('Error de referencia: verifique que todos los datos seleccionados sean válidos');
-      } else if (error.code === '23502') {
-        throw new Error('Faltan campos requeridos en el servicio');
-      } else {
-        throw new Error(`Error al crear el servicio: ${error.message}`);
+      if (error) {
+        console.error('serviciosApi.create: Error al insertar servicio:', error);
+        console.error('serviciosApi.create: Detalles del error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        if (error.code === '23505') {
+          throw new Error('Ya existe un servicio con este folio');
+        } else if (error.code === '23503') {
+          throw new Error('Error de referencia: verifique que todos los datos seleccionados sean válidos');
+        } else if (error.code === '23502') {
+          throw new Error('Faltan campos requeridos en el servicio');
+        } else {
+          throw new Error(`Error al crear el servicio: ${error.message}`);
+        }
       }
-    }
 
-    console.log('Servicio creado exitosamente:', data);
-    return data;
+      console.log('serviciosApi.create: Servicio creado exitosamente:', data);
+      return data;
+    } catch (error) {
+      console.error('serviciosApi.create: Error inesperado:', error);
+      throw error;
+    }
   },
 
   update: async (params: { 

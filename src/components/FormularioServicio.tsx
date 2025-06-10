@@ -82,9 +82,25 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   }, [servicio, form]);
 
   const onSubmit = async (data: ServicioFormData) => {
+    console.log('Iniciando envío del formulario de servicio...');
+    console.log('Datos del formulario:', data);
+    
     try {
       setIsSubmitting(true);
-      console.log('Enviando datos del formulario:', data);
+      
+      // Validar que todos los campos requeridos estén presentes
+      if (!data.clienteId) {
+        throw new Error('Cliente es requerido');
+      }
+      if (!data.gruaId) {
+        throw new Error('Grúa es requerida');
+      }
+      if (!data.operadorId) {
+        throw new Error('Operador es requerido');
+      }
+      if (!data.tipoServicioId) {
+        throw new Error('Tipo de servicio es requerido');
+      }
       
       // Asegurar que la fecha es válida
       const validatedData: ServicioFormData = {
@@ -92,6 +108,8 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
         fecha: data.fecha instanceof Date ? data.fecha : new Date(data.fecha),
         valor: Number(data.valor),
       };
+      
+      console.log('Datos validados:', validatedData);
       
       if (isEditing) {
         console.log('Actualizando servicio:', servicio.id);
@@ -104,8 +122,9 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
           description: "El servicio ha sido actualizado exitosamente.",
         });
       } else {
-        console.log('Creando nuevo servicio');
-        await createServicio.mutateAsync(validatedData);
+        console.log('Creando nuevo servicio...');
+        const result = await createServicio.mutateAsync(validatedData);
+        console.log('Servicio creado exitosamente:', result);
         toast({
           title: "Servicio creado",
           description: "El servicio ha sido creado exitosamente.",
@@ -113,11 +132,14 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
       }
       
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al guardar servicio:', error);
+      
+      const errorMessage = error?.message || `Error al ${isEditing ? 'actualizar' : 'crear'} el servicio. Intenta nuevamente.`;
+      
       toast({
         title: "Error",
-        description: `Error al ${isEditing ? 'actualizar' : 'crear'} el servicio. Intenta nuevamente.`,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
