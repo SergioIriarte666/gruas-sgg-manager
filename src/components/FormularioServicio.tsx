@@ -34,7 +34,7 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   const form = useForm<ServicioFormData>({
     resolver: zodResolver(servicioFormSchema),
     defaultValues: {
-      fecha: undefined, // Cambio: inicializar como undefined
+      fecha: new Date(), // ❗ Requerido - siempre Date válido
       clienteId: "",
       ordenCompra: "",
       marcaVehiculo: "",

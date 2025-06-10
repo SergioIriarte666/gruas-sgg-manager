@@ -33,7 +33,7 @@ export function DatePickerField<TFieldValues extends FieldValues>({
         <FormItem className="flex flex-col">
           <FormLabel>{label}</FormLabel>
           <DatePicker
-            selected={field.value || undefined}
+            selected={field.value} // Siempre Date válido
             onSelect={(date) => field.onChange(date)}
             placeholder="Seleccionar fecha"
           />
