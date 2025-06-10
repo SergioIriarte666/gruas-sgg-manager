@@ -2,18 +2,83 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, FileText, DollarSign } from "lucide-react";
+import { Plus, Calendar, FileText, DollarSign, Eye, Download, CheckCircle } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { useCierres, useServiciosElegibles, useCreateCierre } from "@/hooks/useCierres";
+import { useCreateFactura } from "@/hooks/useCreateFactura";
+import { useClientes } from "@/hooks/useClientes";
+import { CierrePreviewModal } from "@/components/CierrePreviewModal";
 
 export default function Cierres() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
-  
+  const [clienteId, setClienteId] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+
+  const { data: cierres = [], isLoading } = useCierres();
+  const { data: clientes = [] } = useClientes();
+  const { data: serviciosElegibles = [] } = useServiciosElegibles(fechaInicio, fechaFin, clienteId || undefined);
+  const createCierre = useCreateCierre();
+  const createFactura = useCreateFactura();
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP'
     }).format(amount);
   };
+
+  const handleGeneratePreview = () => {
+    if (!fechaInicio || !fechaFin) {
+      return;
+    }
+    setShowPreview(true);
+  };
+
+  const handleCreateCierre = () => {
+    if (serviciosElegibles.length === 0) return;
+
+    const total = serviciosElegibles.reduce((sum, servicio) => sum + Number(servicio.valor), 0);
+    const serviciosIds = serviciosElegibles.map(s => s.id);
+
+    createCierre.mutate({
+      fechaInicio,
+      fechaFin,
+      clienteId: clienteId || undefined,
+      serviciosIds,
+      total
+    }, {
+      onSuccess: () => {
+        setShowPreview(false);
+        setFechaInicio("");
+        setFechaFin("");
+        setClienteId("");
+      }
+    });
+  };
+
+  const handleCreateFactura = (cierreId: string) => {
+    createFactura.mutate(cierreId);
+  };
+
+  const clienteSeleccionado = clientes.find(c => c.id === clienteId);
+
+  // Estadísticas
+  const totalCierres = cierres.length;
+  const pendientesFacturar = cierres.filter(c => !c.facturado).length;
+  const yaFacturados = cierres.filter(c => c.facturado).length;
+  const valorTotal = cierres.reduce((sum, cierre) => sum + Number(cierre.total), 0);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-muted-foreground">Cargando cierres...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -23,10 +88,6 @@ export default function Cierres() {
           <h1 className="text-3xl font-bold text-primary">Cierres de Servicios</h1>
           <p className="text-muted-foreground">Generación de cierres para facturación</p>
         </div>
-        <Button className="bg-primary hover:bg-primary-dark text-white">
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Cierre
-        </Button>
       </div>
 
       {/* Filtros para Nuevo Cierre */}
@@ -59,19 +120,43 @@ export default function Cierres() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Cliente (Opcional)</label>
-              <select className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              <select 
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                value={clienteId}
+                onChange={(e) => setClienteId(e.target.value)}
+              >
                 <option value="">Todos los clientes</option>
-                <option value="1">Transportes López S.A.</option>
-                <option value="2">Constructora San Miguel Ltda.</option>
-                <option value="3">Rent a Car Premium</option>
+                {clientes.map((cliente) => (
+                  <option key={cliente.id} value={cliente.id}>
+                    {cliente.razonSocial}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex items-end">
-              <Button className="w-full bg-primary hover:bg-primary-dark">
+              <Button 
+                className="w-full bg-primary hover:bg-primary-dark"
+                onClick={handleGeneratePreview}
+                disabled={!fechaInicio || !fechaFin}
+              >
                 Generar Vista Previa
               </Button>
             </div>
           </div>
+          
+          {/* Mostrar servicios elegibles */}
+          {fechaInicio && fechaFin && (
+            <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Servicios elegibles para cierre: <strong>{serviciosElegibles.length}</strong>
+                {serviciosElegibles.length > 0 && (
+                  <span className="ml-2 text-primary font-medium">
+                    Total: {formatCurrency(serviciosElegibles.reduce((sum, s) => sum + Number(s.valor), 0))}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -84,67 +169,57 @@ export default function Cierres() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {/* Cierre Example 1 */}
-            <div className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h3 className="font-medium text-primary">Cierre C001-2024</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Del 01/06/2024 al 07/06/2024 • Transportes López S.A.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    3 servicios incluidos
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-primary">{formatCurrency(205000)}</div>
-                    <div className="text-xs text-muted-foreground">Total</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline">Ver</Button>
-                    <Button size="sm" variant="outline">PDF</Button>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      Facturar
-                    </Button>
-                  </div>
-                </div>
-              </div>
+          {cierres.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay cierres generados aún. Crea tu primer cierre usando los filtros de arriba.
             </div>
-
-            {/* Cierre Example 2 */}
-            <div className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h3 className="font-medium text-primary">Cierre C002-2024</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Del 08/06/2024 al 14/06/2024 • Todos los clientes
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    5 servicios incluidos
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-primary">{formatCurrency(340000)}</div>
-                    <div className="text-xs text-muted-foreground">Total</div>
+          ) : (
+            <div className="space-y-4">
+              {cierres.map((cierre) => (
+                <div key={cierre.id} className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h3 className="font-medium text-primary">{cierre.folio}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Del {format(new Date(cierre.fecha_inicio), "dd/MM/yyyy", { locale: es })} al {format(new Date(cierre.fecha_fin), "dd/MM/yyyy", { locale: es })}
+                        {cierre.clientes && ` • ${cierre.clientes.razon_social}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-primary">{formatCurrency(Number(cierre.total))}</div>
+                        <div className="text-xs text-muted-foreground">Total</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Download className="h-3 w-3" />
+                        </Button>
+                        {!cierre.facturado ? (
+                          <Button 
+                            size="sm" 
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => handleCreateFactura(cierre.id)}
+                            disabled={createFactura.isPending}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Facturar
+                          </Button>
+                        ) : (
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Facturado
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline">Ver</Button>
-                    <Button size="sm" variant="outline">PDF</Button>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled>
-                      Facturado
-                    </Button>
-                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          </div>
-
-          <div className="text-center py-8 text-muted-foreground">
-            {/* Placeholder cuando no hay cierres */}
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -155,7 +230,7 @@ export default function Cierres() {
             <CardTitle className="text-primary text-sm">Total Cierres</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{totalCierres}</div>
           </CardContent>
         </Card>
 
@@ -164,7 +239,7 @@ export default function Cierres() {
             <CardTitle className="text-blue-400 text-sm">Pendientes Facturar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
+            <div className="text-2xl font-bold">{pendientesFacturar}</div>
           </CardContent>
         </Card>
 
@@ -173,7 +248,7 @@ export default function Cierres() {
             <CardTitle className="text-green-400 text-sm">Ya Facturados</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
+            <div className="text-2xl font-bold">{yaFacturados}</div>
           </CardContent>
         </Card>
 
@@ -182,10 +257,22 @@ export default function Cierres() {
             <CardTitle className="text-yellow-400 text-sm">Valor Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold">{formatCurrency(545000)}</div>
+            <div className="text-xl font-bold">{formatCurrency(valorTotal)}</div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de Vista Previa */}
+      <CierrePreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        servicios={serviciosElegibles}
+        fechaInicio={fechaInicio}
+        fechaFin={fechaFin}
+        clienteNombre={clienteSeleccionado?.razonSocial}
+        onConfirm={handleCreateCierre}
+        isCreating={createCierre.isPending}
+      />
     </div>
   );
 }
