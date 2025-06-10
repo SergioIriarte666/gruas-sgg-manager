@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { FacturaDetailsModal } from "@/components/FacturaDetailsModal";
-import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download, Search, BarChart3, Filter, User, FileExcel } from "lucide-react";
+import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download, Search, BarChart3, Filter, User, FileSpreadsheet } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
 import { useFacturas, useUpdateFacturaEstado } from "@/hooks/useFacturas";
 import { useCierres } from "@/hooks/useCierres";

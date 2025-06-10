@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit, Download, FileExcel } from "lucide-react";
+import { Plus, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit, Download, FileSpreadsheet } from "lucide-react";
 import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { AlertasPendientes } from "@/components/AlertasPendientes";
 import { FormularioServicio } from "@/components/FormularioServicio";
