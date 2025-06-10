@@ -58,13 +58,14 @@ export const useUpdateOperador = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...operador }: { id: string; nombreCompleto?: string; rut?: string; telefono?: string; numeroLicencia?: string; activo?: boolean }) => {
+    mutationFn: async (params: { id: string; nombreCompleto?: string; rut?: string; telefono?: string; numeroLicencia?: string; activo?: boolean }) => {
+      const { id, ...operador } = params;
       const updateData: any = {};
       
-      if (operador.nombreCompleto) updateData.nombre_completo = operador.nombreCompleto;
-      if (operador.rut) updateData.rut = operador.rut;
-      if (operador.telefono) updateData.telefono = operador.telefono;
-      if (operador.numeroLicencia) updateData.numero_licencia = operador.numeroLicencia;
+      if (operador.nombreCompleto !== undefined) updateData.nombre_completo = operador.nombreCompleto;
+      if (operador.rut !== undefined) updateData.rut = operador.rut;
+      if (operador.telefono !== undefined) updateData.telefono = operador.telefono;
+      if (operador.numeroLicencia !== undefined) updateData.numero_licencia = operador.numeroLicencia;
       if (operador.activo !== undefined) updateData.activo = operador.activo;
       
       const { data, error } = await supabase

@@ -147,22 +147,39 @@ export const useUpdateServicio = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...servicio }: Partial<Servicio> & { id: string }) => {
+    mutationFn: async (params: { 
+      id: string; 
+      fecha?: Date; 
+      clienteId?: string; 
+      ordenCompra?: string; 
+      marcaVehiculo?: string; 
+      modeloVehiculo?: string; 
+      patente?: string; 
+      ubicacionOrigen?: string; 
+      ubicacionDestino?: string; 
+      valor?: number; 
+      gruaId?: string; 
+      operadorId?: string; 
+      tipoServicioId?: string; 
+      estado?: 'en_curso' | 'cerrado' | 'facturado'; 
+      observaciones?: string; 
+    }) => {
+      const { id, ...servicio } = params;
       const updateData: any = {};
       
-      if (servicio.fecha) updateData.fecha = servicio.fecha.toISOString().split('T')[0];
-      if (servicio.clienteId) updateData.cliente_id = servicio.clienteId;
+      if (servicio.fecha !== undefined) updateData.fecha = servicio.fecha.toISOString().split('T')[0];
+      if (servicio.clienteId !== undefined) updateData.cliente_id = servicio.clienteId;
       if (servicio.ordenCompra !== undefined) updateData.orden_compra = servicio.ordenCompra;
-      if (servicio.marcaVehiculo) updateData.marca_vehiculo = servicio.marcaVehiculo;
-      if (servicio.modeloVehiculo) updateData.modelo_vehiculo = servicio.modeloVehiculo;
-      if (servicio.patente) updateData.patente = servicio.patente;
-      if (servicio.ubicacionOrigen) updateData.ubicacion_origen = servicio.ubicacionOrigen;
-      if (servicio.ubicacionDestino) updateData.ubicacion_destino = servicio.ubicacionDestino;
+      if (servicio.marcaVehiculo !== undefined) updateData.marca_vehiculo = servicio.marcaVehiculo;
+      if (servicio.modeloVehiculo !== undefined) updateData.modelo_vehiculo = servicio.modeloVehiculo;
+      if (servicio.patente !== undefined) updateData.patente = servicio.patente;
+      if (servicio.ubicacionOrigen !== undefined) updateData.ubicacion_origen = servicio.ubicacionOrigen;
+      if (servicio.ubicacionDestino !== undefined) updateData.ubicacion_destino = servicio.ubicacionDestino;
       if (servicio.valor !== undefined) updateData.valor = servicio.valor;
-      if (servicio.gruaId) updateData.grua_id = servicio.gruaId;
-      if (servicio.operadorId) updateData.operador_id = servicio.operadorId;
-      if (servicio.tipoServicioId) updateData.tipo_servicio_id = servicio.tipoServicioId;
-      if (servicio.estado) updateData.estado = servicio.estado;
+      if (servicio.gruaId !== undefined) updateData.grua_id = servicio.gruaId;
+      if (servicio.operadorId !== undefined) updateData.operador_id = servicio.operadorId;
+      if (servicio.tipoServicioId !== undefined) updateData.tipo_servicio_id = servicio.tipoServicioId;
+      if (servicio.estado !== undefined) updateData.estado = servicio.estado;
       if (servicio.observaciones !== undefined) updateData.observaciones = servicio.observaciones;
       
       const { data, error } = await supabase
