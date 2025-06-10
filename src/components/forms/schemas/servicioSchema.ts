@@ -18,8 +18,12 @@ export const servicioFormSchema = z.object({
   patente: z.string({
     required_error: "Se requiere la patente del vehículo.",
   }),
-  ubicacionOrigen: z.string().optional(),
-  ubicacionDestino: z.string().optional(),
+  ubicacionOrigen: z.string({
+    required_error: "Se requiere la ubicación de origen.",
+  }),
+  ubicacionDestino: z.string({
+    required_error: "Se requiere la ubicación de destino.",
+  }),
   valor: z.number({
     required_error: "Se requiere un valor.",
   }).min(1, "El valor debe ser mayor a 0"),

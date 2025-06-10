@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface ServiceAssignmentFieldsProps<TFieldValues extends FieldValues> {
   control: Control<TFieldValues>;
   gruas: Array<{ id: string; patente: string; marca: string; modelo: string }>;
-  operadores: Array<{ id: string; nombre: string; apellido: string }>;
+  operadores: Array<{ id: string; nombreCompleto: string }>;
   tiposServicio: Array<{ id: string; nombre: string }>;
 }
 
@@ -68,7 +68,7 @@ export function ServiceAssignmentFields<TFieldValues extends FieldValues>({
               <SelectContent>
                 {operadores.map((operador) => (
                   <SelectItem key={operador.id} value={operador.id}>
-                    {operador.nombre} {operador.apellido}
+                    {operador.nombreCompleto}
                   </SelectItem>
                 ))}
               </SelectContent>
