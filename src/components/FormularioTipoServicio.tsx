@@ -41,11 +41,18 @@ export function FormularioTipoServicio({ tipoServicio, onSuccess, onCancel }: Pr
 
   const onSubmit = async (datos: DatosFormulario) => {
     try {
+      // Asegurarse de que todos los campos obligatorios existan
+      const datosValidados = {
+        nombre: datos.nombre || "",
+        descripcion: datos.descripcion || "",
+        activo: datos.activo,
+      };
+
       if (tipoServicio) {
-        await updateMutation.mutateAsync({ id: tipoServicio.id, ...datos });
+        await updateMutation.mutateAsync({ id: tipoServicio.id, ...datosValidados });
         toast.success("Tipo de servicio actualizado exitosamente");
       } else {
-        await createMutation.mutateAsync(datos);
+        await createMutation.mutateAsync(datosValidados);
         toast.success("Tipo de servicio creado exitosamente");
       }
       onSuccess();

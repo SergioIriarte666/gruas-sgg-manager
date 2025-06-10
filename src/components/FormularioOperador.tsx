@@ -44,11 +44,20 @@ export function FormularioOperador({ operador, onSuccess, onCancel }: Props) {
 
   const onSubmit = async (datos: DatosFormulario) => {
     try {
+      // Asegurarse de que todos los campos obligatorios existan
+      const datosValidados = {
+        nombreCompleto: datos.nombreCompleto || "",
+        rut: datos.rut || "",
+        telefono: datos.telefono || "",
+        numeroLicencia: datos.numeroLicencia || "",
+        activo: datos.activo,
+      };
+
       if (operador) {
-        await updateMutation.mutateAsync({ id: operador.id, ...datos });
+        await updateMutation.mutateAsync({ id: operador.id, ...datosValidados });
         toast.success("Operador actualizado exitosamente");
       } else {
-        await createMutation.mutateAsync(datos);
+        await createMutation.mutateAsync(datosValidados);
         toast.success("Operador creado exitosamente");
       }
       onSuccess();

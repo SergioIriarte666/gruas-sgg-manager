@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -82,11 +81,29 @@ export function FormularioServicio({ servicio, onSuccess, onCancel }: Props) {
 
   const onSubmit = async (datos: DatosFormulario) => {
     try {
+      // Asegurarse de que todos los campos obligatorios existan
+      const datosValidados = {
+        fecha: datos.fecha || new Date(),
+        clienteId: datos.clienteId || "",
+        ordenCompra: datos.ordenCompra,
+        marcaVehiculo: datos.marcaVehiculo || "",
+        modeloVehiculo: datos.modeloVehiculo || "",
+        patente: datos.patente || "",
+        ubicacionOrigen: datos.ubicacionOrigen || "",
+        ubicacionDestino: datos.ubicacionDestino || "",
+        valor: datos.valor || 0,
+        gruaId: datos.gruaId || "",
+        operadorId: datos.operadorId || "",
+        tipoServicioId: datos.tipoServicioId || "",
+        estado: datos.estado as 'en_curso' | 'cerrado' | 'facturado',
+        observaciones: datos.observaciones,
+      };
+
       if (servicio) {
-        await updateMutation.mutateAsync({ id: servicio.id, ...datos });
+        await updateMutation.mutateAsync({ id: servicio.id, ...datosValidados });
         toast.success("Servicio actualizado exitosamente");
       } else {
-        await createMutation.mutateAsync(datos);
+        await createMutation.mutateAsync(datosValidados);
         toast.success("Servicio creado exitosamente");
       }
       onSuccess();

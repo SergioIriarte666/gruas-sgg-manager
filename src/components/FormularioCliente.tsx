@@ -46,11 +46,21 @@ export function FormularioCliente({ cliente, onSuccess, onCancel }: Props) {
 
   const onSubmit = async (datos: DatosFormulario) => {
     try {
+      // Asegurarse de que todos los campos obligatorios existan
+      const datosValidados = {
+        razonSocial: datos.razonSocial || "",
+        rut: datos.rut || "",
+        telefono: datos.telefono || "",
+        email: datos.email || "",
+        direccion: datos.direccion || "",
+        activo: datos.activo,
+      };
+
       if (cliente) {
-        await updateMutation.mutateAsync({ id: cliente.id, ...datos });
+        await updateMutation.mutateAsync({ id: cliente.id, ...datosValidados });
         toast.success("Cliente actualizado exitosamente");
       } else {
-        await createMutation.mutateAsync(datos);
+        await createMutation.mutateAsync(datosValidados);
         toast.success("Cliente creado exitosamente");
       }
       onSuccess();

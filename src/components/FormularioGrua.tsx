@@ -47,11 +47,20 @@ export function FormularioGrua({ grua, onSuccess, onCancel }: Props) {
 
   const onSubmit = async (datos: DatosFormulario) => {
     try {
+      // Asegurarse de que todos los campos obligatorios existan
+      const datosValidados = {
+        patente: datos.patente || "",
+        marca: datos.marca || "",
+        modelo: datos.modelo || "",
+        tipo: datos.tipo as 'Liviana' | 'Mediana' | 'Pesada',
+        activo: datos.activo,
+      };
+
       if (grua) {
-        await updateMutation.mutateAsync({ id: grua.id, ...datos });
+        await updateMutation.mutateAsync({ id: grua.id, ...datosValidados });
         toast.success("Grúa actualizada exitosamente");
       } else {
-        await createMutation.mutateAsync(datos);
+        await createMutation.mutateAsync(datosValidados);
         toast.success("Grúa creada exitosamente");
       }
       onSuccess();
