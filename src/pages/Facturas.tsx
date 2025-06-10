@@ -193,7 +193,7 @@ export default function Facturas() {
                   onClick={handleExportExcel}
                   disabled={facturasFiltradas.length === 0}
                 >
-                  <FileExcel className="h-4 w-4 mr-2" />
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
                   Excel
                 </Button>
               </TooltipTrigger>

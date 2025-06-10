@@ -260,7 +260,7 @@ export default function Index() {
                         size="sm"
                         onClick={handleExportExcel}
                       >
-                        <FileExcel className="h-4 w-4 mr-2" />
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
                         Excel
                       </Button>
                     </TooltipTrigger>
