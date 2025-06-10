@@ -65,13 +65,14 @@ export const ServiciosSelectionModal = ({
     const serviciosSeleccionados = serviciosElegibles.filter(s => selectedServicios.includes(s.id));
     const total = serviciosSeleccionados.reduce((sum, s) => sum + Number(s.valor), 0);
 
-    // Usar fechas de los servicios seleccionados si no se especificaron filtros
-    const minFecha = fechaInicio || Math.min(...serviciosSeleccionados.map(s => s.fecha));
-    const maxFecha = fechaFin || Math.max(...serviciosSeleccionados.map(s => s.fecha));
+    // Convert dates properly to strings
+    const servicioFechas = serviciosSeleccionados.map(s => s.fecha);
+    const minFecha = fechaInicio || servicioFechas.sort()[0];
+    const maxFecha = fechaFin || servicioFechas.sort().reverse()[0];
 
     createCierre.mutate({
-      fechaInicio: minFecha,
-      fechaFin: maxFecha,
+      fechaInicio: String(minFecha),
+      fechaFin: String(maxFecha),
       clienteId: clienteId || undefined,
       serviciosIds: selectedServicios,
       total

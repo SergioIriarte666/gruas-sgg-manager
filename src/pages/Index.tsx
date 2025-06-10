@@ -76,6 +76,10 @@ export default function Index() {
     setShowNewForm(false);
   };
 
+  const handleFormCancel = () => {
+    setShowNewForm(false);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -108,22 +112,22 @@ export default function Index() {
         <EstadisticasCard
           title="Total Servicios"
           value={estadisticas?.totalServicios || 0}
-          icon={<FileText className="h-4 w-4" />}
+          icon={FileText}
         />
         <EstadisticasCard
           title="En Curso"
           value={estadisticas?.serviciosEnCurso || 0}
-          icon={<Calendar className="h-4 w-4" />}
+          icon={Calendar}
         />
         <EstadisticasCard
           title="Finalizados"
           value={estadisticas?.serviciosCerrados || 0}
-          icon={<CheckCircle className="h-4 w-4" />}
+          icon={CheckCircle}
         />
         <EstadisticasCard
           title="Ingresos Total"
           value={formatCurrency(estadisticas?.ingresosTotales || 0)}
-          icon={<Truck className="h-4 w-4" />}
+          icon={Truck}
         />
       </div>
 
@@ -212,7 +216,7 @@ export default function Index() {
                   Cancelar
                 </Button>
               </div>
-              <FormularioServicio onSuccess={handleFormSuccess} />
+              <FormularioServicio onSuccess={handleFormSuccess} onCancel={handleFormCancel} />
             </div>
           </div>
         </div>

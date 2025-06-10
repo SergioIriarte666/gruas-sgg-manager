@@ -1,21 +1,24 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, Eye, Edit, CheckCircle, Package } from "lucide-react";
-import { formatSafeDate } from "@/lib/utils";
+import { Plus, Search, Eye, Edit, CheckCircle, Filter } from "lucide-react";
 import { useServicios } from "@/hooks/useServicios";
 import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
+import { FormularioServicio } from "@/components/FormularioServicio";
 import { ServicioDetailsModal } from "@/components/ServicioDetailsModal";
 import { ServiciosSelectionModal } from "@/components/ServiciosSelectionModal";
-import { FormularioServicio } from "@/components/FormularioServicio";
+import { formatSafeDate } from "@/lib/utils";
 
 export default function Servicios() {
-  const [selectedServicio, setSelectedServicio] = useState<any>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [selectedServicio, setSelectedServicio] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showSelectionModal, setShowSelectionModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [estadoFilter, setEstadoFilter] = useState<string>("");
 
   const { data: servicios = [], isLoading } = useServicios();
   const updateServicioEstado = useUpdateServicioEstado();
@@ -53,10 +56,16 @@ export default function Servicios() {
     }
   };
 
-  const handleViewServicio = (servicio: any) => {
-    setSelectedServicio(servicio);
-    setIsDetailsModalOpen(true);
-  };
+  const filteredServicios = servicios.filter(servicio => {
+    const matchesSearch = !searchTerm || 
+      servicio.folio.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      servicio.cliente?.razonSocial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      servicio.patente.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesEstado = !estadoFilter || servicio.estado === estadoFilter;
+    
+    return matchesSearch && matchesEstado;
+  });
 
   const handleFinalizarServicio = (servicioId: string) => {
     updateServicioEstado.mutate({
@@ -65,15 +74,23 @@ export default function Servicios() {
     });
   };
 
+  const handleViewServicio = (servicio: any) => {
+    setSelectedServicio(servicio);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedServicio(null);
+  };
+
   const handleFormSuccess = () => {
     setShowNewForm(false);
   };
 
-  // Estadísticas
-  const serviciosEnCurso = servicios.filter(s => s.estado === 'en_curso').length;
-  const serviciosCerrados = servicios.filter(s => s.estado === 'cerrado').length;
-  const serviciosFacturados = servicios.filter(s => s.estado === 'facturado').length;
-  const serviciosElegiblesParaCierre = servicios.filter(s => s.estado === 'cerrado' && !s.cierreId).length;
+  const handleFormCancel = () => {
+    setShowNewForm(false);
+  };
 
   if (isLoading) {
     return (
@@ -91,16 +108,16 @@ export default function Servicios() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Servicios</h1>
-          <p className="text-muted-foreground">Gestión de servicios de grúa</p>
+          <p className="text-muted-foreground">Gestión completa de servicios de grúa</p>
         </div>
         <div className="flex gap-2">
           <Button 
-            onClick={() => setIsSelectionModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700"
-            disabled={serviciosElegiblesParaCierre === 0}
+            onClick={() => setShowSelectionModal(true)}
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
           >
-            <Package className="h-4 w-4 mr-2" />
-            Generar Cierre ({serviciosElegiblesParaCierre})
+            <Filter className="h-4 w-4 mr-2" />
+            Generar Cierre
           </Button>
           <Button 
             onClick={() => setShowNewForm(true)}
@@ -112,116 +129,100 @@ export default function Servicios() {
         </div>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-primary text-sm">Total Servicios</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{servicios.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
-          <CardHeader>
-            <CardTitle className="text-yellow-400 text-sm">En Curso</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{serviciosEnCurso}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-500/30 bg-green-500/5">
-          <CardHeader>
-            <CardTitle className="text-green-400 text-sm">Cerrados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{serviciosCerrados}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-blue-500/30 bg-blue-500/5">
-          <CardHeader>
-            <CardTitle className="text-blue-400 text-sm">Facturados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{serviciosFacturados}</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Filtros */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar por folio, cliente o patente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <select
+              className="px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              value={estadoFilter}
+              onChange={(e) => setEstadoFilter(e.target.value)}
+            >
+              <option value="">Todos los estados</option>
+              <option value="en_curso">En Curso</option>
+              <option value="cerrado">Cerrado</option>
+              <option value="facturado">Facturado</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Lista de Servicios */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Lista de Servicios
-          </CardTitle>
+          <CardTitle>Servicios ({filteredServicios.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {servicios.length === 0 ? (
+          {filteredServicios.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No hay servicios registrados aún. ¡Crea tu primer servicio!
+              {searchTerm || estadoFilter ? 
+                "No se encontraron servicios con los filtros aplicados." :
+                "No hay servicios registrados aún. ¡Crea tu primer servicio!"
+              }
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-3 font-medium text-muted-foreground">Folio</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Cliente</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Vehículo</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Valor</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {servicios.map((servicio) => (
-                    <tr key={servicio.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                      <td className="p-3 font-medium text-primary">{servicio.folio}</td>
-                      <td className="p-3">{formatSafeDate(servicio.fecha)}</td>
-                      <td className="p-3">{servicio.cliente?.razonSocial || 'N/A'}</td>
-                      <td className="p-3">
-                        {servicio.marcaVehiculo} {servicio.modeloVehiculo} - {servicio.patente}
-                      </td>
-                      <td className="p-3 font-medium">{formatCurrency(Number(servicio.valor))}</td>
-                      <td className="p-3">
+            <div className="space-y-4">
+              {filteredServicios.map((servicio) => (
+                <div key={servicio.id} className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-medium text-primary">{servicio.folio}</h3>
                         <Badge className={getEstadoBadgeColor(servicio.estado)}>
                           {getEstadoLabel(servicio.estado)}
                         </Badge>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-2">
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                        <p><strong>Cliente:</strong> {servicio.cliente?.razonSocial || 'N/A'}</p>
+                        <p><strong>Fecha:</strong> {formatSafeDate(servicio.fecha)}</p>
+                        <p><strong>Vehículo:</strong> {servicio.marcaVehiculo} {servicio.modeloVehiculo}</p>
+                        <p><strong>Patente:</strong> {servicio.patente}</p>
+                        <p><strong>Grúa:</strong> {servicio.grua?.patente || 'N/A'}</p>
+                        <p><strong>Operador:</strong> {servicio.operador?.nombreCompleto || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-primary">{formatCurrency(Number(servicio.valor))}</div>
+                        <div className="text-xs text-muted-foreground">Valor</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleViewServicio(servicio)}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        {servicio.estado === 'en_curso' && (
                           <Button 
                             size="sm" 
-                            variant="outline" 
-                            className="h-8 px-2"
-                            onClick={() => handleViewServicio(servicio)}
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => handleFinalizarServicio(servicio.id)}
+                            disabled={updateServicioEstado.isPending}
                           >
-                            <Eye className="h-3 w-3" />
+                            <CheckCircle className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline" className="h-8 px-2">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          {servicio.estado === 'en_curso' && (
-                            <Button 
-                              size="sm" 
-                              className="h-8 px-2 bg-green-600 hover:bg-green-700"
-                              onClick={() => handleFinalizarServicio(servicio.id)}
-                              disabled={updateServicioEstado.isPending}
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
@@ -238,7 +239,7 @@ export default function Servicios() {
                   Cancelar
                 </Button>
               </div>
-              <FormularioServicio onSuccess={handleFormSuccess} />
+              <FormularioServicio onSuccess={handleFormSuccess} onCancel={handleFormCancel} />
             </div>
           </div>
         </div>
@@ -246,18 +247,15 @@ export default function Servicios() {
 
       {/* Modal de Detalles del Servicio */}
       <ServicioDetailsModal
-        isOpen={isDetailsModalOpen}
-        onClose={() => {
-          setIsDetailsModalOpen(false);
-          setSelectedServicio(null);
-        }}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
         servicio={selectedServicio}
       />
 
-      {/* Modal de Selección para Cierre */}
+      {/* Modal de Selección para Cierres */}
       <ServiciosSelectionModal
-        isOpen={isSelectionModalOpen}
-        onClose={() => setIsSelectionModalOpen(false)}
+        isOpen={showSelectionModal}
+        onClose={() => setShowSelectionModal(false)}
         servicios={servicios}
       />
     </div>
