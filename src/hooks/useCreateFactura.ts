@@ -11,11 +11,15 @@ export const useCreateFactura = () => {
   return useMutation({
     mutationFn: async (cierreId: string) => {
       try {
+        console.log('Iniciando creación de factura para cierre:', cierreId);
+        
         // Crear factura desde cierre
         const factura = await facturasApi.createFromCierre(cierreId);
+        console.log('Factura creada:', factura);
         
         // Marcar cierre como facturado
         await cierresApi.markAsFacturado(cierreId, factura.id);
+        console.log('Cierre marcado como facturado');
         
         return factura;
       } catch (error) {
@@ -23,7 +27,8 @@ export const useCreateFactura = () => {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (factura) => {
+      console.log('Factura creada exitosamente:', factura);
       queryClient.invalidateQueries({ queryKey: ['facturas'] });
       queryClient.invalidateQueries({ queryKey: ['cierres'] });
       queryClient.invalidateQueries({ queryKey: ['servicios'] });

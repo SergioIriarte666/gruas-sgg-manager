@@ -10,7 +10,7 @@ export const cierresApi = {
       .from('cierres')
       .select(`
         *,
-        clientes!inner(
+        clientes(
           razon_social,
           rut,
           telefono,
@@ -37,7 +37,7 @@ export const cierresApi = {
       .from('cierres')
       .select(`
         *,
-        clientes!inner(
+        clientes(
           razon_social,
           rut,
           telefono,
@@ -64,10 +64,10 @@ export const cierresApi = {
       .from('servicios')
       .select(`
         *,
-        clientes!inner(razon_social, rut),
-        gruas!inner(patente, marca, modelo),
-        operadores!inner(nombre_completo),
-        tipos_servicio!inner(nombre)
+        clientes(razon_social, rut),
+        gruas(patente, marca, modelo),
+        operadores(nombre_completo),
+        tipos_servicio(nombre)
       `)
       .eq('estado', 'cerrado')
       .is('cierre_id', null)
@@ -107,8 +107,14 @@ export const cierresApi = {
 
       if (folioError) {
         console.error('Error al generar folio:', folioError);
-        throw new Error('No se pudo generar el folio del cierre');
+        throw new Error('No se pudo generar el folio del cierre: ' + folioError.message);
       }
+
+      if (!folio) {
+        throw new Error('No se recibió un folio válido');
+      }
+
+      console.log('Folio generado para cierre:', folio);
 
       // Crear el cierre
       const { data: cierre, error: cierreError } = await supabase
@@ -126,8 +132,10 @@ export const cierresApi = {
 
       if (cierreError) {
         console.error('Error al crear cierre:', cierreError);
-        throw new Error('No se pudo crear el cierre');
+        throw new Error('No se pudo crear el cierre: ' + cierreError.message);
       }
+
+      console.log('Cierre creado:', cierre);
 
       // Actualizar servicios con el cierre_id
       const { error: serviciosError } = await supabase
@@ -137,10 +145,12 @@ export const cierresApi = {
 
       if (serviciosError) {
         console.error('Error al actualizar servicios:', serviciosError);
-        throw new Error('No se pudieron actualizar los servicios');
+        // Si falla la actualización de servicios, eliminar el cierre creado
+        await supabase.from('cierres').delete().eq('id', cierre.id);
+        throw new Error('No se pudieron actualizar los servicios: ' + serviciosError.message);
       }
 
-      console.log('Cierre creado exitosamente:', cierre);
+      console.log('Servicios actualizados con cierre_id:', cierre.id);
       return cierre;
     } catch (error) {
       console.error('Error en creación de cierre:', error);

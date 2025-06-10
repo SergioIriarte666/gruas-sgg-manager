@@ -10,9 +10,9 @@ export const facturasApi = {
       .from('facturas')
       .select(`
         *,
-        cierres!inner(
+        cierres(
           cliente_id,
-          clientes!inner(
+          clientes(
             razon_social,
             rut,
             telefono,
@@ -41,7 +41,7 @@ export const facturasApi = {
         .from('cierres')
         .select(`
           *,
-          clientes!inner(
+          clientes(
             razon_social,
             rut,
             email,
@@ -65,6 +65,8 @@ export const facturasApi = {
         throw new Error('Este cierre ya ha sido facturado');
       }
 
+      console.log('Cierre obtenido:', cierre);
+
       // Generar folio automático para factura
       const { data: folio, error: folioError } = await supabase.rpc('generate_folio', {
         prefix: 'F'
@@ -74,6 +76,12 @@ export const facturasApi = {
         console.error('Error al generar folio de factura:', folioError);
         throw new Error('No se pudo generar el folio de la factura: ' + folioError.message);
       }
+
+      if (!folio) {
+        throw new Error('No se recibió un folio válido para la factura');
+      }
+
+      console.log('Folio de factura generado:', folio);
 
       // Calcular subtotal e IVA
       const subtotal = Number(cierre.total);

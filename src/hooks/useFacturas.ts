@@ -23,10 +23,13 @@ export const useFacturas = () => {
     queryKey: ["facturas"],
     queryFn: async () => {
       try {
+        console.log('Obteniendo facturas...');
         const data = await facturasApi.getAll();
 
         // Transform data to match expected format with safe date handling
-        return data.map((factura: any) => {
+        const facturas = data.map((factura: any) => {
+          console.log('Procesando factura:', factura);
+          
           // Helper function to safely parse dates
           const safeParseDate = (dateValue: any) => {
             if (!dateValue) return null;
@@ -50,20 +53,31 @@ export const useFacturas = () => {
             estado = 'vencida';
           }
 
+          // Get client name safely
+          let clienteNombre = 'Cliente no encontrado';
+          if (factura.cierres?.clientes?.razon_social) {
+            clienteNombre = factura.cierres.clientes.razon_social;
+          } else if (factura.cierres && Array.isArray(factura.cierres) && factura.cierres[0]?.clientes?.razon_social) {
+            clienteNombre = factura.cierres[0].clientes.razon_social;
+          }
+
           return {
             id: factura.id,
             folio: factura.folio,
-            fecha: fechaFactura || new Date(),
-            fechaVencimiento: fechaVencimiento || new Date(),
-            cliente: factura.cierres?.clientes?.razon_social || 'Cliente no encontrado',
-            subtotal: Number(factura.subtotal),
-            iva: Number(factura.iva),
-            total: Number(factura.total),
+            fecha: fechaFactura ? fechaFactura.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            fechaVencimiento: fechaVencimiento ? fechaVencimiento.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            cliente: clienteNombre,
+            subtotal: Number(factura.subtotal) || 0,
+            iva: Number(factura.iva) || 0,
+            total: Number(factura.total) || 0,
             estado: estado as 'pendiente' | 'pagada' | 'vencida',
-            fechaPago: fechaPago,
+            fechaPago: fechaPago ? fechaPago.toISOString().split('T')[0] : undefined,
             diasVencimiento
           };
         });
+
+        console.log('Facturas procesadas:', facturas);
+        return facturas;
       } catch (error) {
         console.error("Error fetching facturas:", error);
         throw error;
@@ -78,6 +92,8 @@ export const useUpdateFacturaEstado = () => {
 
   return useMutation({
     mutationFn: async ({ facturaId, fechaPago }: { facturaId: string; fechaPago: string }) => {
+      console.log('Actualizando estado de factura:', { facturaId, fechaPago });
+      
       const { data, error } = await supabase
         .from("facturas")
         .update({
@@ -88,7 +104,12 @@ export const useUpdateFacturaEstado = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error al actualizar factura:', error);
+        throw error;
+      }
+      
+      console.log('Factura actualizada:', data);
       return data;
     },
     onSuccess: () => {
