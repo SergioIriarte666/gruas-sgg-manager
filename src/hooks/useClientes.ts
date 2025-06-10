@@ -60,16 +60,16 @@ export const useUpdateCliente = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: { id: string; razonSocial?: string; rut?: string; telefono?: string; email?: string; direccion?: string; activo?: boolean }) => {
+    mutationFn: async (params: { id: string } & { razonSocial: string; rut: string; telefono: string; email: string; direccion: string; activo: boolean }) => {
       const { id, ...cliente } = params;
       const updateData: any = {};
       
-      if (cliente.razonSocial !== undefined) updateData.razon_social = cliente.razonSocial;
-      if (cliente.rut !== undefined) updateData.rut = cliente.rut;
-      if (cliente.telefono !== undefined) updateData.telefono = cliente.telefono;
-      if (cliente.email !== undefined) updateData.email = cliente.email;
-      if (cliente.direccion !== undefined) updateData.direccion = cliente.direccion;
-      if (cliente.activo !== undefined) updateData.activo = cliente.activo;
+      updateData.razon_social = cliente.razonSocial;
+      updateData.rut = cliente.rut;
+      updateData.telefono = cliente.telefono;
+      updateData.email = cliente.email;
+      updateData.direccion = cliente.direccion;
+      updateData.activo = cliente.activo;
       
       const { data, error } = await supabase
         .from('clientes')

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Servicio } from "@/types";
@@ -147,40 +146,39 @@ export const useUpdateServicio = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: { 
-      id: string; 
-      fecha?: Date; 
-      clienteId?: string; 
-      ordenCompra?: string; 
-      marcaVehiculo?: string; 
-      modeloVehiculo?: string; 
-      patente?: string; 
-      ubicacionOrigen?: string; 
-      ubicacionDestino?: string; 
-      valor?: number; 
-      gruaId?: string; 
-      operadorId?: string; 
-      tipoServicioId?: string; 
-      estado?: 'en_curso' | 'cerrado' | 'facturado'; 
-      observaciones?: string; 
+    mutationFn: async (params: { id: string } & {
+      fecha: Date;
+      clienteId: string;
+      ordenCompra?: string;
+      marcaVehiculo: string;
+      modeloVehiculo: string;
+      patente: string;
+      ubicacionOrigen: string;
+      ubicacionDestino: string;
+      valor: number;
+      gruaId: string;
+      operadorId: string;
+      tipoServicioId: string;
+      estado: 'en_curso' | 'cerrado' | 'facturado';
+      observaciones?: string;
     }) => {
       const { id, ...servicio } = params;
       const updateData: any = {};
       
-      if (servicio.fecha !== undefined) updateData.fecha = servicio.fecha.toISOString().split('T')[0];
-      if (servicio.clienteId !== undefined) updateData.cliente_id = servicio.clienteId;
-      if (servicio.ordenCompra !== undefined) updateData.orden_compra = servicio.ordenCompra;
-      if (servicio.marcaVehiculo !== undefined) updateData.marca_vehiculo = servicio.marcaVehiculo;
-      if (servicio.modeloVehiculo !== undefined) updateData.modelo_vehiculo = servicio.modeloVehiculo;
-      if (servicio.patente !== undefined) updateData.patente = servicio.patente;
-      if (servicio.ubicacionOrigen !== undefined) updateData.ubicacion_origen = servicio.ubicacionOrigen;
-      if (servicio.ubicacionDestino !== undefined) updateData.ubicacion_destino = servicio.ubicacionDestino;
-      if (servicio.valor !== undefined) updateData.valor = servicio.valor;
-      if (servicio.gruaId !== undefined) updateData.grua_id = servicio.gruaId;
-      if (servicio.operadorId !== undefined) updateData.operador_id = servicio.operadorId;
-      if (servicio.tipoServicioId !== undefined) updateData.tipo_servicio_id = servicio.tipoServicioId;
-      if (servicio.estado !== undefined) updateData.estado = servicio.estado;
-      if (servicio.observaciones !== undefined) updateData.observaciones = servicio.observaciones;
+      updateData.fecha = servicio.fecha.toISOString().split('T')[0];
+      updateData.cliente_id = servicio.clienteId;
+      updateData.orden_compra = servicio.ordenCompra;
+      updateData.marca_vehiculo = servicio.marcaVehiculo;
+      updateData.modelo_vehiculo = servicio.modeloVehiculo;
+      updateData.patente = servicio.patente;
+      updateData.ubicacion_origen = servicio.ubicacionOrigen;
+      updateData.ubicacion_destino = servicio.ubicacionDestino;
+      updateData.valor = servicio.valor;
+      updateData.grua_id = servicio.gruaId;
+      updateData.operador_id = servicio.operadorId;
+      updateData.tipo_servicio_id = servicio.tipoServicioId;
+      updateData.estado = servicio.estado;
+      updateData.observaciones = servicio.observaciones;
       
       const { data, error } = await supabase
         .from('servicios')

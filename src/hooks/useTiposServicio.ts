@@ -54,13 +54,13 @@ export const useUpdateTipoServicio = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: { id: string; nombre?: string; descripcion?: string; activo?: boolean }) => {
+    mutationFn: async (params: { id: string } & { nombre: string; descripcion: string; activo: boolean }) => {
       const { id, ...tipo } = params;
       const updateData: any = {};
       
-      if (tipo.nombre !== undefined) updateData.nombre = tipo.nombre;
-      if (tipo.descripcion !== undefined) updateData.descripcion = tipo.descripcion;
-      if (tipo.activo !== undefined) updateData.activo = tipo.activo;
+      updateData.nombre = tipo.nombre;
+      updateData.descripcion = tipo.descripcion;
+      updateData.activo = tipo.activo;
       
       const { data, error } = await supabase
         .from('tipos_servicio')
