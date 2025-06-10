@@ -34,7 +34,8 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   const form = useForm<ServicioFormData>({
     resolver: zodResolver(servicioFormSchema),
     defaultValues: {
-      fecha: new Date(),
+      fecha: new Date(), // Siempre Date válido
+      folio: "",
       clienteId: "",
       ordenCompra: "",
       marcaVehiculo: "",
@@ -54,20 +55,23 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   // Pre-cargar datos para edición
   useEffect(() => {
     if (servicio) {
+      const fechaServicio = servicio.fecha ? new Date(servicio.fecha) : new Date();
+      
       form.reset({
-        fecha: new Date(servicio.fecha),
-        clienteId: servicio.clienteId,
-        ordenCompra: servicio.ordenCompra || "",
-        marcaVehiculo: servicio.marcaVehiculo,
-        modeloVehiculo: servicio.modeloVehiculo,
-        patente: servicio.patente,
-        ubicacionOrigen: servicio.ubicacionOrigen,
-        ubicacionDestino: servicio.ubicacionDestino,
-        valor: Number(servicio.valor),
-        gruaId: servicio.gruaId,
-        operadorId: servicio.operadorId,
-        tipoServicioId: servicio.tipoServicioId,
-        estado: servicio.estado,
+        fecha: fechaServicio,
+        folio: servicio.folio || "",
+        clienteId: servicio.clienteId || servicio.cliente_id || "",
+        ordenCompra: servicio.ordenCompra || servicio.orden_compra || "",
+        marcaVehiculo: servicio.marcaVehiculo || servicio.marca_vehiculo || "",
+        modeloVehiculo: servicio.modeloVehiculo || servicio.modelo_vehiculo || "",
+        patente: servicio.patente || "",
+        ubicacionOrigen: servicio.ubicacionOrigen || servicio.ubicacion_origen || "",
+        ubicacionDestino: servicio.ubicacionDestino || servicio.ubicacion_destino || "",
+        valor: Number(servicio.valor) || 0,
+        gruaId: servicio.gruaId || servicio.grua_id || "",
+        operadorId: servicio.operadorId || servicio.operador_id || "",
+        tipoServicioId: servicio.tipoServicioId || servicio.tipo_servicio_id || "",
+        estado: servicio.estado || "en_curso",
         observaciones: servicio.observaciones || "",
       });
     }
@@ -77,26 +81,20 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
     try {
       setIsSubmitting(true);
       
+      // Asegurar que la fecha es válida
+      const validatedData: ServicioFormData = {
+        ...data,
+        fecha: data.fecha instanceof Date ? data.fecha : new Date(data.fecha),
+        valor: Number(data.valor),
+      };
+      
       if (isEditing) {
         await updateServicio.mutateAsync({
           id: servicio.id,
-          fecha: data.fecha,
-          clienteId: data.clienteId,
-          ordenCompra: data.ordenCompra,
-          marcaVehiculo: data.marcaVehiculo,
-          modeloVehiculo: data.modeloVehiculo,
-          patente: data.patente,
-          ubicacionOrigen: data.ubicacionOrigen,
-          ubicacionDestino: data.ubicacionDestino,
-          valor: data.valor,
-          gruaId: data.gruaId,
-          operadorId: data.operadorId,
-          tipoServicioId: data.tipoServicioId,
-          estado: data.estado,
-          observaciones: data.observaciones,
+          ...validatedData,
         });
       } else {
-        await createServicio.mutateAsync(data);
+        await createServicio.mutateAsync(validatedData);
       }
       
       onSuccess();
