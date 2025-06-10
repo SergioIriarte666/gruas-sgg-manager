@@ -80,24 +80,73 @@ export function FormularioServicio({ servicio, onSuccess, onCancel }: Props) {
   });
 
   const onSubmit = async (datos: DatosFormulario) => {
+    console.log('Enviando formulario con datos:', datos);
+    
     try {
-      // Asegurarse de que todos los campos obligatorios existan
+      // Validación adicional del lado cliente
+      if (!datos.clienteId || datos.clienteId.trim() === '') {
+        toast.error("Debe seleccionar un cliente");
+        return;
+      }
+      
+      if (!datos.gruaId || datos.gruaId.trim() === '') {
+        toast.error("Debe seleccionar una grúa");
+        return;
+      }
+      
+      if (!datos.operadorId || datos.operadorId.trim() === '') {
+        toast.error("Debe seleccionar un operador");
+        return;
+      }
+      
+      if (!datos.tipoServicioId || datos.tipoServicioId.trim() === '') {
+        toast.error("Debe seleccionar un tipo de servicio");
+        return;
+      }
+
+      // Verificar que los elementos seleccionados existan en las listas
+      const clienteSeleccionado = clientes.find(c => c.id === datos.clienteId && c.activo);
+      if (!clienteSeleccionado) {
+        toast.error("El cliente seleccionado no es válido o no está activo");
+        return;
+      }
+
+      const gruaSeleccionada = gruas.find(g => g.id === datos.gruaId && g.activo);
+      if (!gruaSeleccionada) {
+        toast.error("La grúa seleccionada no es válida o no está activa");
+        return;
+      }
+
+      const operadorSeleccionado = operadores.find(o => o.id === datos.operadorId && o.activo);
+      if (!operadorSeleccionado) {
+        toast.error("El operador seleccionado no es válido o no está activo");
+        return;
+      }
+
+      const tipoSeleccionado = tiposServicio.find(t => t.id === datos.tipoServicioId && t.activo);
+      if (!tipoSeleccionado) {
+        toast.error("El tipo de servicio seleccionado no es válido o no está activo");
+        return;
+      }
+
       const datosValidados = {
         fecha: datos.fecha || new Date(),
-        clienteId: datos.clienteId || "",
-        ordenCompra: datos.ordenCompra,
-        marcaVehiculo: datos.marcaVehiculo || "",
-        modeloVehiculo: datos.modeloVehiculo || "",
-        patente: datos.patente || "",
-        ubicacionOrigen: datos.ubicacionOrigen || "",
-        ubicacionDestino: datos.ubicacionDestino || "",
-        valor: datos.valor || 0,
-        gruaId: datos.gruaId || "",
-        operadorId: datos.operadorId || "",
-        tipoServicioId: datos.tipoServicioId || "",
+        clienteId: datos.clienteId.trim(),
+        ordenCompra: datos.ordenCompra?.trim(),
+        marcaVehiculo: datos.marcaVehiculo.trim(),
+        modeloVehiculo: datos.modeloVehiculo.trim(),
+        patente: datos.patente.trim().toUpperCase(),
+        ubicacionOrigen: datos.ubicacionOrigen.trim(),
+        ubicacionDestino: datos.ubicacionDestino.trim(),
+        valor: Number(datos.valor) || 0,
+        gruaId: datos.gruaId.trim(),
+        operadorId: datos.operadorId.trim(),
+        tipoServicioId: datos.tipoServicioId.trim(),
         estado: datos.estado as 'en_curso' | 'cerrado' | 'facturado',
-        observaciones: datos.observaciones,
+        observaciones: datos.observaciones?.trim(),
       };
+
+      console.log('Datos validados para envío:', datosValidados);
 
       if (servicio) {
         await updateMutation.mutateAsync({ id: servicio.id, ...datosValidados });
@@ -107,9 +156,17 @@ export function FormularioServicio({ servicio, onSuccess, onCancel }: Props) {
         toast.success("Servicio creado exitosamente");
       }
       onSuccess();
-    } catch (error) {
-      toast.error("Error al guardar el servicio");
-      console.error(error);
+    } catch (error: any) {
+      console.error('Error completo al guardar servicio:', error);
+      
+      // Mostrar mensaje de error más específico
+      const errorMessage = error?.message || 'Error desconocido al guardar el servicio';
+      toast.error(errorMessage);
+      
+      // Si el error incluye información de validación, también mostrarla
+      if (error?.details) {
+        console.error('Detalles del error:', error.details);
+      }
     }
   };
 
