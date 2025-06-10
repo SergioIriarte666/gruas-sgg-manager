@@ -1,7 +1,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatSafeDate } from "@/lib/utils";
 
 interface FacturaDetailsModalProps {
   isOpen: boolean;
@@ -50,16 +49,16 @@ export function FacturaDetailsModal({ isOpen, onClose, factura }: FacturaDetails
           <div className="grid grid-cols-3 gap-4">
             <div>
               <h3 className="font-medium text-sm text-muted-foreground">Fecha Emisión</h3>
-              <p>{format(factura.fecha, "dd/MM/yyyy", { locale: es })}</p>
+              <p>{formatSafeDate(factura.fecha)}</p>
             </div>
             <div>
               <h3 className="font-medium text-sm text-muted-foreground">Fecha Vencimiento</h3>
-              <p>{format(factura.fechaVencimiento, "dd/MM/yyyy", { locale: es })}</p>
+              <p>{formatSafeDate(factura.fechaVencimiento)}</p>
             </div>
             {factura.fechaPago && (
               <div>
                 <h3 className="font-medium text-sm text-muted-foreground">Fecha Pago</h3>
-                <p>{format(factura.fechaPago, "dd/MM/yyyy", { locale: es })}</p>
+                <p>{formatSafeDate(factura.fechaPago)}</p>
               </div>
             )}
           </div>

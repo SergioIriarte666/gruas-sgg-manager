@@ -51,20 +51,39 @@ export const useFacturas = () => {
         throw error;
       }
 
-      // Transform data to match expected format
-      return data.map((factura: any) => ({
-        id: factura.id,
-        folio: factura.folio,
-        fecha: new Date(factura.fecha),
-        fechaVencimiento: new Date(factura.fecha_vencimiento),
-        cliente: factura.cierres.clientes.razon_social,
-        subtotal: Number(factura.subtotal),
-        iva: Number(factura.iva),
-        total: Number(factura.total),
-        estado: factura.estado as 'pendiente' | 'pagada' | 'vencida',
-        fechaPago: factura.fecha_pago ? new Date(factura.fecha_pago) : null,
-        diasVencimiento: Math.ceil((new Date(factura.fecha_vencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-      }));
+      // Transform data to match expected format with safe date handling
+      return data.map((factura: any) => {
+        // Helper function to safely parse dates
+        const safeParseDate = (dateValue: any) => {
+          if (!dateValue) return null;
+          const parsed = new Date(dateValue);
+          return isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const fechaFactura = safeParseDate(factura.fecha);
+        const fechaVencimiento = safeParseDate(factura.fecha_vencimiento);
+        const fechaPago = factura.fecha_pago ? safeParseDate(factura.fecha_pago) : null;
+
+        // Calculate days until expiration safely
+        let diasVencimiento = 0;
+        if (fechaVencimiento) {
+          diasVencimiento = Math.ceil((fechaVencimiento.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        return {
+          id: factura.id,
+          folio: factura.folio,
+          fecha: fechaFactura || new Date(),
+          fechaVencimiento: fechaVencimiento || new Date(),
+          cliente: factura.cierres.clientes.razon_social,
+          subtotal: Number(factura.subtotal),
+          iva: Number(factura.iva),
+          total: Number(factura.total),
+          estado: factura.estado as 'pendiente' | 'pagada' | 'vencida',
+          fechaPago: fechaPago,
+          diasVencimiento
+        };
+      });
     },
   });
 };
