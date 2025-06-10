@@ -96,6 +96,7 @@ export const serviciosApi = {
 
   create: async (servicio: {
     fecha: Date;
+    folio?: string;
     clienteId: string;
     ordenCompra?: string;
     marcaVehiculo: string;

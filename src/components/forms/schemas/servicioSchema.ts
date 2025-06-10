@@ -5,6 +5,7 @@ export const servicioFormSchema = z.object({
   fecha: z.date({
     required_error: "Se requiere una fecha.",
   }),
+  folio: z.string().optional(), // Folio manual opcional
   clienteId: z.string({
     required_error: "Se requiere un cliente.",
   }).min(1, "Cliente requerido"),

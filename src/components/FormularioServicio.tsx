@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -41,6 +40,7 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
     resolver: zodResolver(servicioFormSchema),
     defaultValues: {
       fecha: new Date(),
+      folio: "",
       clienteId: "",
       ordenCompra: "",
       marcaVehiculo: "",
@@ -63,6 +63,7 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
     // Asegurar que todos los campos obligatorios estén presentes
     const servicioData = {
       fecha: values.fecha,
+      folio: values.folio, // Incluir folio manual si se proporciona
       clienteId: values.clienteId,
       ordenCompra: values.ordenCompra,
       marcaVehiculo: values.marcaVehiculo,
@@ -94,6 +95,23 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
           name="fecha"
           label="Fecha"
           description="Fecha en la que se realizó el servicio."
+        />
+
+        <FormField
+          control={form.control}
+          name="folio"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Folio (Opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Ej: SV000123 - Dejar vacío para generar automáticamente" {...field} />
+              </FormControl>
+              <FormDescription>
+                Folio manual del servicio. Si se deja vacío, se generará automáticamente.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
         />
 
         <FormField
