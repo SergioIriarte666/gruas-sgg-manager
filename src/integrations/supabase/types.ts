@@ -363,7 +363,7 @@ export type Database = {
     }
     Functions: {
       generate_folio: {
-        Args: { prefix: string }
+        Args: Record<PropertyKey, never> | { prefix: string }
         Returns: string
       }
     }
