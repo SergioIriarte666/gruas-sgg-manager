@@ -364,7 +364,7 @@ export type Database = {
     Functions: {
       generate_folio: {
         Args: Record<PropertyKey, never> | { prefix: string }
-        Returns: string
+        Returns: undefined
       }
     }
     Enums: {
