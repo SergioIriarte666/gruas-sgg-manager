@@ -89,7 +89,22 @@ export const useCreateServicio = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (servicio: Omit<Servicio, 'id' | 'createdAt' | 'updatedAt' | 'cliente' | 'grua' | 'operador' | 'tipoServicio'>) => {
+    mutationFn: async (servicio: {
+      fecha: Date;
+      clienteId: string;
+      ordenCompra?: string;
+      marcaVehiculo: string;
+      modeloVehiculo: string;
+      patente: string;
+      ubicacionOrigen: string;
+      ubicacionDestino: string;
+      valor: number;
+      gruaId: string;
+      operadorId: string;
+      tipoServicioId: string;
+      estado: 'en_curso' | 'cerrado' | 'facturado';
+      observaciones?: string;
+    }) => {
       // Generar folio automáticamente
       const { data: folioData, error: folioError } = await supabase
         .rpc('generate_folio', { prefix: 'SV' });

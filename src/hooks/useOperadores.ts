@@ -32,7 +32,7 @@ export const useCreateOperador = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (operador: Omit<Operador, 'id' | 'createdAt' | 'updatedAt'>) => {
+    mutationFn: async (operador: { nombreCompleto: string; rut: string; telefono: string; numeroLicencia: string; activo: boolean }) => {
       const { data, error } = await supabase
         .from('operadores')
         .insert({
@@ -58,7 +58,7 @@ export const useUpdateOperador = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...operador }: Partial<Operador> & { id: string }) => {
+    mutationFn: async ({ id, ...operador }: { id: string; nombreCompleto?: string; rut?: string; telefono?: string; numeroLicencia?: string; activo?: boolean }) => {
       const updateData: any = {};
       
       if (operador.nombreCompleto) updateData.nombre_completo = operador.nombreCompleto;

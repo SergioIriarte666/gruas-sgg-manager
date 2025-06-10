@@ -32,7 +32,7 @@ export const useCreateGrua = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (grua: Omit<Grua, 'id' | 'createdAt' | 'updatedAt'>) => {
+    mutationFn: async (grua: { patente: string; marca: string; modelo: string; tipo: 'Liviana' | 'Mediana' | 'Pesada'; activo: boolean }) => {
       const { data, error } = await supabase
         .from('gruas')
         .insert({
@@ -58,7 +58,7 @@ export const useUpdateGrua = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...grua }: Partial<Grua> & { id: string }) => {
+    mutationFn: async ({ id, ...grua }: { id: string; patente?: string; marca?: string; modelo?: string; tipo?: 'Liviana' | 'Mediana' | 'Pesada'; activo?: boolean }) => {
       const updateData: any = {};
       
       if (grua.patente) updateData.patente = grua.patente;

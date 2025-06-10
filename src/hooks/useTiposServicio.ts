@@ -30,7 +30,7 @@ export const useCreateTipoServicio = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (tipo: Omit<TipoServicio, 'id' | 'createdAt' | 'updatedAt'>) => {
+    mutationFn: async (tipo: { nombre: string; descripcion: string; activo: boolean }) => {
       const { data, error } = await supabase
         .from('tipos_servicio')
         .insert({
@@ -54,7 +54,7 @@ export const useUpdateTipoServicio = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...tipo }: Partial<TipoServicio> & { id: string }) => {
+    mutationFn: async ({ id, ...tipo }: { id: string; nombre?: string; descripcion?: string; activo?: boolean }) => {
       const updateData: any = {};
       
       if (tipo.nombre) updateData.nombre = tipo.nombre;

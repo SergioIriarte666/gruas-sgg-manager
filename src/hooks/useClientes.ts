@@ -33,7 +33,7 @@ export const useCreateCliente = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (cliente: Omit<Cliente, 'id' | 'createdAt' | 'updatedAt'>) => {
+    mutationFn: async (cliente: { razonSocial: string; rut: string; telefono: string; email: string; direccion: string; activo: boolean }) => {
       const { data, error } = await supabase
         .from('clientes')
         .insert({
@@ -60,7 +60,7 @@ export const useUpdateCliente = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, ...cliente }: Partial<Cliente> & { id: string }) => {
+    mutationFn: async ({ id, ...cliente }: { id: string; razonSocial?: string; rut?: string; telefono?: string; email?: string; direccion?: string; activo?: boolean }) => {
       const updateData: any = {};
       
       if (cliente.razonSocial) updateData.razon_social = cliente.razonSocial;
