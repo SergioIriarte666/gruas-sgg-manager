@@ -1,5 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { facturasApi } from "@/api/facturasApi";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,77 +14,60 @@ export interface FacturaWithDetails {
   total: number;
   estado: 'pendiente' | 'pagada' | 'vencida';
   fechaPago?: string;
-  cierre: {
-    cliente: {
-      razonSocial: string;
-    };
-  };
+  cliente: string;
+  diasVencimiento: number;
 }
 
 export const useFacturas = () => {
   return useQuery({
     queryKey: ["facturas"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("facturas")
-        .select(`
-          id,
-          folio,
-          fecha,
-          fecha_vencimiento,
-          subtotal,
-          iva,
-          total,
-          estado,
-          fecha_pago,
-          cierre_id,
-          cierres!inner(
-            cliente_id,
-            clientes!inner(
-              razon_social
-            )
-          )
-        `)
-        .order("fecha", { ascending: false });
+      try {
+        const data = await facturasApi.getAll();
 
-      if (error) {
+        // Transform data to match expected format with safe date handling
+        return data.map((factura: any) => {
+          // Helper function to safely parse dates
+          const safeParseDate = (dateValue: any) => {
+            if (!dateValue) return null;
+            const parsed = new Date(dateValue);
+            return isNaN(parsed.getTime()) ? null : parsed;
+          };
+
+          const fechaFactura = safeParseDate(factura.fecha);
+          const fechaVencimiento = safeParseDate(factura.fecha_vencimiento);
+          const fechaPago = factura.fecha_pago ? safeParseDate(factura.fecha_pago) : null;
+
+          // Calculate days until expiration safely
+          let diasVencimiento = 0;
+          if (fechaVencimiento) {
+            diasVencimiento = Math.ceil((fechaVencimiento.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+          }
+
+          // Determine estado based on dates
+          let estado = factura.estado;
+          if (estado === 'pendiente' && diasVencimiento < 0) {
+            estado = 'vencida';
+          }
+
+          return {
+            id: factura.id,
+            folio: factura.folio,
+            fecha: fechaFactura || new Date(),
+            fechaVencimiento: fechaVencimiento || new Date(),
+            cliente: factura.cierres?.clientes?.razon_social || 'Cliente no encontrado',
+            subtotal: Number(factura.subtotal),
+            iva: Number(factura.iva),
+            total: Number(factura.total),
+            estado: estado as 'pendiente' | 'pagada' | 'vencida',
+            fechaPago: fechaPago,
+            diasVencimiento
+          };
+        });
+      } catch (error) {
         console.error("Error fetching facturas:", error);
         throw error;
       }
-
-      // Transform data to match expected format with safe date handling
-      return data.map((factura: any) => {
-        // Helper function to safely parse dates
-        const safeParseDate = (dateValue: any) => {
-          if (!dateValue) return null;
-          const parsed = new Date(dateValue);
-          return isNaN(parsed.getTime()) ? null : parsed;
-        };
-
-        const fechaFactura = safeParseDate(factura.fecha);
-        const fechaVencimiento = safeParseDate(factura.fecha_vencimiento);
-        const fechaPago = factura.fecha_pago ? safeParseDate(factura.fecha_pago) : null;
-
-        // Calculate days until expiration safely
-        let diasVencimiento = 0;
-        if (fechaVencimiento) {
-          diasVencimiento = Math.ceil((fechaVencimiento.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-        }
-
-        return {
-          id: factura.id,
-          folio: factura.folio,
-          fecha: fechaFactura || new Date(),
-          fechaVencimiento: fechaVencimiento || new Date(),
-          cliente: factura.cierres.clientes.razon_social,
-          subtotal: Number(factura.subtotal),
-          iva: Number(factura.iva),
-          total: Number(factura.total),
-          estado: factura.estado as 'pendiente' | 'pagada' | 'vencida',
-          fechaPago: fechaPago,
-          diasVencimiento
-        };
-      });
     },
   });
 };

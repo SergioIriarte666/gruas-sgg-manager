@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { Cierre } from "@/types";
 
 export const cierresApi = {
   // Obtener todos los cierres
@@ -11,8 +10,12 @@ export const cierresApi = {
       .from('cierres')
       .select(`
         *,
-        clientes (
-          razon_social
+        clientes!inner(
+          razon_social,
+          rut,
+          telefono,
+          email,
+          direccion
         )
       `)
       .order('created_at', { ascending: false });
@@ -22,129 +25,11 @@ export const cierresApi = {
       throw error;
     }
 
-    return data;
+    console.log('Cierres obtenidos:', data);
+    return data || [];
   },
 
-  // Generar folio automático para cierre
-  generateFolio: async (): Promise<string> => {
-    console.log('Generando folio automático para cierre...');
-    
-    const { data, error } = await supabase.rpc('generate_folio', {
-      prefix: 'C'
-    });
-
-    if (error) {
-      console.error('Error al generar folio de cierre:', error);
-      throw error;
-    }
-
-    console.log('Folio generado:', data);
-    return data;
-  },
-
-  // Obtener servicios elegibles para cierre (estado 'cerrado' y sin cierre asignado)
-  getServiciosElegibles: async (fechaInicio: string, fechaFin: string, clienteId?: string) => {
-    console.log('Obteniendo servicios elegibles para cierre:', { fechaInicio, fechaFin, clienteId });
-    
-    let query = supabase
-      .from('servicios')
-      .select(`
-        *,
-        clientes!inner (
-          id,
-          razon_social
-        ),
-        gruas (
-          patente
-        ),
-        operadores (
-          nombre_completo
-        ),
-        tipos_servicio (
-          nombre
-        )
-      `)
-      .eq('estado', 'cerrado')
-      .is('cierre_id', null);
-
-    if (fechaInicio) {
-      query = query.gte('fecha', fechaInicio);
-    }
-    
-    if (fechaFin) {
-      query = query.lte('fecha', fechaFin);
-    }
-
-    if (clienteId) {
-      query = query.eq('cliente_id', clienteId);
-    }
-
-    const { data, error } = await query.order('fecha', { ascending: true });
-
-    if (error) {
-      console.error('Error al obtener servicios elegibles:', error);
-      throw error;
-    }
-
-    return data;
-  },
-
-  // Crear nuevo cierre y actualizar servicios automáticamente
-  create: async (cierre: {
-    fechaInicio: string;
-    fechaFin: string;
-    clienteId?: string;
-    serviciosIds: string[];
-    total: number;
-  }) => {
-    console.log('Creando nuevo cierre:', cierre);
-
-    try {
-      // Generar folio automático
-      const folio = await cierresApi.generateFolio();
-
-      // Crear el cierre
-      const { data, error } = await supabase
-        .from('cierres')
-        .insert({
-          folio,
-          fecha_inicio: cierre.fechaInicio,
-          fecha_fin: cierre.fechaFin,
-          cliente_id: cierre.clienteId || null,
-          total: cierre.total,
-          facturado: false
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error al crear cierre:', error);
-        throw error;
-      }
-
-      // Actualizar servicios para asignarles el cierre_id y mantener estado "cerrado"
-      const { error: updateError } = await supabase
-        .from('servicios')
-        .update({ 
-          cierre_id: data.id,
-          estado: 'cerrado'
-        })
-        .in('id', cierre.serviciosIds);
-
-      if (updateError) {
-        console.error('Error al actualizar servicios con cierre_id:', updateError);
-        throw updateError;
-      }
-
-      console.log('Cierre creado exitosamente y servicios actualizados:', data);
-      return data;
-    } catch (error) {
-      console.error('Error en create cierre:', error);
-      throw error;
-    }
-  },
-
-  // Obtener cierre por ID con servicios incluidos
+  // Obtener cierre por ID
   getById: async (id: string) => {
     console.log('Obteniendo cierre por ID:', id);
     
@@ -152,24 +37,12 @@ export const cierresApi = {
       .from('cierres')
       .select(`
         *,
-        clientes (
+        clientes!inner(
           razon_social,
           rut,
-          direccion,
           telefono,
-          email
-        ),
-        servicios (
-          *,
-          gruas (
-            patente
-          ),
-          operadores (
-            nombre_completo
-          ),
-          tipos_servicio (
-            nombre
-          )
+          email,
+          direccion
         )
       `)
       .eq('id', id)
@@ -183,46 +56,118 @@ export const cierresApi = {
     return data;
   },
 
-  // Marcar cierre como facturado y actualizar servicios automáticamente
-  markAsFacturado: async (cierreId: string, facturaId: string) => {
-    console.log('Marcando cierre como facturado:', { cierreId, facturaId });
+  // Obtener servicios elegibles para cierre
+  getServiciosElegibles: async (fechaInicio: string, fechaFin: string, clienteId?: string) => {
+    console.log('Obteniendo servicios elegibles:', { fechaInicio, fechaFin, clienteId });
     
+    let query = supabase
+      .from('servicios')
+      .select(`
+        *,
+        clientes!inner(razon_social, rut),
+        gruas!inner(patente, marca, modelo),
+        operadores!inner(nombre_completo),
+        tipos_servicio!inner(nombre)
+      `)
+      .eq('estado', 'cerrado')
+      .is('cierre_id', null)
+      .gte('fecha', fechaInicio)
+      .lte('fecha', fechaFin);
+
+    if (clienteId) {
+      query = query.eq('cliente_id', clienteId);
+    }
+
+    const { data, error } = await query.order('fecha', { ascending: false });
+
+    if (error) {
+      console.error('Error al obtener servicios elegibles:', error);
+      throw error;
+    }
+
+    console.log('Servicios elegibles obtenidos:', data);
+    return data || [];
+  },
+
+  // Crear cierre
+  create: async (cierreData: {
+    fechaInicio: string;
+    fechaFin: string;
+    clienteId?: string;
+    servicioIds: string[];
+    total: number;
+  }) => {
+    console.log('Creando cierre con datos:', cierreData);
+
     try {
-      // Actualizar el cierre
-      const { data, error } = await supabase
+      // Generar folio automático
+      const { data: folio, error: folioError } = await supabase.rpc('generate_folio', {
+        prefix: 'C'
+      });
+
+      if (folioError) {
+        console.error('Error al generar folio:', folioError);
+        throw new Error('No se pudo generar el folio del cierre');
+      }
+
+      // Crear el cierre
+      const { data: cierre, error: cierreError } = await supabase
         .from('cierres')
-        .update({
-          facturado: true,
-          factura_id: facturaId
+        .insert({
+          folio,
+          fecha_inicio: cierreData.fechaInicio,
+          fecha_fin: cierreData.fechaFin,
+          cliente_id: cierreData.clienteId || null,
+          total: cierreData.total,
+          facturado: false
         })
-        .eq('id', cierreId)
         .select()
         .single();
 
-      if (error) {
-        console.error('Error al marcar cierre como facturado:', error);
-        throw error;
+      if (cierreError) {
+        console.error('Error al crear cierre:', cierreError);
+        throw new Error('No se pudo crear el cierre');
       }
 
-      // Actualizar servicios automáticamente para marcarlos como facturados
+      // Actualizar servicios con el cierre_id
       const { error: serviciosError } = await supabase
         .from('servicios')
-        .update({ 
-          estado: 'facturado',
-          factura_id: facturaId
-        })
-        .eq('cierre_id', cierreId);
+        .update({ cierre_id: cierre.id })
+        .in('id', cierreData.servicioIds);
 
       if (serviciosError) {
-        console.error('Error al actualizar servicios como facturados:', serviciosError);
-        throw serviciosError;
+        console.error('Error al actualizar servicios:', serviciosError);
+        throw new Error('No se pudieron actualizar los servicios');
       }
 
-      console.log('Cierre marcado como facturado y servicios actualizados automáticamente');
-      return data;
+      console.log('Cierre creado exitosamente:', cierre);
+      return cierre;
     } catch (error) {
-      console.error('Error en markAsFacturado:', error);
+      console.error('Error en creación de cierre:', error);
       throw error;
     }
+  },
+
+  // Marcar cierre como facturado
+  markAsFacturado: async (cierreId: string, facturaId: string) => {
+    console.log('Marcando cierre como facturado:', { cierreId, facturaId });
+
+    const { data, error } = await supabase
+      .from('cierres')
+      .update({
+        facturado: true,
+        factura_id: facturaId
+      })
+      .eq('id', cierreId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error al marcar cierre como facturado:', error);
+      throw error;
+    }
+
+    console.log('Cierre marcado como facturado:', data);
+    return data;
   }
 };

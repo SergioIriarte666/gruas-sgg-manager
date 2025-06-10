@@ -33,7 +33,7 @@ export function DatePickerField<TFieldValues extends FieldValues>({
         <FormItem className="flex flex-col">
           <FormLabel>{label}</FormLabel>
           <DatePicker
-            selected={field.value instanceof Date ? field.value : new Date()}
+            selected={field.value && typeof field.value === 'object' && field.value instanceof Date ? field.value : new Date()}
             onSelect={(date) => field.onChange(date || new Date())}
             placeholder="Seleccionar fecha"
           />

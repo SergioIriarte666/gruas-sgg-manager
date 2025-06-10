@@ -2,6 +2,35 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const facturasApi = {
+  // Obtener todas las facturas
+  getAll: async () => {
+    console.log('Obteniendo todas las facturas...');
+    
+    const { data, error } = await supabase
+      .from('facturas')
+      .select(`
+        *,
+        cierres!inner(
+          cliente_id,
+          clientes!inner(
+            razon_social,
+            rut,
+            telefono,
+            email
+          )
+        )
+      `)
+      .order('fecha', { ascending: false });
+
+    if (error) {
+      console.error('Error al obtener facturas:', error);
+      throw error;
+    }
+
+    console.log('Facturas obtenidas:', data);
+    return data || [];
+  },
+
   // Crear factura desde cierre
   createFromCierre: async (cierreId: string) => {
     console.log('Creando factura desde cierre:', cierreId);
@@ -10,13 +39,26 @@ export const facturasApi = {
       // Obtener datos del cierre
       const { data: cierre, error: cierreError } = await supabase
         .from('cierres')
-        .select('*')
+        .select(`
+          *,
+          clientes!inner(
+            razon_social,
+            rut,
+            email,
+            telefono,
+            direccion
+          )
+        `)
         .eq('id', cierreId)
         .single();
 
       if (cierreError) {
         console.error('Error al obtener cierre:', cierreError);
-        throw new Error('No se pudo obtener el cierre');
+        throw new Error('No se pudo obtener el cierre: ' + cierreError.message);
+      }
+
+      if (!cierre) {
+        throw new Error('Cierre no encontrado');
       }
 
       if (cierre.facturado) {
@@ -30,7 +72,7 @@ export const facturasApi = {
 
       if (folioError) {
         console.error('Error al generar folio de factura:', folioError);
-        throw new Error('No se pudo generar el folio de la factura');
+        throw new Error('No se pudo generar el folio de la factura: ' + folioError.message);
       }
 
       // Calcular subtotal e IVA
@@ -60,7 +102,7 @@ export const facturasApi = {
 
       if (facturaError) {
         console.error('Error al crear factura:', facturaError);
-        throw new Error('No se pudo crear la factura');
+        throw new Error('No se pudo crear la factura: ' + facturaError.message);
       }
 
       console.log('Factura creada exitosamente:', factura);
