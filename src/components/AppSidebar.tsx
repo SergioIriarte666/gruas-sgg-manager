@@ -38,7 +38,7 @@ const maestrosItems = [{
 export function AppSidebar() {
   const location = useLocation();
   return <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="bg-[#007600]">
         <div className="p-4">
           <div className="flex items-center space-x-2">
             <Truck className="h-8 w-8 text-primary" />
