@@ -1,423 +1,428 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { format } from 'date-fns';
+import { DatePicker } from "@/components/ui/date-picker"
+import { CalendarIcon } from "@radix-ui/react-icons"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
 import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useTiposServicio } from "@/hooks/useTiposServicio";
-import { useCreateServicio, useUpdateServicio } from "@/hooks/useServicios";
-import { Servicio } from "@/types";
-import { toast } from "@/components/ui/sonner";
+import { useCreateServicio } from "@/hooks/useCreateServicio";
 
-const esquemaServicio = z.object({
+const formSchema = z.object({
   fecha: z.date({
-    required_error: "La fecha es requerida",
+    required_error: "Se requiere una fecha.",
   }),
-  clienteId: z.string().min(1, "Debe seleccionar un cliente"),
+  clienteId: z.string({
+    required_error: "Se requiere un cliente.",
+  }),
   ordenCompra: z.string().optional(),
-  marcaVehiculo: z.string().min(1, "La marca del vehículo es requerida"),
-  modeloVehiculo: z.string().min(1, "El modelo del vehículo es requerido"),
-  patente: z.string().min(1, "La patente es requerida"),
-  ubicacionOrigen: z.string().min(1, "La ubicación de origen es requerida"),
-  ubicacionDestino: z.string().min(1, "La ubicación de destino es requerida"),
-  valor: z.number().min(0, "El valor debe ser mayor a 0"),
-  gruaId: z.string().min(1, "Debe seleccionar una grúa"),
-  operadorId: z.string().min(1, "Debe seleccionar un operador"),
-  tipoServicioId: z.string().min(1, "Debe seleccionar un tipo de servicio"),
-  estado: z.enum(['en_curso', 'cerrado', 'facturado']),
+  marcaVehiculo: z.string({
+    required_error: "Se requiere la marca del vehículo.",
+  }),
+  modeloVehiculo: z.string({
+    required_error: "Se requiere el modelo del vehículo.",
+  }),
+  patente: z.string({
+    required_error: "Se requiere la patente del vehículo.",
+  }),
+  ubicacionOrigen: z.string().optional(),
+  ubicacionDestino: z.string().optional(),
+  valor: z.number({
+    required_error: "Se requiere un valor.",
+  }).min(1, "El valor debe ser mayor a 0"),
+  gruaId: z.string({
+    required_error: "Se requiere una grúa.",
+  }),
+  operadorId: z.string({
+    required_error: "Se requiere un operador.",
+  }),
+  tipoServicioId: z.string({
+    required_error: "Se requiere un tipo de servicio.",
+  }),
+  estado: z.enum(['en_curso', 'cerrado', 'facturado'], {
+    required_error: "Se requiere un estado.",
+  }),
   observaciones: z.string().optional(),
 });
 
-type DatosFormulario = z.infer<typeof esquemaServicio>;
-
-interface Props {
-  servicio?: Servicio;
+interface FormularioServicioProps {
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function FormularioServicio({ servicio, onSuccess, onCancel }: Props) {
-  const [fechaOpen, setFechaOpen] = useState(false);
-  
+export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSuccess, onCancel }) => {
+  const [fechaSeleccionada, setFechaSeleccionada] = useState<Date | undefined>(new Date());
   const { data: clientes = [] } = useClientes();
   const { data: gruas = [] } = useGruas();
   const { data: operadores = [] } = useOperadores();
   const { data: tiposServicio = [] } = useTiposServicio();
-  
-  const createMutation = useCreateServicio();
-  const updateMutation = useUpdateServicio();
-  
-  const form = useForm<DatosFormulario>({
-    resolver: zodResolver(esquemaServicio),
+  const { mutate: crearServicio, isLoading, error } = useCreateServicio();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      fecha: servicio?.fecha || new Date(),
-      clienteId: servicio?.clienteId || "",
-      ordenCompra: servicio?.ordenCompra || "",
-      marcaVehiculo: servicio?.marcaVehiculo || "",
-      modeloVehiculo: servicio?.modeloVehiculo || "",
-      patente: servicio?.patente || "",
-      ubicacionOrigen: servicio?.ubicacionOrigen || "",
-      ubicacionDestino: servicio?.ubicacionDestino || "",
-      valor: servicio?.valor || 0,
-      gruaId: servicio?.gruaId || "",
-      operadorId: servicio?.operadorId || "",
-      tipoServicioId: servicio?.tipoServicioId || "",
-      estado: servicio?.estado || "en_curso",
-      observaciones: servicio?.observaciones || "",
+      fecha: new Date(),
+      clienteId: "",
+      ordenCompra: "",
+      marcaVehiculo: "",
+      modeloVehiculo: "",
+      patente: "",
+      ubicacionOrigen: "",
+      ubicacionDestino: "",
+      valor: 10000,
+      gruaId: "",
+      operadorId: "",
+      tipoServicioId: "",
+      estado: 'en_curso',
+      observaciones: "",
     },
   });
 
-  const onSubmit = async (datos: DatosFormulario) => {
-    console.log('Enviando formulario con datos:', datos);
-    
-    try {
-      // Validación adicional del lado cliente
-      if (!datos.clienteId || datos.clienteId.trim() === '') {
-        toast.error("Debe seleccionar un cliente");
-        return;
-      }
-      
-      if (!datos.gruaId || datos.gruaId.trim() === '') {
-        toast.error("Debe seleccionar una grúa");
-        return;
-      }
-      
-      if (!datos.operadorId || datos.operadorId.trim() === '') {
-        toast.error("Debe seleccionar un operador");
-        return;
-      }
-      
-      if (!datos.tipoServicioId || datos.tipoServicioId.trim() === '') {
-        toast.error("Debe seleccionar un tipo de servicio");
-        return;
-      }
-
-      // Verificar que los elementos seleccionados existan en las listas
-      const clienteSeleccionado = clientes.find(c => c.id === datos.clienteId && c.activo);
-      if (!clienteSeleccionado) {
-        toast.error("El cliente seleccionado no es válido o no está activo");
-        return;
-      }
-
-      const gruaSeleccionada = gruas.find(g => g.id === datos.gruaId && g.activo);
-      if (!gruaSeleccionada) {
-        toast.error("La grúa seleccionada no es válida o no está activa");
-        return;
-      }
-
-      const operadorSeleccionado = operadores.find(o => o.id === datos.operadorId && o.activo);
-      if (!operadorSeleccionado) {
-        toast.error("El operador seleccionado no es válido o no está activo");
-        return;
-      }
-
-      const tipoSeleccionado = tiposServicio.find(t => t.id === datos.tipoServicioId && t.activo);
-      if (!tipoSeleccionado) {
-        toast.error("El tipo de servicio seleccionado no es válido o no está activo");
-        return;
-      }
-
-      const datosValidados = {
-        fecha: datos.fecha || new Date(),
-        clienteId: datos.clienteId.trim(),
-        ordenCompra: datos.ordenCompra?.trim(),
-        marcaVehiculo: datos.marcaVehiculo.trim(),
-        modeloVehiculo: datos.modeloVehiculo.trim(),
-        patente: datos.patente.trim().toUpperCase(),
-        ubicacionOrigen: datos.ubicacionOrigen.trim(),
-        ubicacionDestino: datos.ubicacionDestino.trim(),
-        valor: Number(datos.valor) || 0,
-        gruaId: datos.gruaId.trim(),
-        operadorId: datos.operadorId.trim(),
-        tipoServicioId: datos.tipoServicioId.trim(),
-        estado: datos.estado as 'en_curso' | 'cerrado' | 'facturado',
-        observaciones: datos.observaciones?.trim(),
-      };
-
-      console.log('Datos validados para envío:', datosValidados);
-
-      if (servicio) {
-        await updateMutation.mutateAsync({ id: servicio.id, ...datosValidados });
-        toast.success("Servicio actualizado exitosamente");
-      } else {
-        await createMutation.mutateAsync(datosValidados);
-        toast.success("Servicio creado exitosamente");
-      }
-      onSuccess();
-    } catch (error: any) {
-      console.error('Error completo al guardar servicio:', error);
-      
-      // Mostrar mensaje de error más específico
-      const errorMessage = error?.message || 'Error desconocido al guardar el servicio';
-      toast.error(errorMessage);
-      
-      // Si el error incluye información de validación, también mostrarla
-      if (error?.details) {
-        console.error('Detalles del error:', error.details);
-      }
+  useEffect(() => {
+    if (fechaSeleccionada) {
+      form.setValue("fecha", fechaSeleccionada);
     }
-  };
+  }, [fechaSeleccionada, form.setValue]);
 
-  const clientesActivos = clientes.filter(c => c.activo);
-  const gruasActivas = gruas.filter(g => g.activo);
-  const operadoresActivos = operadores.filter(o => o.activo);
-  const tiposActivos = tiposServicio.filter(t => t.activo);
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log(values);
+    crearServicio(values, {
+      onSuccess: () => {
+        form.reset();
+        onSuccess();
+      },
+    });
+  }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="fecha">Fecha del Servicio</Label>
-          <Popover open={fechaOpen} onOpenChange={setFechaOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !form.watch("fecha") && "text-muted-foreground"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="fecha"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Fecha</FormLabel>
+              <Controller
+                name="fecha"
+                control={form.control}
+                render={({ field }) => (
+                  <DatePicker
+                    selected={field.value}
+                    onSelect={setFechaSeleccionada}
+                    dateFormat="dd/MM/yyyy"
+                  />
                 )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch("fecha") ? (
-                  format(form.watch("fecha"), "PPP", { locale: es })
-                ) : (
-                  <span>Seleccionar fecha</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={form.watch("fecha")}
-                onSelect={(date) => {
-                  form.setValue("fecha", date || new Date());
-                  setFechaOpen(false);
-                }}
-                initialFocus
-                className="pointer-events-auto"
               />
-            </PopoverContent>
-          </Popover>
-          {form.formState.errors.fecha && (
-            <p className="text-sm text-red-500">{form.formState.errors.fecha.message}</p>
+              <FormDescription>
+                Fecha en la que se realizó el servicio.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="cliente">Cliente</Label>
-          <Select onValueChange={(value) => form.setValue("clienteId", value)} value={form.watch("clienteId")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              {clientesActivos.map((cliente) => (
-                <SelectItem key={cliente.id} value={cliente.id}>
-                  {cliente.razonSocial}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.clienteId && (
-            <p className="text-sm text-red-500">{form.formState.errors.clienteId.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="ordenCompra">Orden de Compra (Opcional)</Label>
-          <Input
-            id="ordenCompra"
-            {...form.register("ordenCompra")}
-            placeholder="Número de orden de compra"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="tipoServicio">Tipo de Servicio</Label>
-          <Select onValueChange={(value) => form.setValue("tipoServicioId", value)} value={form.watch("tipoServicioId")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              {tiposActivos.map((tipo) => (
-                <SelectItem key={tipo.id} value={tipo.id}>
-                  {tipo.nombre}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.tipoServicioId && (
-            <p className="text-sm text-red-500">{form.formState.errors.tipoServicioId.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="marcaVehiculo">Marca del Vehículo</Label>
-          <Input
-            id="marcaVehiculo"
-            {...form.register("marcaVehiculo")}
-            placeholder="Ej: Toyota"
-          />
-          {form.formState.errors.marcaVehiculo && (
-            <p className="text-sm text-red-500">{form.formState.errors.marcaVehiculo.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="modeloVehiculo">Modelo del Vehículo</Label>
-          <Input
-            id="modeloVehiculo"
-            {...form.register("modeloVehiculo")}
-            placeholder="Ej: Corolla"
-          />
-          {form.formState.errors.modeloVehiculo && (
-            <p className="text-sm text-red-500">{form.formState.errors.modeloVehiculo.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="patente">Patente</Label>
-          <Input
-            id="patente"
-            {...form.register("patente")}
-            placeholder="Ej: ABC123"
-            className="uppercase"
-          />
-          {form.formState.errors.patente && (
-            <p className="text-sm text-red-500">{form.formState.errors.patente.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="valor">Valor del Servicio</Label>
-          <Input
-            id="valor"
-            type="number"
-            {...form.register("valor", { valueAsNumber: true })}
-            placeholder="0"
-          />
-          {form.formState.errors.valor && (
-            <p className="text-sm text-red-500">{form.formState.errors.valor.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="ubicacionOrigen">Ubicación de Origen</Label>
-        <Input
-          id="ubicacionOrigen"
-          {...form.register("ubicacionOrigen")}
-          placeholder="Dirección de recogida"
         />
-        {form.formState.errors.ubicacionOrigen && (
-          <p className="text-sm text-red-500">{form.formState.errors.ubicacionOrigen.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="ubicacionDestino">Ubicación de Destino</Label>
-        <Input
-          id="ubicacionDestino"
-          {...form.register("ubicacionDestino")}
-          placeholder="Dirección de entrega"
+        <FormField
+          control={form.control}
+          name="clienteId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cliente</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un cliente" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente.id} value={cliente.id}>
+                      {cliente.razonSocial}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Cliente que solicitó el servicio.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {form.formState.errors.ubicacionDestino && (
-          <p className="text-sm text-red-500">{form.formState.errors.ubicacionDestino.message}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="grua">Grúa Asignada</Label>
-          <Select onValueChange={(value) => form.setValue("gruaId", value)} value={form.watch("gruaId")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar grúa" />
-            </SelectTrigger>
-            <SelectContent>
-              {gruasActivas.map((grua) => (
-                <SelectItem key={grua.id} value={grua.id}>
-                  {grua.patente} - {grua.marca} {grua.modelo} ({grua.tipo})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.gruaId && (
-            <p className="text-sm text-red-500">{form.formState.errors.gruaId.message}</p>
+        <FormField
+          control={form.control}
+          name="ordenCompra"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Orden de Compra</FormLabel>
+              <FormControl>
+                <Input placeholder="Número de orden de compra" {...field} />
+              </FormControl>
+              <FormDescription>
+                Número de orden de compra del cliente (opcional).
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="operador">Operador Asignado</Label>
-          <Select onValueChange={(value) => form.setValue("operadorId", value)} value={form.watch("operadorId")}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar operador" />
-            </SelectTrigger>
-            <SelectContent>
-              {operadoresActivos.map((operador) => (
-                <SelectItem key={operador.id} value={operador.id}>
-                  {operador.nombreCompleto}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {form.formState.errors.operadorId && (
-            <p className="text-sm text-red-500">{form.formState.errors.operadorId.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="estado">Estado del Servicio</Label>
-        <Select onValueChange={(value: any) => form.setValue("estado", value)} value={form.watch("estado")}>
-          <SelectTrigger>
-            <SelectValue placeholder="Seleccionar estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en_curso">En Curso</SelectItem>
-            <SelectItem value="cerrado">Cerrado</SelectItem>
-            <SelectItem value="facturado">Facturado</SelectItem>
-          </SelectContent>
-        </Select>
-        {form.formState.errors.estado && (
-          <p className="text-sm text-red-500">{form.formState.errors.estado.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="observaciones">Observaciones (Opcional)</Label>
-        <Textarea
-          id="observaciones"
-          {...form.register("observaciones")}
-          placeholder="Observaciones adicionales del servicio"
-          rows={3}
         />
-      </div>
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button 
-          type="submit" 
-          disabled={createMutation.isPending || updateMutation.isPending}
-        >
-          {(createMutation.isPending || updateMutation.isPending) && (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <div className="flex flex-col md:flex-row gap-4">
+          <FormField
+            control={form.control}
+            name="marcaVehiculo"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Marca del Vehículo</FormLabel>
+                <FormControl>
+                  <Input placeholder="Marca" {...field} />
+                </FormControl>
+                <FormDescription>
+                  Marca del vehículo a remolcar.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="modeloVehiculo"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Modelo del Vehículo</FormLabel>
+                <FormControl>
+                  <Input placeholder="Modelo" {...field} />
+                </FormControl>
+                <FormDescription>
+                  Modelo del vehículo a remolcar.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="patente"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Patente del Vehículo</FormLabel>
+              <FormControl>
+                <Input placeholder="Patente" {...field} />
+              </FormControl>
+              <FormDescription>
+                Patente del vehículo a remolcar.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
           )}
-          {servicio ? "Actualizar" : "Crear"} Servicio
-        </Button>
-      </div>
-    </form>
+        />
+        <div className="flex flex-col md:flex-row gap-4">
+          <FormField
+            control={form.control}
+            name="ubicacionOrigen"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Ubicación de Origen</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ubicación de origen" {...field} />
+                </FormControl>
+                <FormDescription>
+                  Ubicación donde se recogió el vehículo.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="ubicacionDestino"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel>Ubicación de Destino</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ubicación de destino" {...field} />
+                </FormControl>
+                <FormDescription>
+                  Ubicación a donde se llevó el vehículo.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="valor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Valor del Servicio</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Valor"
+                  {...field}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              </FormControl>
+              <FormDescription>
+                Valor del servicio en pesos chilenos.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="gruaId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Grúa Asignada</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona una grúa" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {gruas.map((grua) => (
+                    <SelectItem key={grua.id} value={grua.id}>
+                      {grua.patente} - {grua.marca} {grua.modelo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Grúa asignada para realizar el servicio.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="operadorId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Operador Asignado</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un operador" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {operadores.map((operador) => (
+                    <SelectItem key={operador.id} value={operador.id}>
+                      {operador.nombreCompleto}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Operador asignado para realizar el servicio.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="tipoServicioId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tipo de Servicio</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un tipo de servicio" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {tiposServicio.map((tipoServicio) => (
+                    <SelectItem key={tipoServicio.id} value={tipoServicio.id}>
+                      {tipoServicio.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Tipo de servicio realizado.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="estado"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Estado del Servicio</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un estado" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="en_curso">En Curso</SelectItem>
+                  <SelectItem value="cerrado">Cerrado</SelectItem>
+                  <SelectItem value="facturado">Facturado</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Estado actual del servicio.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="observaciones"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Observaciones</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Observaciones adicionales"
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Observaciones adicionales sobre el servicio (opcional).
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {error && (
+          <div className="text-red-500">
+            {error instanceof Error ? error.message : 'Error al crear el servicio'}
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Creando...' : 'Crear Servicio'}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
-}
+};
