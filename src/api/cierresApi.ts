@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { Cierre } from "@/types";
 
@@ -64,9 +65,15 @@ export const cierresApi = {
         )
       `)
       .eq('estado', 'cerrado')
-      .is('cierre_id', null)
-      .gte('fecha', fechaInicio)
-      .lte('fecha', fechaFin);
+      .is('cierre_id', null);
+
+    if (fechaInicio) {
+      query = query.gte('fecha', fechaInicio);
+    }
+    
+    if (fechaFin) {
+      query = query.lte('fecha', fechaFin);
+    }
 
     if (clienteId) {
       query = query.eq('cliente_id', clienteId);
@@ -92,44 +99,49 @@ export const cierresApi = {
   }) => {
     console.log('Creando nuevo cierre:', cierre);
 
-    // Generar folio automático
-    const folio = await cierresApi.generateFolio();
+    try {
+      // Generar folio automático
+      const folio = await cierresApi.generateFolio();
 
-    // Crear el cierre
-    const { data, error } = await supabase
-      .from('cierres')
-      .insert({
-        folio,
-        fecha_inicio: cierre.fechaInicio,
-        fecha_fin: cierre.fechaFin,
-        cliente_id: cierre.clienteId,
-        total: cierre.total,
-        facturado: false
-      })
-      .select()
-      .single();
+      // Crear el cierre
+      const { data, error } = await supabase
+        .from('cierres')
+        .insert({
+          folio,
+          fecha_inicio: cierre.fechaInicio,
+          fecha_fin: cierre.fechaFin,
+          cliente_id: cierre.clienteId || null,
+          total: cierre.total,
+          facturado: false
+        })
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error al crear cierre:', error);
+      if (error) {
+        console.error('Error al crear cierre:', error);
+        throw error;
+      }
+
+      // Actualizar servicios para asignarles el cierre_id y mantener estado "cerrado"
+      const { error: updateError } = await supabase
+        .from('servicios')
+        .update({ 
+          cierre_id: data.id,
+          estado: 'cerrado'
+        })
+        .in('id', cierre.serviciosIds);
+
+      if (updateError) {
+        console.error('Error al actualizar servicios con cierre_id:', updateError);
+        throw updateError;
+      }
+
+      console.log('Cierre creado exitosamente y servicios actualizados:', data);
+      return data;
+    } catch (error) {
+      console.error('Error en create cierre:', error);
       throw error;
     }
-
-    // Actualizar servicios para asignarles el cierre_id y mantener estado "cerrado"
-    const { error: updateError } = await supabase
-      .from('servicios')
-      .update({ 
-        cierre_id: data.id,
-        estado: 'cerrado' // Mantener estado cerrado
-      })
-      .in('id', cierre.serviciosIds);
-
-    if (updateError) {
-      console.error('Error al actualizar servicios con cierre_id:', updateError);
-      throw updateError;
-    }
-
-    console.log('Cierre creado exitosamente y servicios actualizados:', data);
-    return data;
   },
 
   // Obtener cierre por ID con servicios incluidos
@@ -175,37 +187,42 @@ export const cierresApi = {
   markAsFacturado: async (cierreId: string, facturaId: string) => {
     console.log('Marcando cierre como facturado:', { cierreId, facturaId });
     
-    // Actualizar el cierre
-    const { data, error } = await supabase
-      .from('cierres')
-      .update({
-        facturado: true,
-        factura_id: facturaId
-      })
-      .eq('id', cierreId)
-      .select()
-      .single();
+    try {
+      // Actualizar el cierre
+      const { data, error } = await supabase
+        .from('cierres')
+        .update({
+          facturado: true,
+          factura_id: facturaId
+        })
+        .eq('id', cierreId)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error al marcar cierre como facturado:', error);
+      if (error) {
+        console.error('Error al marcar cierre como facturado:', error);
+        throw error;
+      }
+
+      // Actualizar servicios automáticamente para marcarlos como facturados
+      const { error: serviciosError } = await supabase
+        .from('servicios')
+        .update({ 
+          estado: 'facturado',
+          factura_id: facturaId
+        })
+        .eq('cierre_id', cierreId);
+
+      if (serviciosError) {
+        console.error('Error al actualizar servicios como facturados:', serviciosError);
+        throw serviciosError;
+      }
+
+      console.log('Cierre marcado como facturado y servicios actualizados automáticamente');
+      return data;
+    } catch (error) {
+      console.error('Error en markAsFacturado:', error);
       throw error;
     }
-
-    // Actualizar servicios automáticamente para marcarlos como facturados
-    const { error: serviciosError } = await supabase
-      .from('servicios')
-      .update({ 
-        estado: 'facturado',
-        factura_id: facturaId
-      })
-      .eq('cierre_id', cierreId);
-
-    if (serviciosError) {
-      console.error('Error al actualizar servicios como facturados:', serviciosError);
-      throw serviciosError;
-    }
-
-    console.log('Cierre marcado como facturado y servicios actualizados automáticamente');
-    return data;
   }
 };

@@ -6,7 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 export const useCierres = () => {
   return useQuery({
     queryKey: ['cierres'],
-    queryFn: cierresApi.getAll
+    queryFn: cierresApi.getAll,
+    onError: (error: any) => {
+      console.error('Error en useCierres:', error);
+    }
   });
 };
 
@@ -41,11 +44,12 @@ export const useCreateCierre = () => {
         description: "El cierre se ha creado exitosamente.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error al crear cierre:', error);
+      const errorMessage = error?.message || "No se pudo crear el cierre. Intenta nuevamente.";
       toast({
         title: "Error",
-        description: "No se pudo crear el cierre. Intenta nuevamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -68,11 +72,12 @@ export const useMarkCierreAsFacturado = () => {
         description: "El cierre ha sido marcado como facturado exitosamente.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error al marcar cierre como facturado:', error);
+      const errorMessage = error?.message || "No se pudo marcar el cierre como facturado.";
       toast({
         title: "Error",
-        description: "No se pudo marcar el cierre como facturado.",
+        description: errorMessage,
         variant: "destructive",
       });
     },

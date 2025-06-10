@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,18 +28,28 @@ export const ServiciosSelectionModal = ({
   const { data: servicios = [] } = useServicios();
   const createCierre = useCreateCierre();
 
-  // Filtrar servicios cerrados sin cierre asignado
-  const serviciosElegibles = servicios.filter(s => {
-    if (s.estado !== 'cerrado' || s.cierreId) return false;
+  // Filtrar servicios elegibles (cerrados sin cierre asignado)
+  const serviciosElegibles = servicios.filter(servicio => {
+    console.log('Evaluando servicio:', servicio.id, 'Estado:', servicio.estado, 'CierreId:', servicio.cierreId);
     
-    const servicioFecha = new Date(s.fecha).toISOString().split('T')[0];
+    // Debe estar cerrado y sin cierre asignado
+    if (servicio.estado !== 'cerrado' || servicio.cierreId) {
+      return false;
+    }
     
-    if (fechaInicio && servicioFecha < fechaInicio) return false;
-    if (fechaFin && servicioFecha > fechaFin) return false;
-    if (clienteId && s.clienteId !== clienteId) return false;
+    // Filtros adicionales
+    if (fechaInicio || fechaFin || clienteId) {
+      const servicioFecha = new Date(servicio.fecha).toISOString().split('T')[0];
+      
+      if (fechaInicio && servicioFecha < fechaInicio) return false;
+      if (fechaFin && servicioFecha > fechaFin) return false;
+      if (clienteId && servicio.clienteId !== clienteId) return false;
+    }
     
     return true;
   });
+
+  console.log('Servicios elegibles encontrados:', serviciosElegibles.length);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -75,6 +85,14 @@ export const ServiciosSelectionModal = ({
     const minFecha = fechaInicio || servicioFechas.sort()[0];
     const maxFecha = fechaFin || servicioFechas.sort().reverse()[0];
 
+    console.log('Creando cierre con datos:', {
+      fechaInicio: minFecha,
+      fechaFin: maxFecha,
+      clienteId: clienteId || undefined,
+      serviciosIds: selectedServicios,
+      total
+    });
+
     createCierre.mutate({
       fechaInicio: minFecha,
       fechaFin: maxFecha,
@@ -88,6 +106,9 @@ export const ServiciosSelectionModal = ({
         setFechaFin("");
         setClienteId("");
         onClose();
+      },
+      onError: (error) => {
+        console.error('Error al crear cierre desde modal:', error);
       }
     });
   };
@@ -95,6 +116,16 @@ export const ServiciosSelectionModal = ({
   const totalSeleccionado = serviciosElegibles
     .filter(s => selectedServicios.includes(s.id))
     .reduce((sum, s) => sum + Number(s.valor), 0);
+
+  // Reset selections when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedServicios([]);
+      setFechaInicio("");
+      setFechaFin("");
+      setClienteId("");
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -186,7 +217,7 @@ export const ServiciosSelectionModal = ({
                             <div>
                               <h3 className="font-medium text-primary">{servicio.folio}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {formatSafeDate(servicio.fecha)} - {servicio.cliente?.razonSocial}
+                                {formatSafeDate(servicio.fecha)} - {servicio.cliente?.razonSocial || 'Cliente no encontrado'}
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 {servicio.marcaVehiculo} {servicio.modeloVehiculo} - {servicio.patente}

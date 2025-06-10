@@ -10,13 +10,18 @@ export const useCreateFactura = () => {
 
   return useMutation({
     mutationFn: async (cierreId: string) => {
-      // Crear factura desde cierre
-      const factura = await facturasApi.createFromCierre(cierreId);
-      
-      // Marcar cierre como facturado
-      await cierresApi.markAsFacturado(cierreId, factura.id);
-      
-      return factura;
+      try {
+        // Crear factura desde cierre
+        const factura = await facturasApi.createFromCierre(cierreId);
+        
+        // Marcar cierre como facturado
+        await cierresApi.markAsFacturado(cierreId, factura.id);
+        
+        return factura;
+      } catch (error) {
+        console.error('Error en mutationFn de createFactura:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['facturas'] });
@@ -27,11 +32,12 @@ export const useCreateFactura = () => {
         description: "La factura se ha creado exitosamente desde el cierre.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error al crear factura:', error);
+      const errorMessage = error?.message || "No se pudo crear la factura.";
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "No se pudo crear la factura.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
