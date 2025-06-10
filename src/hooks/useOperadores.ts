@@ -69,7 +69,7 @@ export const useUpdateOperador = () => {
       if (operador.activo !== undefined) updateData.activo = operador.activo;
       
       const { data, error } = await supabase
-        .from('operadores')
+        .from('gruas')
         .update(updateData)
         .eq('id', id)
         .select()
