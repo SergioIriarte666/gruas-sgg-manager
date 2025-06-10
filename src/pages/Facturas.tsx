@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { FacturaDetailsModal } from "@/components/FacturaDetailsModal";
-import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download, Search, BarChart3, Filter } from "lucide-react";
+import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download, Search, BarChart3, Filter, User } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
 import { useFacturas, useUpdateFacturaEstado } from "@/hooks/useFacturas";
 import { useCierres } from "@/hooks/useCierres";
@@ -105,7 +104,7 @@ export default function Facturas() {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex justify-center items-center h-64">
-          <div className="text-red-500">Error al cargar las facturas</div>
+          <div className="text-red-500">Error al cargar las facturas: {error.message}</div>
         </div>
       </div>
     );
@@ -372,7 +371,16 @@ export default function Facturas() {
                       <td className="p-3">
                         {formatSafeDate(factura.fecha)}
                       </td>
-                      <td className="p-3">{factura.cliente}</td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          {factura.cliente === 'Sin cliente asignado' && (
+                            <User className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <span className={factura.cliente === 'Sin cliente asignado' ? 'text-muted-foreground italic' : ''}>
+                            {factura.cliente}
+                          </span>
+                        </div>
+                      </td>
                       <td className="p-3">{formatCurrency(factura.subtotal)}</td>
                       <td className="p-3">{formatCurrency(factura.iva)}</td>
                       <td className="p-3 font-medium">{formatCurrency(factura.total)}</td>

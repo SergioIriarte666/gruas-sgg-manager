@@ -48,19 +48,20 @@ export const useFacturas = () => {
             estado = 'vencida';
           }
 
-          // Get client name safely - handle both direct client data and through cierres
-          let clienteNombre = 'Cliente no encontrado';
+          // Get client name safely - handle cases where there's no client
+          let clienteNombre = 'Sin cliente asignado';
           try {
-            // Try to get client from cierres relationship first
-            if (factura.cierres?.clientes?.razon_social) {
+            // Check if we have cierres data and client information
+            if (factura.cierres && factura.cierres.clientes && factura.cierres.clientes.razon_social) {
               clienteNombre = factura.cierres.clientes.razon_social;
+            } else if (factura.cierres && factura.cierres.cliente_id) {
+              // If there's a cliente_id but no client data loaded, show a loading message
+              clienteNombre = 'Cliente no disponible';
             }
-            // If no cierres, this might be a direct invoice, need to implement client lookup
-            else {
-              console.warn('useFacturas: No se encontró información del cliente en cierres para factura:', factura.id);
-            }
+            // If no cierres or cliente_id is null, keep default "Sin cliente asignado"
           } catch (err) {
             console.warn('useFacturas: Error al obtener nombre del cliente:', err);
+            clienteNombre = 'Error al cargar cliente';
           }
 
           const transformedFactura = {
