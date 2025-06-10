@@ -34,7 +34,7 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   const form = useForm<ServicioFormData>({
     resolver: zodResolver(servicioFormSchema),
     defaultValues: {
-      fecha: new Date(), // ❗ Requerido - siempre Date válido
+      fecha: new Date(),
       clienteId: "",
       ordenCompra: "",
       marcaVehiculo: "",
@@ -77,52 +77,26 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
     try {
       setIsSubmitting(true);
       
-      // Validar datos con Zod antes de enviar
-      const validatedData = servicioFormSchema.parse(data);
-      
       if (isEditing) {
-        // Crear objeto con aserciones de tipo para campos requeridos
-        const updateData: ServicioFormData = {
-          fecha: validatedData.fecha!,
-          clienteId: validatedData.clienteId!,
-          ordenCompra: validatedData.ordenCompra,
-          marcaVehiculo: validatedData.marcaVehiculo!,
-          modeloVehiculo: validatedData.modeloVehiculo!,
-          patente: validatedData.patente!,
-          ubicacionOrigen: validatedData.ubicacionOrigen!,
-          ubicacionDestino: validatedData.ubicacionDestino!,
-          valor: validatedData.valor!,
-          gruaId: validatedData.gruaId!,
-          operadorId: validatedData.operadorId!,
-          tipoServicioId: validatedData.tipoServicioId!,
-          estado: validatedData.estado!,
-          observaciones: validatedData.observaciones,
-        };
-        
         await updateServicio.mutateAsync({
           id: servicio.id,
-          ...updateData
+          fecha: data.fecha,
+          clienteId: data.clienteId,
+          ordenCompra: data.ordenCompra,
+          marcaVehiculo: data.marcaVehiculo,
+          modeloVehiculo: data.modeloVehiculo,
+          patente: data.patente,
+          ubicacionOrigen: data.ubicacionOrigen,
+          ubicacionDestino: data.ubicacionDestino,
+          valor: data.valor,
+          gruaId: data.gruaId,
+          operadorId: data.operadorId,
+          tipoServicioId: data.tipoServicioId,
+          estado: data.estado,
+          observaciones: data.observaciones,
         });
       } else {
-        // Para crear, convertir a tipo requerido
-        const createData: ServicioFormData = {
-          fecha: validatedData.fecha!,
-          clienteId: validatedData.clienteId!,
-          ordenCompra: validatedData.ordenCompra,
-          marcaVehiculo: validatedData.marcaVehiculo!,
-          modeloVehiculo: validatedData.modeloVehiculo!,
-          patente: validatedData.patente!,
-          ubicacionOrigen: validatedData.ubicacionOrigen!,
-          ubicacionDestino: validatedData.ubicacionDestino!,
-          valor: validatedData.valor!,
-          gruaId: validatedData.gruaId!,
-          operadorId: validatedData.operadorId!,
-          tipoServicioId: validatedData.tipoServicioId!,
-          estado: validatedData.estado!,
-          observaciones: validatedData.observaciones,
-        };
-        
-        await createServicio.mutateAsync(createData);
+        await createServicio.mutateAsync(data);
       }
       
       onSuccess();

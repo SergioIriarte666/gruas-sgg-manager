@@ -8,17 +8,16 @@ import { FileText, DollarSign, CheckCircle } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
 import { useCreateCierre } from "@/hooks/useCierres";
 import { useClientes } from "@/hooks/useClientes";
+import { useServicios } from "@/hooks/useServicios";
 
 interface ServiciosSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  servicios: any[];
 }
 
 export const ServiciosSelectionModal = ({
   isOpen,
-  onClose,
-  servicios
+  onClose
 }: ServiciosSelectionModalProps) => {
   const [selectedServicios, setSelectedServicios] = useState<string[]>([]);
   const [fechaInicio, setFechaInicio] = useState("");
@@ -26,15 +25,21 @@ export const ServiciosSelectionModal = ({
   const [clienteId, setClienteId] = useState("");
 
   const { data: clientes = [] } = useClientes();
+  const { data: servicios = [] } = useServicios();
   const createCierre = useCreateCierre();
 
   // Filtrar servicios cerrados sin cierre asignado
-  const serviciosElegibles = servicios.filter(s => 
-    s.estado === 'cerrado' && !s.cierreId &&
-    (!fechaInicio || s.fecha >= fechaInicio) &&
-    (!fechaFin || s.fecha <= fechaFin) &&
-    (!clienteId || s.clienteId === clienteId)
-  );
+  const serviciosElegibles = servicios.filter(s => {
+    if (s.estado !== 'cerrado' || s.cierreId) return false;
+    
+    const servicioFecha = new Date(s.fecha).toISOString().split('T')[0];
+    
+    if (fechaInicio && servicioFecha < fechaInicio) return false;
+    if (fechaFin && servicioFecha > fechaFin) return false;
+    if (clienteId && s.clienteId !== clienteId) return false;
+    
+    return true;
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -65,14 +70,14 @@ export const ServiciosSelectionModal = ({
     const serviciosSeleccionados = serviciosElegibles.filter(s => selectedServicios.includes(s.id));
     const total = serviciosSeleccionados.reduce((sum, s) => sum + Number(s.valor), 0);
 
-    // Convert dates properly to strings
-    const servicioFechas = serviciosSeleccionados.map(s => s.fecha);
+    // Determinar fechas del cierre
+    const servicioFechas = serviciosSeleccionados.map(s => new Date(s.fecha).toISOString().split('T')[0]);
     const minFecha = fechaInicio || servicioFechas.sort()[0];
     const maxFecha = fechaFin || servicioFechas.sort().reverse()[0];
 
     createCierre.mutate({
-      fechaInicio: String(minFecha),
-      fechaFin: String(maxFecha),
+      fechaInicio: minFecha,
+      fechaFin: maxFecha,
       clienteId: clienteId || undefined,
       serviciosIds: selectedServicios,
       total
@@ -151,13 +156,15 @@ export const ServiciosSelectionModal = ({
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Servicios Elegibles ({serviciosElegibles.length})</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectAll}
-                >
-                  {selectedServicios.length === serviciosElegibles.length ? "Deseleccionar Todo" : "Seleccionar Todo"}
-                </Button>
+                {serviciosElegibles.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectAll}
+                  >
+                    {selectedServicios.length === serviciosElegibles.length ? "Deseleccionar Todo" : "Seleccionar Todo"}
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>

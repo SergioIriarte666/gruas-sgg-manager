@@ -43,10 +43,12 @@ export const servicioFormSchema = z.object({
   observaciones: z.string().optional(),
 });
 
-// Tipo que usa la inferencia de Zod pero asegura campos requeridos
-export type ServicioFormData = z.infer<typeof servicioFormSchema> & {
+// Tipo que coincide exactamente con lo que espera la API
+export type ServicioFormData = {
   fecha: Date;
+  folio?: string;
   clienteId: string;
+  ordenCompra?: string;
   marcaVehiculo: string;
   modeloVehiculo: string;
   patente: string;
@@ -57,6 +59,7 @@ export type ServicioFormData = z.infer<typeof servicioFormSchema> & {
   operadorId: string;
   tipoServicioId: string;
   estado: 'en_curso' | 'cerrado' | 'facturado';
+  observaciones?: string;
 };
 
 // Alias para compatibilidad

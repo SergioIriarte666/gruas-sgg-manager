@@ -4,20 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Calendar, FileText, DollarSign, Eye, Download, CheckCircle } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
-import { useCierres, useServiciosElegibles } from "@/hooks/useCierres";
+import { useCierres } from "@/hooks/useCierres";
 import { useCreateFactura } from "@/hooks/useCreateFactura";
 import { useClientes } from "@/hooks/useClientes";
+import { useServicios } from "@/hooks/useServicios";
 import { ServiciosSelectionModal } from "@/components/ServiciosSelectionModal";
 
 export default function Cierres() {
-  const [fechaInicio, setFechaInicio] = useState("");
-  const [fechaFin, setFechaFin] = useState("");
-  const [clienteId, setClienteId] = useState("");
   const [showServiciosModal, setShowServiciosModal] = useState(false);
 
   const { data: cierres = [], isLoading } = useCierres();
   const { data: clientes = [] } = useClientes();
-  const { data: serviciosElegibles = [] } = useServiciosElegibles(fechaInicio, fechaFin, clienteId || undefined);
+  const { data: servicios = [] } = useServicios();
   const createFactura = useCreateFactura();
 
   const formatCurrency = (amount: number) => {
@@ -27,18 +25,14 @@ export default function Cierres() {
     }).format(amount);
   };
 
-  const handleGeneratePreview = () => {
-    if (!fechaInicio || !fechaFin) {
-      return;
-    }
-    setShowServiciosModal(true);
-  };
-
   const handleCreateFactura = (cierreId: string) => {
     createFactura.mutate(cierreId);
   };
 
-  const clienteSeleccionado = clientes.find(c => c.id === clienteId);
+  // Servicios elegibles para cierre
+  const serviciosElegibles = servicios.filter(s => 
+    s.estado === 'cerrado' && !s.cierreId
+  );
 
   // Estadísticas
   const totalCierres = cierres.length;
@@ -64,75 +58,81 @@ export default function Cierres() {
           <h1 className="text-3xl font-bold text-primary">Cierres de Servicios</h1>
           <p className="text-muted-foreground">Generación de cierres para facturación</p>
         </div>
+        <Button 
+          className="bg-primary hover:bg-primary-dark"
+          onClick={() => setShowServiciosModal(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Generar Nuevo Cierre
+        </Button>
       </div>
 
-      {/* Filtros para Nuevo Cierre */}
-      <Card>
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-primary text-sm">Total Cierres</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalCierres}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-500/30 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="text-blue-400 text-sm">Pendientes Facturar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendientesFacturar}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-green-500/30 bg-green-500/5">
+          <CardHeader>
+            <CardTitle className="text-green-400 text-sm">Ya Facturados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{yaFacturados}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardHeader>
+            <CardTitle className="text-yellow-400 text-sm">Valor Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{formatCurrency(valorTotal)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Info de Servicios Elegibles */}
+      <Card className="border-blue-500/30 bg-blue-500/5">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-blue-400">
             <Calendar className="h-5 w-5" />
-            Generar Nuevo Cierre
+            Servicios Disponibles para Cierre
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex justify-between items-center">
             <div>
-              <label className="block text-sm font-medium mb-2">Fecha Inicio</label>
-              <input
-                type="date"
-                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Fecha Fin</label>
-              <input
-                type="date"
-                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Cliente (Opcional)</label>
-              <select 
-                className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                value={clienteId}
-                onChange={(e) => setClienteId(e.target.value)}
-              >
-                <option value="">Todos los clientes</option>
-                {clientes.map((cliente) => (
-                  <option key={cliente.id} value={cliente.id}>
-                    {cliente.razonSocial}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <Button 
-                className="w-full bg-primary hover:bg-primary-dark"
-                onClick={handleGeneratePreview}
-                disabled={!fechaInicio || !fechaFin}
-              >
-                Seleccionar Servicios
-              </Button>
-            </div>
-          </div>
-          
-          {/* Mostrar servicios elegibles */}
-          {fechaInicio && fechaFin && (
-            <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+              <span className="text-lg font-medium">
+                {serviciosElegibles.length} servicios cerrados sin asignar a cierre
+              </span>
               <p className="text-sm text-muted-foreground">
-                Servicios elegibles para cierre: <strong>{serviciosElegibles.length}</strong>
-                {serviciosElegibles.length > 0 && (
-                  <span className="ml-2 text-primary font-medium">
-                    Total: {formatCurrency(serviciosElegibles.reduce((sum, s) => sum + Number(s.valor), 0))}
-                  </span>
-                )}
+                Total disponible: {formatCurrency(serviciosElegibles.reduce((sum, s) => sum + Number(s.valor), 0))}
               </p>
             </div>
-          )}
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => setShowServiciosModal(true)}
+              disabled={serviciosElegibles.length === 0}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Seleccionar Servicios
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -147,7 +147,7 @@ export default function Cierres() {
         <CardContent>
           {cierres.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No hay cierres generados aún. Crea tu primer cierre usando los filtros de arriba.
+              No hay cierres generados aún. Crea tu primer cierre seleccionando servicios.
             </div>
           ) : (
             <div className="space-y-4">
@@ -199,50 +199,10 @@ export default function Cierres() {
         </CardContent>
       </Card>
 
-      {/* Estadísticas de Cierres */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-primary text-sm">Total Cierres</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCierres}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-blue-500/30 bg-blue-500/5">
-          <CardHeader>
-            <CardTitle className="text-blue-400 text-sm">Pendientes Facturar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendientesFacturar}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-500/30 bg-green-500/5">
-          <CardHeader>
-            <CardTitle className="text-green-400 text-sm">Ya Facturados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{yaFacturados}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
-          <CardHeader>
-            <CardTitle className="text-yellow-400 text-sm">Valor Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{formatCurrency(valorTotal)}</div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Modal de Selección de Servicios */}
       <ServiciosSelectionModal
         isOpen={showServiciosModal}
         onClose={() => setShowServiciosModal(false)}
-        servicios={serviciosElegibles}
       />
     </div>
   );
