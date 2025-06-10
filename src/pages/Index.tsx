@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, FileText, DollarSign, Clock, Users, Loader2 } from "lucide-react";
 import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { AlertasPendientes } from "@/components/AlertasPendientes";
 import { EstadoBadge } from "@/components/EstadoBadge";
+import { FormularioServicio } from "@/components/FormularioServicio";
 import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
 import { useClientes } from "@/hooks/useClientes";
 import { format } from "date-fns";
@@ -13,6 +15,7 @@ import { es } from "date-fns/locale";
 
 export default function Index() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [modalServicioAbierto, setModalServicioAbierto] = useState(false);
   const { data: servicios = [], isLoading: loadingServicios } = useServicios();
   const { data: estadisticas, isLoading: loadingEstadisticas } = useEstadisticasServicios();
   const { data: clientes = [] } = useClientes();
@@ -50,7 +53,10 @@ export default function Index() {
           <h1 className="text-3xl font-bold text-primary">Gestión de Servicios</h1>
           <p className="text-muted-foreground">Sistema de Gestión de Grúas - Dashboard Principal</p>
         </div>
-        <Button className="bg-primary hover:bg-primary-dark text-white">
+        <Button 
+          className="bg-primary hover:bg-primary-dark text-white"
+          onClick={() => setModalServicioAbierto(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Servicio
         </Button>
@@ -85,10 +91,8 @@ export default function Index() {
         />
       </div>
 
-      {/* Alertas */}
       <AlertasPendientes />
 
-      {/* Tabla de Servicios */}
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -166,7 +170,6 @@ export default function Index() {
         </CardContent>
       </Card>
 
-      {/* Resumen por Estado */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-yellow-500/30 bg-yellow-500/5">
           <CardHeader>
@@ -213,6 +216,19 @@ export default function Index() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal para nuevo servicio */}
+      <Dialog open={modalServicioAbierto} onOpenChange={setModalServicioAbierto}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Servicio</DialogTitle>
+          </DialogHeader>
+          <FormularioServicio
+            onSuccess={() => setModalServicioAbierto(false)}
+            onCancel={() => setModalServicioAbierto(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

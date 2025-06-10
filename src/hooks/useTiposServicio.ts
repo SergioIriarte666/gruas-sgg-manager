@@ -49,3 +49,48 @@ export const useCreateTipoServicio = () => {
     }
   });
 };
+
+export const useUpdateTipoServicio = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...tipo }: Partial<TipoServicio> & { id: string }) => {
+      const updateData: any = {};
+      
+      if (tipo.nombre) updateData.nombre = tipo.nombre;
+      if (tipo.descripcion) updateData.descripcion = tipo.descripcion;
+      if (tipo.activo !== undefined) updateData.activo = tipo.activo;
+      
+      const { data, error } = await supabase
+        .from('tipos_servicio')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tipos-servicio'] });
+    }
+  });
+};
+
+export const useDeleteTipoServicio = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('tipos_servicio')
+        .update({ activo: false })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tipos-servicio'] });
+    }
+  });
+};

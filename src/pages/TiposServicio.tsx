@@ -1,14 +1,23 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Wrench, Search, Edit, Trash2, Loader2 } from "lucide-react";
-import { useTiposServicio } from "@/hooks/useTiposServicio";
+import { useTiposServicio, useDeleteTipoServicio } from "@/hooks/useTiposServicio";
+import { FormularioTipoServicio } from "@/components/FormularioTipoServicio";
+import { TipoServicio } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 export default function TiposServicio() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [tipoSeleccionado, setTipoSeleccionado] = useState<TipoServicio | undefined>();
+  const [alertaEliminar, setAlertaEliminar] = useState<string | null>(null);
+  
   const { data: tiposServicio = [], isLoading, error } = useTiposServicio();
+  const deleteMutation = useDeleteTipoServicio();
   
   const tiposFiltrados = tiposServicio.filter(tipo =>
     tipo.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -32,15 +41,35 @@ export default function TiposServicio() {
     );
   }
 
+  const handleNuevoTipo = () => {
+    setTipoSeleccionado(undefined);
+    setModalAbierto(true);
+  };
+
+  const handleEditarTipo = (tipo: TipoServicio) => {
+    setTipoSeleccionado(tipo);
+    setModalAbierto(true);
+  };
+
+  const handleEliminarTipo = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success("Tipo de servicio desactivado exitosamente");
+      setAlertaEliminar(null);
+    } catch (error) {
+      toast.error("Error al desactivar el tipo de servicio");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Tipos de Servicio</h1>
           <p className="text-muted-foreground">Gestión de categorías de servicios</p>
         </div>
-        <Button className="bg-primary hover:bg-primary-dark text-white">
+        <Button className="bg-primary hover:bg-primary-dark text-white" onClick={handleNuevoTipo}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Tipo
         </Button>
@@ -111,10 +140,20 @@ export default function TiposServicio() {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="h-8 px-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2"
+                          onClick={() => handleEditarTipo(tipo)}
+                        >
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" className="h-8 px-2 text-red-400 hover:text-red-300">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2 text-red-400 hover:text-red-300"
+                          onClick={() => setAlertaEliminar(tipo.id)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -153,11 +192,21 @@ export default function TiposServicio() {
                 {tipo.descripcion}
               </p>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="flex-1">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleEditarTipo(tipo)}
+                >
                   <Edit className="h-3 w-3 mr-2" />
                   Editar
                 </Button>
-                <Button size="sm" variant="outline" className="text-red-400 hover:text-red-300">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="text-red-400 hover:text-red-300"
+                  onClick={() => setAlertaEliminar(tipo.id)}
+                >
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
@@ -199,6 +248,42 @@ export default function TiposServicio() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {tipoSeleccionado ? "Editar Tipo de Servicio" : "Crear Nuevo Tipo de Servicio"}
+            </DialogTitle>
+          </DialogHeader>
+          <FormularioTipoServicio
+            tipoServicio={tipoSeleccionado}
+            onSuccess={() => setModalAbierto(false)}
+            onCancel={() => setModalAbierto(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!alertaEliminar} onOpenChange={() => setAlertaEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción desactivará el tipo de servicio. No podrá ser utilizado en nuevos servicios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => alertaEliminar && handleEliminarTipo(alertaEliminar)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Desactivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

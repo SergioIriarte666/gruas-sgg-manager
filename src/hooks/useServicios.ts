@@ -85,6 +85,107 @@ export const useServicios = () => {
   });
 };
 
+export const useCreateServicio = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (servicio: Omit<Servicio, 'id' | 'createdAt' | 'updatedAt' | 'cliente' | 'grua' | 'operador' | 'tipoServicio'>) => {
+      // Generar folio automáticamente
+      const { data: folioData, error: folioError } = await supabase
+        .rpc('generate_folio', { prefix: 'SV' });
+      
+      if (folioError) throw folioError;
+      
+      const { data, error } = await supabase
+        .from('servicios')
+        .insert({
+          folio: folioData,
+          fecha: servicio.fecha.toISOString().split('T')[0],
+          cliente_id: servicio.clienteId,
+          orden_compra: servicio.ordenCompra,
+          marca_vehiculo: servicio.marcaVehiculo,
+          modelo_vehiculo: servicio.modeloVehiculo,
+          patente: servicio.patente,
+          ubicacion_origen: servicio.ubicacionOrigen,
+          ubicacion_destino: servicio.ubicacionDestino,
+          valor: servicio.valor,
+          grua_id: servicio.gruaId,
+          operador_id: servicio.operadorId,
+          tipo_servicio_id: servicio.tipoServicioId,
+          estado: servicio.estado,
+          observaciones: servicio.observaciones
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicios'] });
+      queryClient.invalidateQueries({ queryKey: ['estadisticas-servicios'] });
+    }
+  });
+};
+
+export const useUpdateServicio = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...servicio }: Partial<Servicio> & { id: string }) => {
+      const updateData: any = {};
+      
+      if (servicio.fecha) updateData.fecha = servicio.fecha.toISOString().split('T')[0];
+      if (servicio.clienteId) updateData.cliente_id = servicio.clienteId;
+      if (servicio.ordenCompra !== undefined) updateData.orden_compra = servicio.ordenCompra;
+      if (servicio.marcaVehiculo) updateData.marca_vehiculo = servicio.marcaVehiculo;
+      if (servicio.modeloVehiculo) updateData.modelo_vehiculo = servicio.modeloVehiculo;
+      if (servicio.patente) updateData.patente = servicio.patente;
+      if (servicio.ubicacionOrigen) updateData.ubicacion_origen = servicio.ubicacionOrigen;
+      if (servicio.ubicacionDestino) updateData.ubicacion_destino = servicio.ubicacionDestino;
+      if (servicio.valor !== undefined) updateData.valor = servicio.valor;
+      if (servicio.gruaId) updateData.grua_id = servicio.gruaId;
+      if (servicio.operadorId) updateData.operador_id = servicio.operadorId;
+      if (servicio.tipoServicioId) updateData.tipo_servicio_id = servicio.tipoServicioId;
+      if (servicio.estado) updateData.estado = servicio.estado;
+      if (servicio.observaciones !== undefined) updateData.observaciones = servicio.observaciones;
+      
+      const { data, error } = await supabase
+        .from('servicios')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicios'] });
+      queryClient.invalidateQueries({ queryKey: ['estadisticas-servicios'] });
+    }
+  });
+};
+
+export const useDeleteServicio = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('servicios')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicios'] });
+      queryClient.invalidateQueries({ queryKey: ['estadisticas-servicios'] });
+    }
+  });
+};
+
 export const useEstadisticasServicios = () => {
   return useQuery({
     queryKey: ['estadisticas-servicios'],

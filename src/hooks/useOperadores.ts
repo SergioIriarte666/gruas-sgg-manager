@@ -53,3 +53,50 @@ export const useCreateOperador = () => {
     }
   });
 };
+
+export const useUpdateOperador = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...operador }: Partial<Operador> & { id: string }) => {
+      const updateData: any = {};
+      
+      if (operador.nombreCompleto) updateData.nombre_completo = operador.nombreCompleto;
+      if (operador.rut) updateData.rut = operador.rut;
+      if (operador.telefono) updateData.telefono = operador.telefono;
+      if (operador.numeroLicencia) updateData.numero_licencia = operador.numeroLicencia;
+      if (operador.activo !== undefined) updateData.activo = operador.activo;
+      
+      const { data, error } = await supabase
+        .from('operadores')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operadores'] });
+    }
+  });
+};
+
+export const useDeleteOperador = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('operadores')
+        .update({ activo: false })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operadores'] });
+    }
+  });
+};

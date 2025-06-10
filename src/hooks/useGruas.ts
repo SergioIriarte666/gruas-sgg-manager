@@ -53,3 +53,50 @@ export const useCreateGrua = () => {
     }
   });
 };
+
+export const useUpdateGrua = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...grua }: Partial<Grua> & { id: string }) => {
+      const updateData: any = {};
+      
+      if (grua.patente) updateData.patente = grua.patente;
+      if (grua.marca) updateData.marca = grua.marca;
+      if (grua.modelo) updateData.modelo = grua.modelo;
+      if (grua.tipo) updateData.tipo = grua.tipo;
+      if (grua.activo !== undefined) updateData.activo = grua.activo;
+      
+      const { data, error } = await supabase
+        .from('gruas')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gruas'] });
+    }
+  });
+};
+
+export const useDeleteGrua = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('gruas')
+        .update({ activo: false })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gruas'] });
+    }
+  });
+};

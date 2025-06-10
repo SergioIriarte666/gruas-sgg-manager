@@ -1,14 +1,23 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, UserCheck, Search, Edit, Trash2, Loader2 } from "lucide-react";
-import { useOperadores } from "@/hooks/useOperadores";
+import { useOperadores, useDeleteOperador } from "@/hooks/useOperadores";
+import { FormularioOperador } from "@/components/FormularioOperador";
+import { Operador } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 export default function Operadores() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [operadorSeleccionado, setOperadorSeleccionado] = useState<Operador | undefined>();
+  const [alertaEliminar, setAlertaEliminar] = useState<string | null>(null);
+  
   const { data: operadores = [], isLoading, error } = useOperadores();
+  const deleteMutation = useDeleteOperador();
   
   const operadoresFiltrados = operadores.filter(operador =>
     operador.nombreCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -34,15 +43,35 @@ export default function Operadores() {
     );
   }
 
+  const handleNuevoOperador = () => {
+    setOperadorSeleccionado(undefined);
+    setModalAbierto(true);
+  };
+
+  const handleEditarOperador = (operador: Operador) => {
+    setOperadorSeleccionado(operador);
+    setModalAbierto(true);
+  };
+
+  const handleEliminarOperador = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success("Operador desactivado exitosamente");
+      setAlertaEliminar(null);
+    } catch (error) {
+      toast.error("Error al desactivar el operador");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Operadores</h1>
           <p className="text-muted-foreground">Gestión de operadores de grúas</p>
         </div>
-        <Button className="bg-primary hover:bg-primary-dark text-white">
+        <Button className="bg-primary hover:bg-primary-dark text-white" onClick={handleNuevoOperador}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Operador
         </Button>
@@ -119,10 +148,20 @@ export default function Operadores() {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="h-8 px-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2"
+                          onClick={() => handleEditarOperador(operador)}
+                        >
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" className="h-8 px-2 text-red-400 hover:text-red-300">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2 text-red-400 hover:text-red-300"
+                          onClick={() => setAlertaEliminar(operador.id)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -174,6 +213,42 @@ export default function Operadores() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {operadorSeleccionado ? "Editar Operador" : "Crear Nuevo Operador"}
+            </DialogTitle>
+          </DialogHeader>
+          <FormularioOperador
+            operador={operadorSeleccionado}
+            onSuccess={() => setModalAbierto(false)}
+            onCancel={() => setModalAbierto(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!alertaEliminar} onOpenChange={() => setAlertaEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción desactivará el operador. No podrá ser asignado a nuevos servicios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => alertaEliminar && handleEliminarOperador(alertaEliminar)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Desactivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

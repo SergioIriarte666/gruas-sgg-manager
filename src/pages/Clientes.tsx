@@ -1,14 +1,23 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Users, Search, Edit, Trash2, Loader2 } from "lucide-react";
-import { useClientes } from "@/hooks/useClientes";
+import { useClientes, useDeleteCliente } from "@/hooks/useClientes";
+import { FormularioCliente } from "@/components/FormularioCliente";
+import { Cliente } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | undefined>();
+  const [alertaEliminar, setAlertaEliminar] = useState<string | null>(null);
+  
   const { data: clientes = [], isLoading, error } = useClientes();
+  const deleteMutation = useDeleteCliente();
   
   const clientesFiltrados = clientes.filter(cliente =>
     cliente.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,6 +42,27 @@ export default function Clientes() {
     );
   }
 
+  const handleNuevoCliente = () => {
+    setClienteSeleccionado(undefined);
+    setModalAbierto(true);
+  };
+
+  const handleEditarCliente = (cliente: Cliente) => {
+    setClienteSeleccionado(cliente);
+    setModalAbierto(true);
+  };
+
+  const handleEliminarCliente = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success("Cliente desactivado exitosamente");
+      setAlertaEliminar(null);
+    } catch (error) {
+      toast.error("Error al desactivar el cliente");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -41,7 +71,7 @@ export default function Clientes() {
           <h1 className="text-3xl font-bold text-primary">Clientes</h1>
           <p className="text-muted-foreground">Gestión de clientes del sistema</p>
         </div>
-        <Button className="bg-primary hover:bg-primary-dark text-white">
+        <Button className="bg-primary hover:bg-primary-dark text-white" onClick={handleNuevoCliente}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Cliente
         </Button>
@@ -119,10 +149,20 @@ export default function Clientes() {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="h-8 px-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2"
+                          onClick={() => handleEditarCliente(cliente)}
+                        >
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" className="h-8 px-2 text-red-400 hover:text-red-300">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2 text-red-400 hover:text-red-300"
+                          onClick={() => setAlertaEliminar(cliente.id)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -174,6 +214,44 @@ export default function Clientes() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal para formulario */}
+      <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {clienteSeleccionado ? "Editar Cliente" : "Crear Nuevo Cliente"}
+            </DialogTitle>
+          </DialogHeader>
+          <FormularioCliente
+            cliente={clienteSeleccionado}
+            onSuccess={() => setModalAbierto(false)}
+            onCancel={() => setModalAbierto(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Alerta de confirmación para eliminar */}
+      <AlertDialog open={!!alertaEliminar} onOpenChange={() => setAlertaEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción desactivará el cliente. No podrá ser utilizado en nuevos servicios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => alertaEliminar && handleEliminarCliente(alertaEliminar)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Desactivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,14 +1,23 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Truck, Search, Edit, Trash2, Loader2 } from "lucide-react";
-import { useGruas } from "@/hooks/useGruas";
+import { useGruas, useDeleteGrua } from "@/hooks/useGruas";
+import { FormularioGrua } from "@/components/FormularioGrua";
+import { Grua } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 export default function Gruas() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [gruaSeleccionada, setGruaSeleccionada] = useState<Grua | undefined>();
+  const [alertaEliminar, setAlertaEliminar] = useState<string | null>(null);
+  
   const { data: gruas = [], isLoading, error } = useGruas();
+  const deleteMutation = useDeleteGrua();
   
   const gruasFiltradas = gruas.filter(grua =>
     grua.patente.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,21 +56,40 @@ export default function Gruas() {
     );
   }
 
+  const handleNuevaGrua = () => {
+    setGruaSeleccionada(undefined);
+    setModalAbierto(true);
+  };
+
+  const handleEditarGrua = (grua: Grua) => {
+    setGruaSeleccionada(grua);
+    setModalAbierto(true);
+  };
+
+  const handleEliminarGrua = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success("Grúa desactivada exitosamente");
+      setAlertaEliminar(null);
+    } catch (error) {
+      toast.error("Error al desactivar la grúa");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Grúas</h1>
           <p className="text-muted-foreground">Gestión de flota de grúas</p>
         </div>
-        <Button className="bg-primary hover:bg-primary-dark text-white">
+        <Button className="bg-primary hover:bg-primary-dark text-white" onClick={handleNuevaGrua}>
           <Plus className="h-4 w-4 mr-2" />
           Nueva Grúa
         </Button>
       </div>
 
-      {/* Filtros */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -88,7 +116,6 @@ export default function Gruas() {
         </CardContent>
       </Card>
 
-      {/* Tabla de Grúas */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -135,10 +162,20 @@ export default function Gruas() {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="h-8 px-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2"
+                          onClick={() => handleEditarGrua(grua)}
+                        >
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" className="h-8 px-2 text-red-400 hover:text-red-300">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2 text-red-400 hover:text-red-300"
+                          onClick={() => setAlertaEliminar(grua.id)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -157,7 +194,6 @@ export default function Gruas() {
         </CardContent>
       </Card>
 
-      {/* Estadísticas por Tipo */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader>
@@ -201,6 +237,42 @@ export default function Gruas() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {gruaSeleccionada ? "Editar Grúa" : "Crear Nueva Grúa"}
+            </DialogTitle>
+          </DialogHeader>
+          <FormularioGrua
+            grua={gruaSeleccionada}
+            onSuccess={() => setModalAbierto(false)}
+            onCancel={() => setModalAbierto(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!alertaEliminar} onOpenChange={() => setAlertaEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción desactivará la grúa. No podrá ser utilizada en nuevos servicios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => alertaEliminar && handleEliminarGrua(alertaEliminar)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Desactivar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
