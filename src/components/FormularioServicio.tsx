@@ -59,7 +59,26 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
 
   function onSubmit(values: ServicioFormData) {
     console.log('Form values:', values);
-    crearServicio(values, {
+    
+    // Asegurar que todos los campos obligatorios estén presentes
+    const servicioData = {
+      fecha: values.fecha,
+      clienteId: values.clienteId,
+      ordenCompra: values.ordenCompra,
+      marcaVehiculo: values.marcaVehiculo,
+      modeloVehiculo: values.modeloVehiculo,
+      patente: values.patente,
+      ubicacionOrigen: values.ubicacionOrigen,
+      ubicacionDestino: values.ubicacionDestino,
+      valor: values.valor,
+      gruaId: values.gruaId,
+      operadorId: values.operadorId,
+      tipoServicioId: values.tipoServicioId,
+      estado: values.estado,
+      observaciones: values.observaciones,
+    };
+
+    crearServicio(servicioData, {
       onSuccess: () => {
         form.reset();
         onSuccess();
