@@ -81,10 +81,10 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
       const validatedData = servicioFormSchema.parse(data);
       
       if (isEditing) {
-        // Asegurar que todos los campos requeridos estén presentes para la actualización
-        await updateServicio.mutateAsync({
+        // Construir explícitamente el objeto con tipos requeridos
+        const updateData = {
           id: servicio.id,
-          fecha: validatedData.fecha,
+          fecha: validatedData.fecha, // Siempre será Date después de validación
           clienteId: validatedData.clienteId,
           ordenCompra: validatedData.ordenCompra,
           marcaVehiculo: validatedData.marcaVehiculo,
@@ -98,8 +98,11 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
           tipoServicioId: validatedData.tipoServicioId,
           estado: validatedData.estado,
           observaciones: validatedData.observaciones,
-        });
+        };
+        
+        await updateServicio.mutateAsync(updateData);
       } else {
+        // Para crear, pasamos los datos validados directamente
         await createServicio.mutateAsync(validatedData);
       }
       
