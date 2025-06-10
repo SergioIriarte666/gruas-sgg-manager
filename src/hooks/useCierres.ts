@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cierresApi } from "@/api/cierresApi";
 import { useToast } from "@/hooks/use-toast";
@@ -6,10 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 export const useCierres = () => {
   return useQuery({
     queryKey: ['cierres'],
-    queryFn: cierresApi.getAll,
-    onError: (error: any) => {
-      console.error('Error en useCierres:', error);
-    }
+    queryFn: cierresApi.getAll
   });
 };
 
