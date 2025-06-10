@@ -81,29 +81,48 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
       const validatedData = servicioFormSchema.parse(data);
       
       if (isEditing) {
-        // Construir explícitamente el objeto con tipos requeridos
-        const updateData = {
-          id: servicio.id,
-          fecha: validatedData.fecha, // Siempre será Date después de validación
-          clienteId: validatedData.clienteId,
+        // Crear objeto con aserciones de tipo para campos requeridos
+        const updateData: ServicioFormData = {
+          fecha: validatedData.fecha!,
+          clienteId: validatedData.clienteId!,
           ordenCompra: validatedData.ordenCompra,
-          marcaVehiculo: validatedData.marcaVehiculo,
-          modeloVehiculo: validatedData.modeloVehiculo,
-          patente: validatedData.patente,
-          ubicacionOrigen: validatedData.ubicacionOrigen,
-          ubicacionDestino: validatedData.ubicacionDestino,
-          valor: validatedData.valor,
-          gruaId: validatedData.gruaId,
-          operadorId: validatedData.operadorId,
-          tipoServicioId: validatedData.tipoServicioId,
-          estado: validatedData.estado,
+          marcaVehiculo: validatedData.marcaVehiculo!,
+          modeloVehiculo: validatedData.modeloVehiculo!,
+          patente: validatedData.patente!,
+          ubicacionOrigen: validatedData.ubicacionOrigen!,
+          ubicacionDestino: validatedData.ubicacionDestino!,
+          valor: validatedData.valor!,
+          gruaId: validatedData.gruaId!,
+          operadorId: validatedData.operadorId!,
+          tipoServicioId: validatedData.tipoServicioId!,
+          estado: validatedData.estado!,
           observaciones: validatedData.observaciones,
         };
         
-        await updateServicio.mutateAsync(updateData);
+        await updateServicio.mutateAsync({
+          id: servicio.id,
+          ...updateData
+        });
       } else {
-        // Para crear, pasamos los datos validados directamente
-        await createServicio.mutateAsync(validatedData);
+        // Para crear, convertir a tipo requerido
+        const createData: ServicioFormData = {
+          fecha: validatedData.fecha!,
+          clienteId: validatedData.clienteId!,
+          ordenCompra: validatedData.ordenCompra,
+          marcaVehiculo: validatedData.marcaVehiculo!,
+          modeloVehiculo: validatedData.modeloVehiculo!,
+          patente: validatedData.patente!,
+          ubicacionOrigen: validatedData.ubicacionOrigen!,
+          ubicacionDestino: validatedData.ubicacionDestino!,
+          valor: validatedData.valor!,
+          gruaId: validatedData.gruaId!,
+          operadorId: validatedData.operadorId!,
+          tipoServicioId: validatedData.tipoServicioId!,
+          estado: validatedData.estado!,
+          observaciones: validatedData.observaciones,
+        };
+        
+        await createServicio.mutateAsync(createData);
       }
       
       onSuccess();

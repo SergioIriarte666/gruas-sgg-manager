@@ -43,12 +43,10 @@ export const servicioFormSchema = z.object({
   observaciones: z.string().optional(),
 });
 
-// Tipo explícito con campos requeridos para la API
-export type ServicioFormData = {
+// Tipo que usa la inferencia de Zod pero asegura campos requeridos
+export type ServicioFormData = z.infer<typeof servicioFormSchema> & {
   fecha: Date;
-  folio?: string;
   clienteId: string;
-  ordenCompra?: string;
   marcaVehiculo: string;
   modeloVehiculo: string;
   patente: string;
@@ -59,7 +57,6 @@ export type ServicioFormData = {
   operadorId: string;
   tipoServicioId: string;
   estado: 'en_curso' | 'cerrado' | 'facturado';
-  observaciones?: string;
 };
 
 // Alias para compatibilidad
