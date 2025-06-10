@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit, Download, FileSpreadsheet } from "lucide-react";
+import { Plus, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit, FileSpreadsheet } from "lucide-react";
 import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { AlertasPendientes } from "@/components/AlertasPendientes";
 import { FormularioServicio } from "@/components/FormularioServicio";
@@ -89,30 +89,6 @@ export default function Index() {
     setShowNewForm(false);
     setShowEditForm(false);
     setSelectedServicio(null);
-  };
-
-  const handleExportServicios = () => {
-    const csvData = serviciosRecientes.map(servicio => ({
-      Folio: servicio.folio,
-      Fecha: formatSafeDate(servicio.fecha),
-      Cliente: servicio.cliente?.razonSocial || 'N/A',
-      Vehiculo: `${servicio.marcaVehiculo} ${servicio.modeloVehiculo}`,
-      Patente: servicio.patente,
-      Valor: servicio.valor,
-      Estado: getEstadoLabel(servicio.estado)
-    }));
-
-    const csv = [
-      Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `servicios_recientes_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
   };
 
   const handleExportExcel = () => {
@@ -252,39 +228,21 @@ export default function Index() {
                 Servicios Recientes
               </CardTitle>
               {serviciosRecientes.length > 0 && (
-                <div className="flex gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleExportExcel}
-                      >
-                        <FileSpreadsheet className="h-4 w-4 mr-2" />
-                        Excel
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Exportar servicios recientes a Excel</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleExportServicios}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        CSV
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Exportar servicios recientes a CSV</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleExportExcel}
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Excel
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Exportar servicios recientes a Excel</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           </CardHeader>

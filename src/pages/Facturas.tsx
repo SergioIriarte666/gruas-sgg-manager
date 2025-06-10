@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,32 +63,6 @@ export default function Facturas() {
 
   const handleCreateFacturaFromCierre = (cierreId: string) => {
     createFactura.mutate(cierreId);
-  };
-
-  const handleExportCSV = () => {
-    const csvData = facturasFiltradas.map(factura => ({
-      Folio: factura.folio,
-      Fecha: formatSafeDate(factura.fecha),
-      Cliente: factura.cliente,
-      Subtotal: factura.subtotal,
-      IVA: factura.iva,
-      Total: factura.total,
-      Vencimiento: formatSafeDate(factura.fechaVencimiento),
-      Estado: factura.estado,
-      FechaPago: factura.fechaPago ? formatSafeDate(factura.fechaPago) : ''
-    }));
-
-    const csv = [
-      Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `facturas_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
   };
 
   const handleExportExcel = () => {
@@ -199,22 +172,6 @@ export default function Facturas() {
               </TooltipTrigger>
               <TooltipContent>
                 <p>Exportar facturas a Excel</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline"
-                  onClick={handleExportCSV}
-                  disabled={facturasFiltradas.length === 0}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  CSV
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Exportar facturas a CSV</p>
               </TooltipContent>
             </Tooltip>
 
