@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Edit, X } from "lucide-react";
+import { CheckCircle, X } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
-import { useUpdateServicio } from "@/hooks/useServicios";
+import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 import { useToast } from "@/hooks/use-toast";
 
 interface ServicioDetailsModalProps {
@@ -19,7 +19,7 @@ export const ServicioDetailsModal = ({
   onClose,
   servicio
 }: ServicioDetailsModalProps) => {
-  const updateServicio = useUpdateServicio();
+  const updateServicioEstado = useUpdateServicioEstado();
   const { toast } = useToast();
 
   if (!servicio) return null;
@@ -67,7 +67,7 @@ export const ServicioDetailsModal = ({
       return;
     }
 
-    updateServicio.mutate({
+    updateServicioEstado.mutate({
       id: servicio.id,
       estado: 'cerrado'
     }, {
@@ -107,20 +107,20 @@ export const ServicioDetailsModal = ({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Cliente</label>
-                  <p className="font-medium">{servicio.clientes?.razon_social || 'N/A'}</p>
+                  <p className="font-medium">{servicio.cliente?.razonSocial || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Tipo de Servicio</label>
-                  <p className="font-medium">{servicio.tipos_servicio?.nombre || 'N/A'}</p>
+                  <p className="font-medium">{servicio.tipoServicio?.nombre || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Valor</label>
                   <p className="font-bold text-lg text-primary">{formatCurrency(Number(servicio.valor))}</p>
                 </div>
-                {servicio.orden_compra && (
+                {servicio.ordenCompra && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Orden de Compra</label>
-                    <p className="font-medium">{servicio.orden_compra}</p>
+                    <p className="font-medium">{servicio.ordenCompra}</p>
                   </div>
                 )}
               </div>
@@ -136,11 +136,11 @@ export const ServicioDetailsModal = ({
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Marca</label>
-                  <p className="font-medium">{servicio.marca_vehiculo}</p>
+                  <p className="font-medium">{servicio.marcaVehiculo}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Modelo</label>
-                  <p className="font-medium">{servicio.modelo_vehiculo}</p>
+                  <p className="font-medium">{servicio.modeloVehiculo}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Patente</label>
@@ -159,11 +159,11 @@ export const ServicioDetailsModal = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Origen</label>
-                  <p className="font-medium">{servicio.ubicacion_origen}</p>
+                  <p className="font-medium">{servicio.ubicacionOrigen}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Destino</label>
-                  <p className="font-medium">{servicio.ubicacion_destino}</p>
+                  <p className="font-medium">{servicio.ubicacionDestino}</p>
                 </div>
               </div>
             </CardContent>
@@ -178,11 +178,11 @@ export const ServicioDetailsModal = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Grúa</label>
-                  <p className="font-medium">{servicio.gruas?.patente || 'N/A'}</p>
+                  <p className="font-medium">{servicio.grua?.patente || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Operador</label>
-                  <p className="font-medium">{servicio.operadores?.nombre_completo || 'N/A'}</p>
+                  <p className="font-medium">{servicio.operador?.nombreCompleto || 'N/A'}</p>
                 </div>
               </div>
             </CardContent>
@@ -209,11 +209,11 @@ export const ServicioDetailsModal = ({
             {servicio.estado === 'en_curso' && (
               <Button 
                 onClick={handleFinalizarServicio}
-                disabled={updateServicio.isPending}
+                disabled={updateServicioEstado.isPending}
                 className="bg-green-600 hover:bg-green-700"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                {updateServicio.isPending ? "Finalizando..." : "Finalizar Servicio"}
+                {updateServicioEstado.isPending ? "Finalizando..." : "Finalizar Servicio"}
               </Button>
             )}
           </div>

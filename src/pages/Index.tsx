@@ -2,33 +2,25 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit } from "lucide-react";
 import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { AlertasPendientes } from "@/components/AlertasPendientes";
 import { FormularioServicio } from "@/components/FormularioServicio";
 import { ServicioDetailsModal } from "@/components/ServicioDetailsModal";
-import { 
-  Plus, 
-  Eye, 
-  Edit, 
-  CheckCircle,
-  Truck,
-  Users,
-  ClipboardList,
-  Calendar
-} from "lucide-react";
+import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
+import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 import { formatSafeDate } from "@/lib/utils";
-import { useServicios, useUpdateServicio } from "@/hooks/useServicios";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Index() {
-  const [showFormulario, setShowFormulario] = useState(false);
+  const [showNewForm, setShowNewForm] = useState(false);
   const [selectedServicio, setSelectedServicio] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const { data: servicios = [], isLoading } = useServicios();
-  const updateServicio = useUpdateServicio();
-  const { toast } = useToast();
+  const { data: estadisticas } = useEstadisticasServicios();
+  const updateServicioEstado = useUpdateServicioEstado();
+
+  const serviciosRecientes = servicios.slice(0, 5);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -40,13 +32,13 @@ export default function Index() {
   const getEstadoBadgeColor = (estado: string) => {
     switch (estado) {
       case 'en_curso':
-        return 'bg-yellow-500';
+        return 'bg-yellow-500 text-yellow-900';
       case 'cerrado':
-        return 'bg-green-500';
+        return 'bg-green-500 text-green-900';
       case 'facturado':
-        return 'bg-blue-500';
+        return 'bg-blue-500 text-blue-900';
       default:
-        return 'bg-gray-500';
+        return 'bg-gray-500 text-gray-900';
     }
   };
 
@@ -63,49 +55,32 @@ export default function Index() {
     }
   };
 
+  const handleFinalizarServicio = (servicioId: string) => {
+    updateServicioEstado.mutate({
+      id: servicioId,
+      estado: 'cerrado'
+    });
+  };
+
   const handleViewServicio = (servicio: any) => {
     setSelectedServicio(servicio);
     setIsModalOpen(true);
   };
 
-  const handleEditServicio = (servicio: any) => {
-    // Por ahora, abrir el modal de detalles
-    setSelectedServicio(servicio);
-    setIsModalOpen(true);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedServicio(null);
   };
 
-  const handleFinalizarServicio = (servicioId: string) => {
-    const servicio = servicios.find(s => s.id === servicioId);
-    if (servicio?.estado === 'facturado') {
-      toast({
-        title: "No se puede modificar",
-        description: "Este servicio ya está facturado y no se puede modificar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    updateServicio.mutate({
-      id: servicioId,
-      estado: 'cerrado'
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "Servicio finalizado",
-          description: "El servicio ha sido marcado como cerrado exitosamente.",
-        });
-      }
-    });
+  const handleFormSuccess = () => {
+    setShowNewForm(false);
   };
-
-  // Servicios recientes (últimos 10)
-  const serviciosRecientes = servicios.slice(0, 10);
 
   if (isLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex justify-center items-center h-64">
-          <div className="text-muted-foreground">Cargando...</div>
+          <div className="text-muted-foreground">Cargando dashboard...</div>
         </div>
       </div>
     );
@@ -116,17 +91,41 @@ export default function Index() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Sistema de Gestión de Grúas</h1>
-          <p className="text-muted-foreground">Panel de control principal</p>
+          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
+          <p className="text-muted-foreground">Resumen de tu sistema de gestión de grúas</p>
         </div>
-        <Button onClick={() => setShowFormulario(true)} className="bg-primary hover:bg-primary-dark">
+        <Button 
+          onClick={() => setShowNewForm(true)}
+          className="bg-primary hover:bg-primary-dark"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Servicio
         </Button>
       </div>
 
-      {/* Estadísticas Cards */}
-      <EstadisticasCard />
+      {/* Estadísticas Generales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <EstadisticasCard
+          title="Total Servicios"
+          value={estadisticas?.totalServicios || 0}
+          icon={<FileText className="h-4 w-4" />}
+        />
+        <EstadisticasCard
+          title="En Curso"
+          value={estadisticas?.serviciosEnCurso || 0}
+          icon={<Calendar className="h-4 w-4" />}
+        />
+        <EstadisticasCard
+          title="Finalizados"
+          value={estadisticas?.serviciosCerrados || 0}
+          icon={<CheckCircle className="h-4 w-4" />}
+        />
+        <EstadisticasCard
+          title="Ingresos Total"
+          value={formatCurrency(estadisticas?.ingresosTotales || 0)}
+          icon={<Truck className="h-4 w-4" />}
+        />
+      </div>
 
       {/* Alertas Pendientes */}
       <AlertasPendientes />
@@ -135,97 +134,94 @@ export default function Index() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5" />
+            <FileText className="h-5 w-5" />
             Servicios Recientes
           </CardTitle>
         </CardHeader>
         <CardContent>
           {serviciosRecientes.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No hay servicios registrados aún.
+              No hay servicios registrados aún. ¡Crea tu primer servicio!
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-3 font-medium text-muted-foreground">Folio</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Fecha</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Cliente</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Vehículo</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Valor</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Estado</th>
-                    <th className="text-left p-3 font-medium text-muted-foreground">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {serviciosRecientes.map((servicio) => (
-                    <tr key={servicio.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                      <td className="p-3 font-medium text-primary">{servicio.folio}</td>
-                      <td className="p-3">
-                        {formatSafeDate(servicio.fecha)}
-                      </td>
-                      <td className="p-3">{servicio.clientes?.razon_social || 'N/A'}</td>
-                      <td className="p-3">
-                        {servicio.marca_vehiculo} {servicio.modelo_vehiculo} - {servicio.patente}
-                      </td>
-                      <td className="p-3 font-medium">{formatCurrency(Number(servicio.valor))}</td>
-                      <td className="p-3">
-                        <Badge className={getEstadoBadgeColor(servicio.estado)}>
+            <div className="space-y-4">
+              {serviciosRecientes.map((servicio) => (
+                <div key={servicio.id} className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-medium text-primary">{servicio.folio}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoBadgeColor(servicio.estado)}`}>
                           {getEstadoLabel(servicio.estado)}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-2">
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        <strong>Cliente:</strong> {servicio.cliente?.razonSocial || 'N/A'}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        <strong>Vehículo:</strong> {servicio.marcaVehiculo} {servicio.modeloVehiculo} - {servicio.patente}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Fecha:</strong> {formatSafeDate(servicio.fecha)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-primary">{formatCurrency(Number(servicio.valor))}</div>
+                        <div className="text-xs text-muted-foreground">Valor</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleViewServicio(servicio)}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        {servicio.estado === 'en_curso' && (
                           <Button 
                             size="sm" 
-                            variant="outline" 
-                            className="h-8 px-2"
-                            onClick={() => handleViewServicio(servicio)}
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => handleFinalizarServicio(servicio.id)}
+                            disabled={updateServicioEstado.isPending}
                           >
-                            <Eye className="h-3 w-3" />
+                            <CheckCircle className="h-3 w-3" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-8 px-2"
-                            onClick={() => handleEditServicio(servicio)}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          {servicio.estado === 'en_curso' && (
-                            <Button 
-                              size="sm" 
-                              className="h-8 px-2 bg-green-600 hover:bg-green-700"
-                              onClick={() => handleFinalizarServicio(servicio.id)}
-                              disabled={updateServicio.isPending}
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Formulario Modal */}
-      {showFormulario && (
-        <FormularioServicio 
-          onClose={() => setShowFormulario(false)}
-          onSuccess={() => setShowFormulario(false)}
-        />
+      {/* Modal de Nuevo Servicio */}
+      {showNewForm && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-background border border-border rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-primary">Nuevo Servicio</h2>
+                <Button variant="outline" onClick={() => setShowNewForm(false)}>
+                  Cancelar
+                </Button>
+              </div>
+              <FormularioServicio onSuccess={handleFormSuccess} />
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Modal de Detalles */}
+      {/* Modal de Detalles del Servicio */}
       <ServicioDetailsModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         servicio={selectedServicio}
       />
     </div>

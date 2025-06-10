@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Cierre } from "@/types";
 
@@ -83,7 +82,7 @@ export const cierresApi = {
     return data;
   },
 
-  // Crear nuevo cierre
+  // Crear nuevo cierre y actualizar servicios automáticamente
   create: async (cierre: {
     fechaInicio: string;
     fechaFin: string;
@@ -96,6 +95,7 @@ export const cierresApi = {
     // Generar folio automático
     const folio = await cierresApi.generateFolio();
 
+    // Crear el cierre
     const { data, error } = await supabase
       .from('cierres')
       .insert({
@@ -114,12 +114,12 @@ export const cierresApi = {
       throw error;
     }
 
-    // Actualizar servicios para asignarles el cierre_id
+    // Actualizar servicios para asignarles el cierre_id y mantener estado "cerrado"
     const { error: updateError } = await supabase
       .from('servicios')
       .update({ 
         cierre_id: data.id,
-        estado: 'cerrado' // Mantener estado cerrado pero ahora con cierre asignado
+        estado: 'cerrado' // Mantener estado cerrado
       })
       .in('id', cierre.serviciosIds);
 
@@ -128,7 +128,7 @@ export const cierresApi = {
       throw updateError;
     }
 
-    console.log('Cierre creado exitosamente:', data);
+    console.log('Cierre creado exitosamente y servicios actualizados:', data);
     return data;
   },
 
@@ -171,10 +171,11 @@ export const cierresApi = {
     return data;
   },
 
-  // Marcar cierre como facturado
+  // Marcar cierre como facturado y actualizar servicios automáticamente
   markAsFacturado: async (cierreId: string, facturaId: string) => {
     console.log('Marcando cierre como facturado:', { cierreId, facturaId });
     
+    // Actualizar el cierre
     const { data, error } = await supabase
       .from('cierres')
       .update({
@@ -190,7 +191,7 @@ export const cierresApi = {
       throw error;
     }
 
-    // También actualizar servicios para marcarlos como facturados
+    // Actualizar servicios automáticamente para marcarlos como facturados
     const { error: serviciosError } = await supabase
       .from('servicios')
       .update({ 
@@ -204,6 +205,7 @@ export const cierresApi = {
       throw serviciosError;
     }
 
+    console.log('Cierre marcado como facturado y servicios actualizados automáticamente');
     return data;
   }
 };
