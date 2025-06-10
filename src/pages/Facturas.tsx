@@ -3,11 +3,21 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EstadoBadge } from "@/components/EstadoBadge";
-import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle } from "lucide-react";
+import { FacturaDetailsModal } from "@/components/FacturaDetailsModal";
+import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useFacturas, useUpdateFacturaEstado } from "@/hooks/useFacturas";
+import { generateFacturaPDF } from "@/utils/pdfGenerator";
 
 export default function Facturas() {
+  const [selectedFactura, setSelectedFactura] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [paymentDates, setPaymentDates] = useState<Record<string, string>>({});
+
+  const { data: facturas = [], isLoading, error } = useFacturas();
+  const updateFacturaEstado = useUpdateFacturaEstado();
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
@@ -15,46 +25,46 @@ export default function Facturas() {
     }).format(amount);
   };
 
-  // Mock data para facturas
-  const facturas = [
-    {
-      id: 1,
-      folio: 'F001-2024',
-      fecha: new Date('2024-06-01'),
-      fechaVencimiento: new Date('2024-07-01'),
-      cliente: 'Transportes López S.A.',
-      subtotal: 172269,
-      iva: 32731,
-      total: 205000,
-      estado: 'pendiente' as const,
-      diasVencimiento: 9
-    },
-    {
-      id: 2,
-      folio: 'F002-2024',
-      fecha: new Date('2024-05-15'),
-      fechaVencimiento: new Date('2024-06-14'),
-      cliente: 'Constructora San Miguel Ltda.',
-      subtotal: 285714,
-      iva: 54286,
-      total: 340000,
-      estado: 'vencida' as const,
-      diasVencimiento: -4,
-      fechaPago: null
-    },
-    {
-      id: 3,
-      folio: 'F003-2024',
-      fecha: new Date('2024-05-20'),
-      fechaVencimiento: new Date('2024-06-19'),
-      cliente: 'Rent a Car Premium',
-      subtotal: 71429,
-      iva: 13571,
-      total: 85000,
-      estado: 'pagada' as const,
-      fechaPago: new Date('2024-06-15')
-    }
-  ];
+  const handleViewFactura = (factura: any) => {
+    setSelectedFactura(factura);
+    setIsModalOpen(true);
+  };
+
+  const handleGeneratePDF = (factura: any) => {
+    generateFacturaPDF(factura);
+  };
+
+  const handleMarkAsPaid = (facturaId: string) => {
+    const fechaPago = paymentDates[facturaId] || format(new Date(), "yyyy-MM-dd");
+    updateFacturaEstado.mutate({ facturaId, fechaPago });
+  };
+
+  const handlePaymentDateChange = (facturaId: string, date: string) => {
+    setPaymentDates(prev => ({ ...prev, [facturaId]: date }));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-muted-foreground">Cargando facturas...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-red-500">Error al cargar las facturas</div>
+        </div>
+      </div>
+    );
+  }
+
+  const facturasVencidas = facturas.filter(f => f.estado === 'vencida');
+  const facturasPendientes = facturas.filter(f => f.estado === 'pendiente');
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -71,34 +81,36 @@ export default function Facturas() {
       </div>
 
       {/* Alertas de Facturas Vencidas */}
-      <Card className="border-red-500/30 bg-red-500/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-400">
-            <AlertTriangle className="h-5 w-5" />
-            Facturas Vencidas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {facturas.filter(f => f.estado === 'vencida').map((factura) => (
-              <div key={factura.id} className="flex justify-between items-center p-3 bg-background/50 rounded border border-red-500/20">
-                <div>
-                  <span className="font-medium text-red-400">{factura.folio}</span>
-                  <span className="text-sm text-muted-foreground ml-2">
-                    {factura.cliente}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium text-red-400">{formatCurrency(factura.total)}</div>
-                  <div className="text-xs text-red-400">
-                    {Math.abs(factura.diasVencimiento)} días vencida
+      {facturasVencidas.length > 0 && (
+        <Card className="border-red-500/30 bg-red-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+              Facturas Vencidas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {facturasVencidas.map((factura) => (
+                <div key={factura.id} className="flex justify-between items-center p-3 bg-background/50 rounded border border-red-500/20">
+                  <div>
+                    <span className="font-medium text-red-400">{factura.folio}</span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {factura.cliente}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-red-400">{formatCurrency(factura.total)}</div>
+                    <div className="text-xs text-red-400">
+                      {Math.abs(factura.diasVencimiento)} días vencida
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lista de Facturas */}
       <Card>
@@ -150,14 +162,29 @@ export default function Facturas() {
                     </td>
                     <td className="p-3">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="h-8 px-2">
-                          Ver
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2"
+                          onClick={() => handleViewFactura(factura)}
+                        >
+                          <Eye className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" className="h-8 px-2">
-                          PDF
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 px-2"
+                          onClick={() => handleGeneratePDF(factura)}
+                        >
+                          <Download className="h-3 w-3" />
                         </Button>
                         {factura.estado === 'pendiente' && (
-                          <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700">
+                          <Button 
+                            size="sm" 
+                            className="h-8 px-2 bg-green-600 hover:bg-green-700"
+                            onClick={() => handleMarkAsPaid(factura.id)}
+                            disabled={updateFacturaEstado.isPending}
+                          >
                             <CheckCircle className="h-3 w-3" />
                           </Button>
                         )}
@@ -172,43 +199,50 @@ export default function Facturas() {
       </Card>
 
       {/* Gestión de Pagos */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Gestión de Pagos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {facturas.filter(f => f.estado === 'pendiente').map((factura) => (
-              <div key={factura.id} className="border border-border rounded-lg p-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <h3 className="font-medium text-primary">{factura.folio}</h3>
-                    <p className="text-sm text-muted-foreground">{factura.cliente}</p>
-                    <p className="text-lg font-bold mt-1">{formatCurrency(factura.total)}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
+      {facturasPendientes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Gestión de Pagos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {facturasPendientes.map((factura) => (
+                <div key={factura.id} className="border border-border rounded-lg p-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Fecha de Pago</label>
-                      <input
-                        type="date"
-                        className="px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                        defaultValue={format(new Date(), "yyyy-MM-dd")}
-                      />
+                      <h3 className="font-medium text-primary">{factura.folio}</h3>
+                      <p className="text-sm text-muted-foreground">{factura.cliente}</p>
+                      <p className="text-lg font-bold mt-1">{formatCurrency(factura.total)}</p>
                     </div>
-                    <Button className="bg-green-600 hover:bg-green-700 mt-6">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Marcar como Pagada
-                    </Button>
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Fecha de Pago</label>
+                        <input
+                          type="date"
+                          className="px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={paymentDates[factura.id] || format(new Date(), "yyyy-MM-dd")}
+                          onChange={(e) => handlePaymentDateChange(factura.id, e.target.value)}
+                        />
+                      </div>
+                      <Button 
+                        className="bg-green-600 hover:bg-green-700 mt-6"
+                        onClick={() => handleMarkAsPaid(factura.id)}
+                        disabled={updateFacturaEstado.isPending}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Marcar como Pagada
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Estadísticas de Facturación */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -254,6 +288,12 @@ export default function Facturas() {
           </CardContent>
         </Card>
       </div>
+
+      <FacturaDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        factura={selectedFactura}
+      />
     </div>
   );
 }
