@@ -10,12 +10,12 @@ export const generateFacturaPDF = (factura: any) => {
   
   doc.setFontSize(12);
   doc.text(`Folio: ${factura.folio}`, 20, 45);
-  doc.text(`Fecha: ${factura.fecha.toLocaleDateString('es-CL')}`, 20, 55);
-  doc.text(`Vencimiento: ${factura.fechaVencimiento.toLocaleDateString('es-CL')}`, 20, 65);
+  doc.text(`Fecha: ${formatDateForPDF(factura.fecha)}`, 20, 55);
+  doc.text(`Vencimiento: ${formatDateForPDF(factura.fechaVencimiento)}`, 20, 65);
   
   // Client info
   doc.text('CLIENTE:', 20, 85);
-  doc.text(factura.cliente, 20, 95);
+  doc.text(factura.cliente || 'Sin cliente asignado', 20, 95);
   
   // Amounts
   doc.text('DETALLE:', 20, 115);
@@ -27,11 +27,15 @@ export const generateFacturaPDF = (factura: any) => {
   
   // Estado
   doc.setFontSize(12);
-  doc.text(`Estado: ${factura.estado.toUpperCase()}`, 20, 175);
+  doc.text(`Estado: ${getEstadoLabel(factura.estado)}`, 20, 175);
   
   if (factura.fechaPago) {
-    doc.text(`Fecha de Pago: ${factura.fechaPago.toLocaleDateString('es-CL')}`, 20, 185);
+    doc.text(`Fecha de Pago: ${formatDateForPDF(factura.fechaPago)}`, 20, 185);
   }
+  
+  // Footer
+  doc.setFontSize(10);
+  doc.text(`Generado el: ${new Date().toLocaleDateString('es-CL')}`, 20, 280);
   
   // Download
   doc.save(`factura-${factura.folio}.pdf`);
@@ -42,4 +46,27 @@ const formatCurrency = (amount: number) => {
     style: 'currency',
     currency: 'CLP'
   }).format(amount);
+};
+
+const formatDateForPDF = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-CL');
+  } catch (error) {
+    return dateString;
+  }
+};
+
+const getEstadoLabel = (estado: string) => {
+  switch (estado) {
+    case 'pendiente':
+      return 'PENDIENTE';
+    case 'pagada':
+      return 'PAGADA';
+    case 'vencida':
+      return 'VENCIDA';
+    default:
+      return estado.toUpperCase();
+  }
 };

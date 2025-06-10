@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit } from "lucide-react";
+import { Plus, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit, Download, FileExcel } from "lucide-react";
 import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { AlertasPendientes } from "@/components/AlertasPendientes";
 import { FormularioServicio } from "@/components/FormularioServicio";
@@ -91,6 +91,55 @@ export default function Index() {
     setSelectedServicio(null);
   };
 
+  const handleExportServicios = () => {
+    const csvData = serviciosRecientes.map(servicio => ({
+      Folio: servicio.folio,
+      Fecha: formatSafeDate(servicio.fecha),
+      Cliente: servicio.cliente?.razonSocial || 'N/A',
+      Vehiculo: `${servicio.marcaVehiculo} ${servicio.modeloVehiculo}`,
+      Patente: servicio.patente,
+      Valor: servicio.valor,
+      Estado: getEstadoLabel(servicio.estado)
+    }));
+
+    const csv = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `servicios_recientes_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  const handleExportExcel = () => {
+    const excelData = serviciosRecientes.map(servicio => ({
+      'Folio': servicio.folio,
+      'Fecha': formatSafeDate(servicio.fecha),
+      'Cliente': servicio.cliente?.razonSocial || 'N/A',
+      'Vehículo': `${servicio.marcaVehiculo} ${servicio.modeloVehiculo}`,
+      'Patente': servicio.patente,
+      'Valor': servicio.valor,
+      'Estado': getEstadoLabel(servicio.estado)
+    }));
+
+    const headers = Object.keys(excelData[0]);
+    const csvContent = [
+      headers.join('\t'),
+      ...excelData.map(row => Object.values(row).join('\t'))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `servicios_recientes_${new Date().toISOString().split('T')[0]}.xls`;
+    a.click();
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -110,37 +159,85 @@ export default function Index() {
             <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
             <p className="text-muted-foreground">Resumen de tu sistema de gestión de grúas</p>
           </div>
-          <Button 
-            onClick={() => setShowNewForm(true)}
-            className="bg-primary hover:bg-primary-dark"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Servicio
-          </Button>
+          <div className="flex gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={() => setShowNewForm(true)}
+                  className="bg-primary hover:bg-primary-dark"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Servicio
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Crear un nuevo servicio de grúa</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Estadísticas Generales */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <EstadisticasCard
-            title="Total Servicios"
-            value={estadisticas?.totalServicios || 0}
-            icon={FileText}
-          />
-          <EstadisticasCard
-            title="En Curso"
-            value={estadisticas?.serviciosEnCurso || 0}
-            icon={Calendar}
-          />
-          <EstadisticasCard
-            title="Finalizados"
-            value={estadisticas?.serviciosCerrados || 0}
-            icon={CheckCircle}
-          />
-          <EstadisticasCard
-            title="Ingresos Total"
-            value={formatCurrency(estadisticas?.ingresosTotales || 0)}
-            icon={Truck}
-          />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <EstadisticasCard
+                  title="Total Servicios"
+                  value={estadisticas?.totalServicios || 0}
+                  icon={FileText}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Total de servicios registrados en el sistema</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <EstadisticasCard
+                  title="En Curso"
+                  value={estadisticas?.serviciosEnCurso || 0}
+                  icon={Calendar}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Servicios que están actualmente en progreso</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <EstadisticasCard
+                  title="Finalizados"
+                  value={estadisticas?.serviciosCerrados || 0}
+                  icon={CheckCircle}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Servicios completados y listos para facturar</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <EstadisticasCard
+                  title="Ingresos Total"
+                  value={formatCurrency(estadisticas?.ingresosTotales || 0)}
+                  icon={Truck}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Ingresos totales generados por todos los servicios</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Alertas Pendientes */}
@@ -149,10 +246,47 @@ export default function Index() {
         {/* Servicios Recientes */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Servicios Recientes
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Servicios Recientes
+              </CardTitle>
+              {serviciosRecientes.length > 0 && (
+                <div className="flex gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleExportExcel}
+                      >
+                        <FileExcel className="h-4 w-4 mr-2" />
+                        Excel
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Exportar servicios recientes a Excel</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleExportServicios}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        CSV
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Exportar servicios recientes a CSV</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {serviciosRecientes.length === 0 ? (
