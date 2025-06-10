@@ -3,16 +3,34 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, Search, Edit, Trash2 } from "lucide-react";
-import { mockTiposServicio } from "@/lib/mockData";
+import { Plus, Wrench, Search, Edit, Trash2, Loader2 } from "lucide-react";
+import { useTiposServicio } from "@/hooks/useTiposServicio";
 
 export default function TiposServicio() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: tiposServicio = [], isLoading, error } = useTiposServicio();
   
-  const tiposFiltrados = mockTiposServicio.filter(tipo =>
+  const tiposFiltrados = tiposServicio.filter(tipo =>
     tipo.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tipo.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando tipos de servicio...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Error al cargar tipos de servicio: {error.message}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -155,7 +173,7 @@ export default function TiposServicio() {
             <CardTitle className="text-primary text-sm">Total Tipos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockTiposServicio.length}</div>
+            <div className="text-2xl font-bold">{tiposServicio.length}</div>
           </CardContent>
         </Card>
 
@@ -165,7 +183,7 @@ export default function TiposServicio() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockTiposServicio.filter(t => t.activo).length}
+              {tiposServicio.filter(t => t.activo).length}
             </div>
           </CardContent>
         </Card>
@@ -176,7 +194,7 @@ export default function TiposServicio() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockTiposServicio.filter(t => !t.activo).length}
+              {tiposServicio.filter(t => !t.activo).length}
             </div>
           </CardContent>
         </Card>

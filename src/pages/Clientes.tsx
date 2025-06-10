@@ -3,17 +3,35 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Search, Edit, Trash2 } from "lucide-react";
-import { mockClientes } from "@/lib/mockData";
+import { Plus, Users, Search, Edit, Trash2, Loader2 } from "lucide-react";
+import { useClientes } from "@/hooks/useClientes";
 
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: clientes = [], isLoading, error } = useClientes();
   
-  const clientesFiltrados = mockClientes.filter(cliente =>
+  const clientesFiltrados = clientes.filter(cliente =>
     cliente.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.rut.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando clientes...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Error al cargar clientes: {error.message}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -130,7 +148,7 @@ export default function Clientes() {
             <CardTitle className="text-primary text-sm">Total Clientes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockClientes.length}</div>
+            <div className="text-2xl font-bold">{clientes.length}</div>
           </CardContent>
         </Card>
 
@@ -140,7 +158,7 @@ export default function Clientes() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockClientes.filter(c => c.activo).length}
+              {clientes.filter(c => c.activo).length}
             </div>
           </CardContent>
         </Card>
@@ -151,7 +169,7 @@ export default function Clientes() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockClientes.filter(c => !c.activo).length}
+              {clientes.filter(c => !c.activo).length}
             </div>
           </CardContent>
         </Card>

@@ -2,26 +2,23 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, FileText, DollarSign, Clock, Users, AlertTriangle } from "lucide-react";
+import { Plus, FileText, DollarSign, Clock, Users, Loader2 } from "lucide-react";
 import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { AlertasPendientes } from "@/components/AlertasPendientes";
 import { EstadoBadge } from "@/components/EstadoBadge";
-import { mockServicios, mockClientes } from "@/lib/mockData";
+import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
+import { useClientes } from "@/hooks/useClientes";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function Index() {
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Calcular estadísticas
-  const totalServicios = mockServicios.length;
-  const serviciosEnCurso = mockServicios.filter(s => s.estado === 'en_curso').length;
-  const serviciosCerrados = mockServicios.filter(s => s.estado === 'cerrado').length;
-  const serviciosFacturados = mockServicios.filter(s => s.estado === 'facturado').length;
-  const ingresosTotales = mockServicios.reduce((acc, s) => acc + s.valor, 0);
+  const { data: servicios = [], isLoading: loadingServicios } = useServicios();
+  const { data: estadisticas, isLoading: loadingEstadisticas } = useEstadisticasServicios();
+  const { data: clientes = [] } = useClientes();
   
   // Filtrar servicios
-  const serviciosFiltrados = mockServicios.filter(servicio =>
+  const serviciosFiltrados = servicios.filter(servicio =>
     servicio.folio.toLowerCase().includes(searchTerm.toLowerCase()) ||
     servicio.cliente?.razonSocial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     servicio.patente.toLowerCase().includes(searchTerm.toLowerCase())
@@ -33,6 +30,17 @@ export default function Index() {
       currency: 'CLP'
     }).format(amount);
   };
+
+  if (loadingServicios || loadingEstadisticas) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando datos...</span>
+      </div>
+    );
+  }
+
+  const clientesActivos = clientes.filter(c => c.activo).length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -52,26 +60,26 @@ export default function Index() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <EstadisticasCard
           title="Total Servicios"
-          value={totalServicios}
+          value={estadisticas?.totalServicios || 0}
           icon={FileText}
           trend={{ value: 12, label: "desde el mes pasado" }}
         />
         <EstadisticasCard
           title="En Curso"
-          value={serviciosEnCurso}
+          value={estadisticas?.serviciosEnCurso || 0}
           icon={Clock}
           className="border-yellow-500/30 bg-yellow-500/5"
         />
         <EstadisticasCard
           title="Ingresos Totales"
-          value={formatCurrency(ingresosTotales)}
+          value={formatCurrency(estadisticas?.ingresosTotales || 0)}
           icon={DollarSign}
           trend={{ value: 8, label: "desde el mes pasado" }}
           className="border-primary/30 bg-primary/5"
         />
         <EstadisticasCard
           title="Clientes Activos"
-          value={mockClientes.filter(c => c.activo).length}
+          value={clientesActivos}
           icon={Users}
           className="border-blue-500/30 bg-blue-500/5"
         />
@@ -149,7 +157,10 @@ export default function Index() {
           
           {serviciosFiltrados.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No se encontraron servicios que coincidan con la búsqueda.
+              {servicios.length === 0 
+                ? "No hay servicios registrados aún."
+                : "No se encontraron servicios que coincidan con la búsqueda."
+              }
             </div>
           )}
         </CardContent>
@@ -165,7 +176,7 @@ export default function Index() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{serviciosEnCurso}</div>
+            <div className="text-2xl font-bold">{estadisticas?.serviciosEnCurso || 0}</div>
             <p className="text-sm text-muted-foreground">
               Servicios activos en proceso
             </p>
@@ -180,7 +191,7 @@ export default function Index() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{serviciosCerrados}</div>
+            <div className="text-2xl font-bold">{estadisticas?.serviciosCerrados || 0}</div>
             <p className="text-sm text-muted-foreground">
               Listos para facturar
             </p>
@@ -195,7 +206,7 @@ export default function Index() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{serviciosFacturados}</div>
+            <div className="text-2xl font-bold">{estadisticas?.serviciosFacturados || 0}</div>
             <p className="text-sm text-muted-foreground">
               Proceso completado
             </p>

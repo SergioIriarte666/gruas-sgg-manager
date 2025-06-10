@@ -3,18 +3,36 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, UserCheck, Search, Edit, Trash2 } from "lucide-react";
-import { mockOperadores } from "@/lib/mockData";
+import { Plus, UserCheck, Search, Edit, Trash2, Loader2 } from "lucide-react";
+import { useOperadores } from "@/hooks/useOperadores";
 
 export default function Operadores() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: operadores = [], isLoading, error } = useOperadores();
   
-  const operadoresFiltrados = mockOperadores.filter(operador =>
+  const operadoresFiltrados = operadores.filter(operador =>
     operador.nombreCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
     operador.rut.toLowerCase().includes(searchTerm.toLowerCase()) ||
     operador.telefono.toLowerCase().includes(searchTerm.toLowerCase()) ||
     operador.numeroLicencia.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando operadores...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Error al cargar operadores: {error.message}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -130,7 +148,7 @@ export default function Operadores() {
             <CardTitle className="text-primary text-sm">Total Operadores</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockOperadores.length}</div>
+            <div className="text-2xl font-bold">{operadores.length}</div>
           </CardContent>
         </Card>
 
@@ -140,7 +158,7 @@ export default function Operadores() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockOperadores.filter(o => o.activo).length}
+              {operadores.filter(o => o.activo).length}
             </div>
           </CardContent>
         </Card>
@@ -151,7 +169,7 @@ export default function Operadores() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockOperadores.filter(o => !o.activo).length}
+              {operadores.filter(o => !o.activo).length}
             </div>
           </CardContent>
         </Card>

@@ -9,13 +9,363 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cierres: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          factura_id: string | null
+          facturado: boolean
+          fecha_fin: string
+          fecha_inicio: string
+          folio: string
+          id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          factura_id?: string | null
+          facturado?: boolean
+          fecha_fin: string
+          fecha_inicio: string
+          folio: string
+          id?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          factura_id?: string | null
+          facturado?: boolean
+          fecha_fin?: string
+          fecha_inicio?: string
+          folio?: string
+          id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cierres_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cierres_factura"
+            columns: ["factura_id"]
+            isOneToOne: false
+            referencedRelation: "facturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          activo: boolean
+          created_at: string
+          direccion: string
+          email: string
+          id: string
+          razon_social: string
+          rut: string
+          telefono: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          direccion: string
+          email: string
+          id?: string
+          razon_social: string
+          rut: string
+          telefono: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          direccion?: string
+          email?: string
+          id?: string
+          razon_social?: string
+          rut?: string
+          telefono?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      facturas: {
+        Row: {
+          cierre_id: string
+          created_at: string
+          estado: string
+          fecha: string
+          fecha_pago: string | null
+          fecha_vencimiento: string
+          folio: string
+          id: string
+          iva: number
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          cierre_id: string
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fecha_pago?: string | null
+          fecha_vencimiento: string
+          folio: string
+          id?: string
+          iva: number
+          subtotal: number
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          cierre_id?: string
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fecha_pago?: string | null
+          fecha_vencimiento?: string
+          folio?: string
+          id?: string
+          iva?: number
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facturas_cierre_id_fkey"
+            columns: ["cierre_id"]
+            isOneToOne: false
+            referencedRelation: "cierres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gruas: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          marca: string
+          modelo: string
+          patente: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          marca: string
+          modelo: string
+          patente: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          marca?: string
+          modelo?: string
+          patente?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      operadores: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre_completo: string
+          numero_licencia: string
+          rut: string
+          telefono: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre_completo: string
+          numero_licencia: string
+          rut: string
+          telefono: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre_completo?: string
+          numero_licencia?: string
+          rut?: string
+          telefono?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      servicios: {
+        Row: {
+          cierre_id: string | null
+          cliente_id: string
+          created_at: string
+          estado: string
+          factura_id: string | null
+          fecha: string
+          folio: string
+          grua_id: string
+          id: string
+          marca_vehiculo: string
+          modelo_vehiculo: string
+          observaciones: string | null
+          operador_id: string
+          orden_compra: string | null
+          patente: string
+          tipo_servicio_id: string
+          ubicacion_destino: string
+          ubicacion_origen: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          cierre_id?: string | null
+          cliente_id: string
+          created_at?: string
+          estado?: string
+          factura_id?: string | null
+          fecha?: string
+          folio: string
+          grua_id: string
+          id?: string
+          marca_vehiculo: string
+          modelo_vehiculo: string
+          observaciones?: string | null
+          operador_id: string
+          orden_compra?: string | null
+          patente: string
+          tipo_servicio_id: string
+          ubicacion_destino: string
+          ubicacion_origen: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          cierre_id?: string | null
+          cliente_id?: string
+          created_at?: string
+          estado?: string
+          factura_id?: string | null
+          fecha?: string
+          folio?: string
+          grua_id?: string
+          id?: string
+          marca_vehiculo?: string
+          modelo_vehiculo?: string
+          observaciones?: string | null
+          operador_id?: string
+          orden_compra?: string | null
+          patente?: string
+          tipo_servicio_id?: string
+          ubicacion_destino?: string
+          ubicacion_origen?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_servicios_cierre"
+            columns: ["cierre_id"]
+            isOneToOne: false
+            referencedRelation: "cierres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_servicios_factura"
+            columns: ["factura_id"]
+            isOneToOne: false
+            referencedRelation: "facturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicios_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicios_grua_id_fkey"
+            columns: ["grua_id"]
+            isOneToOne: false
+            referencedRelation: "gruas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicios_operador_id_fkey"
+            columns: ["operador_id"]
+            isOneToOne: false
+            referencedRelation: "operadores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicios_tipo_servicio_id_fkey"
+            columns: ["tipo_servicio_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_servicio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tipos_servicio: {
+        Row: {
+          activo: boolean
+          created_at: string
+          descripcion: string
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          descripcion: string
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          descripcion?: string
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_folio: {
+        Args: { prefix: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

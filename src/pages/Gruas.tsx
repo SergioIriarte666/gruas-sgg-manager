@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Truck, Search, Edit, Trash2 } from "lucide-react";
-import { mockGruas } from "@/lib/mockData";
+import { Plus, Truck, Search, Edit, Trash2, Loader2 } from "lucide-react";
+import { useGruas } from "@/hooks/useGruas";
 
 export default function Gruas() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: gruas = [], isLoading, error } = useGruas();
   
-  const gruasFiltradas = mockGruas.filter(grua =>
+  const gruasFiltradas = gruas.filter(grua =>
     grua.patente.toLowerCase().includes(searchTerm.toLowerCase()) ||
     grua.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
     grua.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,6 +29,23 @@ export default function Gruas() {
         return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Cargando grúas...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Error al cargar grúas: {error.message}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -146,7 +164,7 @@ export default function Gruas() {
             <CardTitle className="text-primary text-sm">Total Grúas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockGruas.length}</div>
+            <div className="text-2xl font-bold">{gruas.length}</div>
           </CardContent>
         </Card>
 
@@ -156,7 +174,7 @@ export default function Gruas() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockGruas.filter(g => g.tipo === 'Liviana').length}
+              {gruas.filter(g => g.tipo === 'Liviana').length}
             </div>
           </CardContent>
         </Card>
@@ -167,7 +185,7 @@ export default function Gruas() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockGruas.filter(g => g.tipo === 'Mediana').length}
+              {gruas.filter(g => g.tipo === 'Mediana').length}
             </div>
           </CardContent>
         </Card>
@@ -178,7 +196,7 @@ export default function Gruas() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockGruas.filter(g => g.tipo === 'Pesada').length}
+              {gruas.filter(g => g.tipo === 'Pesada').length}
             </div>
           </CardContent>
         </Card>
