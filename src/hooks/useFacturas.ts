@@ -33,8 +33,12 @@ export const useFacturas = () => {
           // Helper function to safely parse dates
           const safeParseDate = (dateValue: any) => {
             if (!dateValue) return null;
-            const parsed = new Date(dateValue);
-            return isNaN(parsed.getTime()) ? null : parsed;
+            try {
+              const parsed = new Date(dateValue);
+              return isNaN(parsed.getTime()) ? null : parsed;
+            } catch {
+              return null;
+            }
           };
 
           const fechaFactura = safeParseDate(factura.fecha);
@@ -48,22 +52,26 @@ export const useFacturas = () => {
           }
 
           // Determine estado based on dates
-          let estado = factura.estado;
+          let estado = factura.estado || 'pendiente';
           if (estado === 'pendiente' && diasVencimiento < 0) {
             estado = 'vencida';
           }
 
-          // Get client name safely
+          // Get client name safely with better error handling
           let clienteNombre = 'Cliente no encontrado';
-          if (factura.cierres?.clientes?.razon_social) {
-            clienteNombre = factura.cierres.clientes.razon_social;
-          } else if (factura.cierres && Array.isArray(factura.cierres) && factura.cierres[0]?.clientes?.razon_social) {
-            clienteNombre = factura.cierres[0].clientes.razon_social;
+          try {
+            if (factura.cierres?.clientes?.razon_social) {
+              clienteNombre = factura.cierres.clientes.razon_social;
+            } else if (Array.isArray(factura.cierres) && factura.cierres.length > 0 && factura.cierres[0]?.clientes?.razon_social) {
+              clienteNombre = factura.cierres[0].clientes.razon_social;
+            }
+          } catch (err) {
+            console.warn('Error al obtener nombre del cliente para factura:', factura.id, err);
           }
 
           return {
             id: factura.id,
-            folio: factura.folio,
+            folio: factura.folio || 'Sin folio',
             fecha: fechaFactura ? fechaFactura.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             fechaVencimiento: fechaVencimiento ? fechaVencimiento.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             cliente: clienteNombre,
@@ -80,9 +88,11 @@ export const useFacturas = () => {
         return facturas;
       } catch (error) {
         console.error("Error fetching facturas:", error);
-        throw error;
+        throw new Error(`Error al obtener facturas: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
     },
+    retry: 2,
+    retryDelay: 1000,
   });
 };
 
@@ -106,7 +116,7 @@ export const useUpdateFacturaEstado = () => {
 
       if (error) {
         console.error('Error al actualizar factura:', error);
-        throw error;
+        throw new Error(`Error al actualizar factura: ${error.message}`);
       }
       
       console.log('Factura actualizada:', data);
@@ -119,11 +129,12 @@ export const useUpdateFacturaEstado = () => {
         description: "La factura ha sido marcada como pagada exitosamente.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error updating factura:", error);
+      const errorMessage = error?.message || "No se pudo actualizar la factura. Intenta nuevamente.";
       toast({
         title: "Error",
-        description: "No se pudo actualizar la factura. Intenta nuevamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     },

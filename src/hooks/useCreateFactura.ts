@@ -24,6 +24,7 @@ export const useCreateFactura = () => {
         return factura;
       } catch (error) {
         console.error('Error en mutationFn de createFactura:', error);
+        // Re-lanzar el error para que sea manejado por onError
         throw error;
       }
     },
@@ -34,14 +35,14 @@ export const useCreateFactura = () => {
       queryClient.invalidateQueries({ queryKey: ['servicios'] });
       toast({
         title: "Factura creada",
-        description: "La factura se ha creado exitosamente desde el cierre.",
+        description: `La factura ${factura.folio} se ha creado exitosamente desde el cierre.`,
       });
     },
     onError: (error: any) => {
       console.error('Error al crear factura:', error);
-      const errorMessage = error?.message || "No se pudo crear la factura.";
+      const errorMessage = error?.message || "No se pudo crear la factura. Por favor, intenta nuevamente.";
       toast({
-        title: "Error",
+        title: "Error al crear factura",
         description: errorMessage,
         variant: "destructive",
       });
