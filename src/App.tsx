@@ -26,7 +26,7 @@ const App = () => <QueryClientProvider client={queryClient}>
           <div className="min-h-screen flex w-full">
             <AppSidebar />
             <main className="flex-1">
-              <div className="p-4 bg-[#377537]">
+              <div className="p-4 bg-[#1e391e]">
                 <SidebarTrigger className="mb-4" />
                 <Routes>
                   <Route path="/" element={<Index />} />
