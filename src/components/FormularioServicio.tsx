@@ -15,6 +15,7 @@ import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useTiposServicio } from "@/hooks/useTiposServicio";
 import { Form } from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
 
 interface FormularioServicioProps {
   servicio?: any;
@@ -29,12 +30,13 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   const { data: gruas = [] } = useGruas();
   const { data: operadores = [] } = useOperadores();
   const { data: tiposServicio = [] } = useTiposServicio();
+  const { toast } = useToast();
   const isEditing = !!servicio;
 
   const form = useForm<ServicioFormData>({
     resolver: zodResolver(servicioFormSchema),
     defaultValues: {
-      fecha: new Date(), // Siempre Date válido
+      fecha: new Date(),
       folio: "",
       clienteId: "",
       ordenCompra: "",
@@ -55,6 +57,8 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   // Pre-cargar datos para edición
   useEffect(() => {
     if (servicio) {
+      console.log('Cargando datos del servicio para editar:', servicio);
+      
       const fechaServicio = servicio.fecha ? new Date(servicio.fecha) : new Date();
       
       form.reset({
@@ -80,6 +84,7 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   const onSubmit = async (data: ServicioFormData) => {
     try {
       setIsSubmitting(true);
+      console.log('Enviando datos del formulario:', data);
       
       // Asegurar que la fecha es válida
       const validatedData: ServicioFormData = {
@@ -89,17 +94,32 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
       };
       
       if (isEditing) {
+        console.log('Actualizando servicio:', servicio.id);
         await updateServicio.mutateAsync({
           id: servicio.id,
           ...validatedData,
         });
+        toast({
+          title: "Servicio actualizado",
+          description: "El servicio ha sido actualizado exitosamente.",
+        });
       } else {
+        console.log('Creando nuevo servicio');
         await createServicio.mutateAsync(validatedData);
+        toast({
+          title: "Servicio creado",
+          description: "El servicio ha sido creado exitosamente.",
+        });
       }
       
       onSuccess();
     } catch (error) {
       console.error('Error al guardar servicio:', error);
+      toast({
+        title: "Error",
+        description: `Error al ${isEditing ? 'actualizar' : 'crear'} el servicio. Intenta nuevamente.`,
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

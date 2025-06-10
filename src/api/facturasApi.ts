@@ -11,7 +11,7 @@ export const facturasApi = {
         .from('facturas')
         .select(`
           *,
-          cierres!inner(
+          cierres(
             id,
             cliente_id,
             clientes(

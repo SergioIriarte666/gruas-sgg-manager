@@ -31,54 +31,39 @@ export const useFacturas = () => {
           return [];
         }
 
-        // Transform data to match expected format with safe data handling
+        // Transform data to match expected format
         const facturas = data.map((factura: any) => {
           console.log('Procesando factura:', factura);
           
-          // Helper function to safely parse dates
-          const safeParseDate = (dateValue: any) => {
-            if (!dateValue) return null;
-            try {
-              const parsed = new Date(dateValue);
-              return isNaN(parsed.getTime()) ? null : parsed;
-            } catch {
-              return null;
-            }
-          };
+          // Safe date parsing
+          const fechaFactura = factura.fecha ? new Date(factura.fecha) : new Date();
+          const fechaVencimiento = factura.fecha_vencimiento ? new Date(factura.fecha_vencimiento) : new Date();
+          const fechaPago = factura.fecha_pago ? new Date(factura.fecha_pago) : null;
 
-          const fechaFactura = safeParseDate(factura.fecha);
-          const fechaVencimiento = safeParseDate(factura.fecha_vencimiento);
-          const fechaPago = factura.fecha_pago ? safeParseDate(factura.fecha_pago) : null;
+          // Calculate days until expiration
+          const diasVencimiento = Math.ceil((fechaVencimiento.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
-          // Calculate days until expiration safely
-          let diasVencimiento = 0;
-          if (fechaVencimiento) {
-            diasVencimiento = Math.ceil((fechaVencimiento.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-          }
-
-          // Determine estado based on dates
+          // Determine estado
           let estado = factura.estado || 'pendiente';
           if (estado === 'pendiente' && diasVencimiento < 0) {
             estado = 'vencida';
           }
 
-          // Get client name safely with better error handling
+          // Get client name safely
           let clienteNombre = 'Cliente no encontrado';
           try {
             if (factura.cierres?.clientes?.razon_social) {
               clienteNombre = factura.cierres.clientes.razon_social;
-            } else if (factura.cierres && factura.cierres.clientes && factura.cierres.clientes.razon_social) {
-              clienteNombre = factura.cierres.clientes.razon_social;
             }
           } catch (err) {
-            console.warn('Error al obtener nombre del cliente para factura:', factura.id, err);
+            console.warn('Error al obtener nombre del cliente:', err);
           }
 
           return {
             id: factura.id,
             folio: factura.folio || 'Sin folio',
-            fecha: fechaFactura ? fechaFactura.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            fechaVencimiento: fechaVencimiento ? fechaVencimiento.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            fecha: fechaFactura.toISOString().split('T')[0],
+            fechaVencimiento: fechaVencimiento.toISOString().split('T')[0],
             cliente: clienteNombre,
             subtotal: Number(factura.subtotal) || 0,
             iva: Number(factura.iva) || 0,
