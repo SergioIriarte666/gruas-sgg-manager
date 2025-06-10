@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { FacturaDetailsModal } from "@/components/FacturaDetailsModal";
-import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download } from "lucide-react";
+import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download, Search, BarChart3, Filter } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
 import { useFacturas, useUpdateFacturaEstado } from "@/hooks/useFacturas";
 import { useCierres } from "@/hooks/useCierres";
@@ -15,11 +16,25 @@ export default function Facturas() {
   const [selectedFactura, setSelectedFactura] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [paymentDates, setPaymentDates] = useState<Record<string, string>>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [showReports, setShowReports] = useState(false);
 
   const { data: facturas = [], isLoading, error } = useFacturas();
   const { data: cierres = [] } = useCierres();
   const updateFacturaEstado = useUpdateFacturaEstado();
   const createFactura = useCreateFactura();
+
+  // Filtrar facturas
+  const facturasFiltradas = facturas.filter(factura => {
+    const matchesSearch = 
+      factura.folio.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      factura.cliente.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || factura.estado === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -50,6 +65,32 @@ export default function Facturas() {
     createFactura.mutate(cierreId);
   };
 
+  const handleExportFacturas = () => {
+    const csvData = facturasFiltradas.map(factura => ({
+      Folio: factura.folio,
+      Fecha: formatSafeDate(factura.fecha),
+      Cliente: factura.cliente,
+      Subtotal: factura.subtotal,
+      IVA: factura.iva,
+      Total: factura.total,
+      Vencimiento: formatSafeDate(factura.fechaVencimiento),
+      Estado: factura.estado,
+      FechaPago: factura.fechaPago ? formatSafeDate(factura.fechaPago) : ''
+    }));
+
+    const csv = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `facturas_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -74,15 +115,117 @@ export default function Facturas() {
   const facturasPendientes = facturas.filter(f => f.estado === 'pendiente');
   const cierresPendientesFacturar = cierres.filter(c => !c.facturado);
 
+  // Estadísticas
+  const totalFacturas = facturas.length;
+  const facturasPendientesCount = facturas.filter(f => f.estado === 'pendiente').length;
+  const facturasVencidasCount = facturas.filter(f => f.estado === 'vencida').length;
+  const totalRecaudado = facturas.filter(f => f.estado === 'pagada').reduce((acc, f) => acc + f.total, 0);
+  const totalPendiente = facturas.filter(f => f.estado === 'pendiente' || f.estado === 'vencida').reduce((acc, f) => acc + f.total, 0);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-primary">Facturas</h1>
-          <p className="text-muted-foreground">Gestión de facturación y pagos</p>
+          <p className="text-muted-foreground">Gestión completa de facturación y pagos</p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setShowReports(!showReports)}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Reportes
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={handleExportFacturas}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
         </div>
       </div>
+
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-primary text-sm">Total Facturas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalFacturas}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-orange-500/30 bg-orange-500/5">
+          <CardHeader>
+            <CardTitle className="text-orange-400 text-sm">Pendientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{facturasPendientesCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-red-500/30 bg-red-500/5">
+          <CardHeader>
+            <CardTitle className="text-red-400 text-sm">Vencidas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{facturasVencidasCount}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-green-500/30 bg-green-500/5">
+          <CardHeader>
+            <CardTitle className="text-green-400 text-sm">Recaudado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{formatCurrency(totalRecaudado)}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-500/30 bg-blue-500/5">
+          <CardHeader>
+            <CardTitle className="text-blue-400 text-sm">Por Cobrar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{formatCurrency(totalPendiente)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Reportes Section */}
+      {showReports && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Reportes de Facturación</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-primary">
+                  {totalFacturas > 0 ? ((facturas.filter(f => f.estado === 'pagada').length / totalFacturas) * 100).toFixed(1) : 0}%
+                </div>
+                <div className="text-sm text-muted-foreground">Tasa de Cobro</div>
+              </div>
+              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(totalFacturas > 0 ? totalRecaudado / facturas.filter(f => f.estado === 'pagada').length : 0)}
+                </div>
+                <div className="text-sm text-muted-foreground">Promedio por Factura</div>
+              </div>
+              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">
+                  {facturas.filter(f => f.diasVencimiento < 0).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Facturas Vencidas</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Cierres Pendientes de Facturar */}
       {cierresPendientesFacturar.length > 0 && (
@@ -161,18 +304,50 @@ export default function Facturas() {
         </Card>
       )}
 
+      {/* Filtros y Búsqueda */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar por folio o cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="all">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="vencida">Vencida</option>
+              <option value="pagada">Pagada</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Lista de Facturas */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Lista de Facturas
+            Lista de Facturas ({facturasFiltradas.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {facturas.length === 0 ? (
+          {facturasFiltradas.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No hay facturas creadas aún. Las facturas se crean desde los cierres de servicios.
+              {searchTerm || statusFilter !== "all"
+                ? "No hay facturas que coincidan con los filtros."
+                : "No hay facturas creadas aún. Las facturas se crean desde los cierres de servicios."
+              }
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -191,7 +366,7 @@ export default function Facturas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {facturas.map((factura) => (
+                  {facturasFiltradas.map((factura) => (
                     <tr key={factura.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-medium text-primary">{factura.folio}</td>
                       <td className="p-3">
@@ -298,51 +473,6 @@ export default function Facturas() {
           </CardContent>
         </Card>
       )}
-
-      {/* Estadísticas de Facturación */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-primary text-sm">Total Facturas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{facturas.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-orange-500/30 bg-orange-500/5">
-          <CardHeader>
-            <CardTitle className="text-orange-400 text-sm">Pendientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {facturas.filter(f => f.estado === 'pendiente').length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-red-500/30 bg-red-500/5">
-          <CardHeader>
-            <CardTitle className="text-red-400 text-sm">Vencidas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {facturas.filter(f => f.estado === 'vencida').length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-500/30 bg-green-500/5">
-          <CardHeader>
-            <CardTitle className="text-green-400 text-sm">Recaudado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold">
-              {formatCurrency(facturas.filter(f => f.estado === 'pagada').reduce((acc, f) => acc + f.total, 0))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       <FacturaDetailsModal
         isOpen={isModalOpen}

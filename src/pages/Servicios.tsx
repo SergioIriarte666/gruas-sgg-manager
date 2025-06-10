@@ -3,25 +3,38 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Eye, Edit, CheckCircle, Filter } from "lucide-react";
-import { useServicios } from "@/hooks/useServicios";
-import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
+import { Plus, Search, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit, Download, BarChart3 } from "lucide-react";
+import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { FormularioServicio } from "@/components/FormularioServicio";
 import { ServicioDetailsModal } from "@/components/ServicioDetailsModal";
-import { ServiciosSelectionModal } from "@/components/ServiciosSelectionModal";
+import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
+import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 import { formatSafeDate } from "@/lib/utils";
 
 export default function Servicios() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showNewForm, setShowNewForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [selectedServicio, setSelectedServicio] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showSelectionModal, setShowSelectionModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [estadoFilter, setEstadoFilter] = useState<string>("");
+  const [showReports, setShowReports] = useState(false);
 
   const { data: servicios = [], isLoading } = useServicios();
+  const { data: estadisticas } = useEstadisticasServicios();
   const updateServicioEstado = useUpdateServicioEstado();
+
+  // Filtrar servicios según búsqueda y estado
+  const serviciosFiltrados = servicios.filter(servicio => {
+    const matchesSearch = 
+      servicio.folio.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      servicio.cliente?.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      servicio.patente.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || servicio.estado === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -33,13 +46,13 @@ export default function Servicios() {
   const getEstadoBadgeColor = (estado: string) => {
     switch (estado) {
       case 'en_curso':
-        return 'bg-yellow-500';
+        return 'bg-yellow-500 text-yellow-900';
       case 'cerrado':
-        return 'bg-green-500';
+        return 'bg-green-500 text-green-900';
       case 'facturado':
-        return 'bg-blue-500';
+        return 'bg-blue-500 text-blue-900';
       default:
-        return 'bg-gray-500';
+        return 'bg-gray-500 text-gray-900';
     }
   };
 
@@ -56,17 +69,6 @@ export default function Servicios() {
     }
   };
 
-  const filteredServicios = servicios.filter(servicio => {
-    const matchesSearch = !searchTerm || 
-      servicio.folio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      servicio.cliente?.razonSocial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      servicio.patente.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesEstado = !estadoFilter || servicio.estado === estadoFilter;
-    
-    return matchesSearch && matchesEstado;
-  });
-
   const handleFinalizarServicio = (servicioId: string) => {
     updateServicioEstado.mutate({
       id: servicioId,
@@ -79,6 +81,38 @@ export default function Servicios() {
     setIsModalOpen(true);
   };
 
+  const handleEditServicio = (servicio: any) => {
+    setSelectedServicio(servicio);
+    setShowEditForm(true);
+  };
+
+  const handleExportServices = () => {
+    // Crear CSV de servicios
+    const csvData = serviciosFiltrados.map(servicio => ({
+      Folio: servicio.folio,
+      Fecha: formatSafeDate(servicio.fecha),
+      Cliente: servicio.cliente?.razonSocial || 'N/A',
+      Vehiculo: `${servicio.marcaVehiculo} ${servicio.modeloVehiculo}`,
+      Patente: servicio.patente,
+      Origen: servicio.ubicacionOrigen,
+      Destino: servicio.ubicacionDestino,
+      Estado: getEstadoLabel(servicio.estado),
+      Valor: servicio.valor
+    }));
+
+    const csv = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `servicios_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedServicio(null);
@@ -86,10 +120,14 @@ export default function Servicios() {
 
   const handleFormSuccess = () => {
     setShowNewForm(false);
+    setShowEditForm(false);
+    setSelectedServicio(null);
   };
 
   const handleFormCancel = () => {
     setShowNewForm(false);
+    setShowEditForm(false);
+    setSelectedServicio(null);
   };
 
   if (isLoading) {
@@ -112,12 +150,18 @@ export default function Servicios() {
         </div>
         <div className="flex gap-2">
           <Button 
-            onClick={() => setShowSelectionModal(true)}
             variant="outline"
-            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            onClick={() => setShowReports(!showReports)}
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Generar Cierre
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Reportes
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={handleExportServices}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
           </Button>
           <Button 
             onClick={() => setShowNewForm(true)}
@@ -129,9 +173,62 @@ export default function Servicios() {
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Estadísticas Generales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <EstadisticasCard
+          title="Total Servicios"
+          value={estadisticas?.totalServicios || 0}
+          icon={FileText}
+        />
+        <EstadisticasCard
+          title="En Curso"
+          value={estadisticas?.serviciosEnCurso || 0}
+          icon={Calendar}
+        />
+        <EstadisticasCard
+          title="Finalizados"
+          value={estadisticas?.serviciosCerrados || 0}
+          icon={CheckCircle}
+        />
+        <EstadisticasCard
+          title="Ingresos Total"
+          value={formatCurrency(estadisticas?.ingresosTotales || 0)}
+          icon={Truck}
+        />
+      </div>
+
+      {/* Reportes Section */}
+      {showReports && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Reportes y Estadísticas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-primary">{estadisticas?.serviciosFacturados || 0}</div>
+                <div className="text-sm text-muted-foreground">Servicios Facturados</div>
+              </div>
+              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {((estadisticas?.serviciosCerrados || 0) / (estadisticas?.totalServicios || 1) * 100).toFixed(1)}%
+                </div>
+                <div className="text-sm text-muted-foreground">Tasa de Finalización</div>
+              </div>
+              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                <div className="text-lg font-bold text-blue-600">
+                  {formatCurrency((estadisticas?.ingresosTotales || 0) / (estadisticas?.totalServicios || 1))}
+                </div>
+                <div className="text-sm text-muted-foreground">Valor Promedio</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filtros y Búsqueda */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -145,11 +242,11 @@ export default function Servicios() {
               </div>
             </div>
             <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              value={estadoFilter}
-              onChange={(e) => setEstadoFilter(e.target.value)}
             >
-              <option value="">Todos los estados</option>
+              <option value="all">Todos los estados</option>
               <option value="en_curso">En Curso</option>
               <option value="cerrado">Cerrado</option>
               <option value="facturado">Facturado</option>
@@ -161,36 +258,40 @@ export default function Servicios() {
       {/* Lista de Servicios */}
       <Card>
         <CardHeader>
-          <CardTitle>Servicios ({filteredServicios.length})</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Lista de Servicios ({serviciosFiltrados.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredServicios.length === 0 ? (
+          {serviciosFiltrados.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {searchTerm || estadoFilter ? 
-                "No se encontraron servicios con los filtros aplicados." :
-                "No hay servicios registrados aún. ¡Crea tu primer servicio!"
+              {searchTerm || statusFilter !== "all" 
+                ? "No hay servicios que coincidan con los filtros."
+                : "No hay servicios registrados aún. ¡Crea tu primer servicio!"
               }
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredServicios.map((servicio) => (
+              {serviciosFiltrados.map((servicio) => (
                 <div key={servicio.id} className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
-                  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-medium text-primary">{servicio.folio}</h3>
-                        <Badge className={getEstadoBadgeColor(servicio.estado)}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoBadgeColor(servicio.estado)}`}>
                           {getEstadoLabel(servicio.estado)}
-                        </Badge>
+                        </span>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        <p><strong>Cliente:</strong> {servicio.cliente?.razonSocial || 'N/A'}</p>
-                        <p><strong>Fecha:</strong> {formatSafeDate(servicio.fecha)}</p>
-                        <p><strong>Vehículo:</strong> {servicio.marcaVehiculo} {servicio.modeloVehiculo}</p>
-                        <p><strong>Patente:</strong> {servicio.patente}</p>
-                        <p><strong>Grúa:</strong> {servicio.grua?.patente || 'N/A'}</p>
-                        <p><strong>Operador:</strong> {servicio.operador?.nombreCompleto || 'N/A'}</p>
-                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        <strong>Cliente:</strong> {servicio.cliente?.razonSocial || 'N/A'}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        <strong>Vehículo:</strong> {servicio.marcaVehiculo} {servicio.modeloVehiculo} - {servicio.patente}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Fecha:</strong> {formatSafeDate(servicio.fecha)}
+                      </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
@@ -205,7 +306,11 @@ export default function Servicios() {
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditServicio(servicio)}
+                        >
                           <Edit className="h-3 w-3" />
                         </Button>
                         {servicio.estado === 'en_curso' && (
@@ -235,11 +340,32 @@ export default function Servicios() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-primary">Nuevo Servicio</h2>
-                <Button variant="outline" onClick={() => setShowNewForm(false)}>
+                <Button variant="outline" onClick={handleFormCancel}>
                   Cancelar
                 </Button>
               </div>
               <FormularioServicio onSuccess={handleFormSuccess} onCancel={handleFormCancel} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Editar Servicio */}
+      {showEditForm && selectedServicio && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-background border border-border rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-primary">Editar Servicio</h2>
+                <Button variant="outline" onClick={handleFormCancel}>
+                  Cancelar
+                </Button>
+              </div>
+              <FormularioServicio 
+                servicio={selectedServicio}
+                onSuccess={handleFormSuccess} 
+                onCancel={handleFormCancel} 
+              />
             </div>
           </div>
         </div>
@@ -250,13 +376,6 @@ export default function Servicios() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         servicio={selectedServicio}
-      />
-
-      {/* Modal de Selección para Cierres */}
-      <ServiciosSelectionModal
-        isOpen={showSelectionModal}
-        onClose={() => setShowSelectionModal(false)}
-        servicios={servicios}
       />
     </div>
   );

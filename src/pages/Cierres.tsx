@@ -4,21 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Calendar, FileText, DollarSign, Eye, Download, CheckCircle } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
-import { useCierres, useServiciosElegibles, useCreateCierre } from "@/hooks/useCierres";
+import { useCierres, useServiciosElegibles } from "@/hooks/useCierres";
 import { useCreateFactura } from "@/hooks/useCreateFactura";
 import { useClientes } from "@/hooks/useClientes";
-import { CierrePreviewModal } from "@/components/CierrePreviewModal";
+import { ServiciosSelectionModal } from "@/components/ServiciosSelectionModal";
 
 export default function Cierres() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [clienteId, setClienteId] = useState("");
-  const [showPreview, setShowPreview] = useState(false);
+  const [showServiciosModal, setShowServiciosModal] = useState(false);
 
   const { data: cierres = [], isLoading } = useCierres();
   const { data: clientes = [] } = useClientes();
   const { data: serviciosElegibles = [] } = useServiciosElegibles(fechaInicio, fechaFin, clienteId || undefined);
-  const createCierre = useCreateCierre();
   const createFactura = useCreateFactura();
 
   const formatCurrency = (amount: number) => {
@@ -32,29 +31,7 @@ export default function Cierres() {
     if (!fechaInicio || !fechaFin) {
       return;
     }
-    setShowPreview(true);
-  };
-
-  const handleCreateCierre = () => {
-    if (serviciosElegibles.length === 0) return;
-
-    const total = serviciosElegibles.reduce((sum, servicio) => sum + Number(servicio.valor), 0);
-    const serviciosIds = serviciosElegibles.map(s => s.id);
-
-    createCierre.mutate({
-      fechaInicio,
-      fechaFin,
-      clienteId: clienteId || undefined,
-      serviciosIds,
-      total
-    }, {
-      onSuccess: () => {
-        setShowPreview(false);
-        setFechaInicio("");
-        setFechaFin("");
-        setClienteId("");
-      }
-    });
+    setShowServiciosModal(true);
   };
 
   const handleCreateFactura = (cierreId: string) => {
@@ -138,7 +115,7 @@ export default function Cierres() {
                 onClick={handleGeneratePreview}
                 disabled={!fechaInicio || !fechaFin}
               >
-                Generar Vista Previa
+                Seleccionar Servicios
               </Button>
             </div>
           </div>
@@ -261,16 +238,11 @@ export default function Cierres() {
         </Card>
       </div>
 
-      {/* Modal de Vista Previa */}
-      <CierrePreviewModal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
+      {/* Modal de Selección de Servicios */}
+      <ServiciosSelectionModal
+        isOpen={showServiciosModal}
+        onClose={() => setShowServiciosModal(false)}
         servicios={serviciosElegibles}
-        fechaInicio={fechaInicio}
-        fechaFin={fechaFin}
-        clienteNombre={clienteSeleccionado?.razonSocial}
-        onConfirm={handleCreateCierre}
-        isCreating={createCierre.isPending}
       />
     </div>
   );
