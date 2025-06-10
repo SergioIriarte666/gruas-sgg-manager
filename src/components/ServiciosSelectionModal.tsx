@@ -89,7 +89,7 @@ export const ServiciosSelectionModal = ({
       fechaInicio: minFecha,
       fechaFin: maxFecha,
       clienteId: clienteId || undefined,
-      serviciosIds: selectedServicios,
+      servicioIds: selectedServicios,
       total
     });
 
@@ -97,7 +97,7 @@ export const ServiciosSelectionModal = ({
       fechaInicio: minFecha,
       fechaFin: maxFecha,
       clienteId: clienteId || undefined,
-      serviciosIds: selectedServicios,
+      servicioIds: selectedServicios,
       total
     }, {
       onSuccess: () => {
