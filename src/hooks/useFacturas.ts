@@ -26,7 +26,12 @@ export const useFacturas = () => {
         console.log('Obteniendo facturas...');
         const data = await facturasApi.getAll();
 
-        // Transform data to match expected format with safe date handling
+        if (!data || data.length === 0) {
+          console.log('No hay facturas disponibles');
+          return [];
+        }
+
+        // Transform data to match expected format with safe data handling
         const facturas = data.map((factura: any) => {
           console.log('Procesando factura:', factura);
           
@@ -62,8 +67,8 @@ export const useFacturas = () => {
           try {
             if (factura.cierres?.clientes?.razon_social) {
               clienteNombre = factura.cierres.clientes.razon_social;
-            } else if (Array.isArray(factura.cierres) && factura.cierres.length > 0 && factura.cierres[0]?.clientes?.razon_social) {
-              clienteNombre = factura.cierres[0].clientes.razon_social;
+            } else if (factura.cierres && factura.cierres.clientes && factura.cierres.clientes.razon_social) {
+              clienteNombre = factura.cierres.clientes.razon_social;
             }
           } catch (err) {
             console.warn('Error al obtener nombre del cliente para factura:', factura.id, err);
@@ -91,8 +96,9 @@ export const useFacturas = () => {
         throw new Error(`Error al obtener facturas: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
     },
-    retry: 2,
-    retryDelay: 1000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

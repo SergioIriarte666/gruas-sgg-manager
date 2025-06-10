@@ -11,7 +11,8 @@ export const facturasApi = {
         .from('facturas')
         .select(`
           *,
-          cierres(
+          cierres!inner(
+            id,
             cliente_id,
             clientes(
               razon_social,
@@ -72,7 +73,7 @@ export const facturasApi = {
 
       console.log('Cierre obtenido:', cierre);
 
-      // Generar folio automático para factura con mejor manejo de errores
+      // Generar folio automático para factura
       let folio;
       try {
         const { data: folioData, error: folioError } = await supabase.rpc('generate_folio', {
@@ -81,15 +82,17 @@ export const facturasApi = {
 
         if (folioError) {
           console.error('Error al generar folio de factura:', folioError);
-          throw new Error(`Error al generar folio: ${folioError.message}`);
+          // Usar fallback
+          folio = `F${String(Date.now()).slice(-6)}`;
+        } else {
+          folio = folioData;
         }
-
-        folio = folioData;
+        
         console.log('Folio de factura generado:', folio);
       } catch (folioErr) {
         console.error('Error en generación de folio:', folioErr);
         // Fallback: generar folio manual temporal
-        folio = `F${Date.now().toString().slice(-6)}`;
+        folio = `F${String(Date.now()).slice(-6)}`;
         console.log('Usando folio temporal:', folio);
       }
 
@@ -150,7 +153,7 @@ export const facturasApi = {
     } catch (error) {
       console.error('Error en generateFolio:', error);
       // Fallback: generar folio temporal
-      return `F${Date.now().toString().slice(-6)}`;
+      return `F${String(Date.now()).slice(-6)}`;
     }
   }
 };
