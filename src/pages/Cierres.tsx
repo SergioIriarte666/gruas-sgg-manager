@@ -3,8 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Calendar, FileText, DollarSign, Eye, Download, CheckCircle } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatSafeDate } from "@/lib/utils";
 import { useCierres, useServiciosElegibles, useCreateCierre } from "@/hooks/useCierres";
 import { useCreateFactura } from "@/hooks/useCreateFactura";
 import { useClientes } from "@/hooks/useClientes";
@@ -181,7 +180,7 @@ export default function Cierres() {
                     <div>
                       <h3 className="font-medium text-primary">{cierre.folio}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Del {format(new Date(cierre.fecha_inicio), "dd/MM/yyyy", { locale: es })} al {format(new Date(cierre.fecha_fin), "dd/MM/yyyy", { locale: es })}
+                        Del {formatSafeDate(cierre.fecha_inicio)} al {formatSafeDate(cierre.fecha_fin)}
                         {cierre.clientes && ` • ${cierre.clientes.razon_social}`}
                       </p>
                     </div>

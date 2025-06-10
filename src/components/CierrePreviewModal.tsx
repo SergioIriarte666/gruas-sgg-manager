@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, DollarSign } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatSafeDate } from "@/lib/utils";
 
 interface ServicioElegible {
   id: string;
@@ -81,7 +80,7 @@ export const CierrePreviewModal = ({
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Período</label>
                   <p className="font-medium">
-                    {format(new Date(fechaInicio), "dd/MM/yyyy", { locale: es })} - {format(new Date(fechaFin), "dd/MM/yyyy", { locale: es })}
+                    {formatSafeDate(fechaInicio)} - {formatSafeDate(fechaFin)}
                   </p>
                 </div>
                 <div>
@@ -114,7 +113,7 @@ export const CierrePreviewModal = ({
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-primary">{servicio.folio}</span>
                           <span className="text-sm text-muted-foreground">
-                            {format(new Date(servicio.fecha), "dd/MM/yyyy", { locale: es })}
+                            {formatSafeDate(servicio.fecha)}
                           </span>
                         </div>
                         <p className="text-sm">

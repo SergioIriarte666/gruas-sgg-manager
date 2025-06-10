@@ -5,8 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EstadoBadge } from "@/components/EstadoBadge";
 import { FacturaDetailsModal } from "@/components/FacturaDetailsModal";
 import { Plus, FileText, DollarSign, AlertTriangle, CheckCircle, Eye, Download } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatSafeDate } from "@/lib/utils";
 import { useFacturas, useUpdateFacturaEstado } from "@/hooks/useFacturas";
 import { useCierres } from "@/hooks/useCierres";
 import { useCreateFactura } from "@/hooks/useCreateFactura";
@@ -39,7 +38,7 @@ export default function Facturas() {
   };
 
   const handleMarkAsPaid = (facturaId: string) => {
-    const fechaPago = paymentDates[facturaId] || format(new Date(), "yyyy-MM-dd");
+    const fechaPago = paymentDates[facturaId] || new Date().toISOString().split('T')[0];
     updateFacturaEstado.mutate({ facturaId, fechaPago });
   };
 
@@ -101,7 +100,7 @@ export default function Facturas() {
                   <div>
                     <span className="font-medium text-blue-400">{cierre.folio}</span>
                     <span className="text-sm text-muted-foreground ml-2">
-                      Del {format(new Date(cierre.fecha_inicio), "dd/MM/yyyy", { locale: es })} al {format(new Date(cierre.fecha_fin), "dd/MM/yyyy", { locale: es })}
+                      Del {formatSafeDate(cierre.fecha_inicio)} al {formatSafeDate(cierre.fecha_fin)}
                     </span>
                     {cierre.clientes && (
                       <span className="text-sm text-muted-foreground block">
@@ -196,7 +195,7 @@ export default function Facturas() {
                     <tr key={factura.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-medium text-primary">{factura.folio}</td>
                       <td className="p-3">
-                        {format(factura.fecha, "dd/MM/yyyy", { locale: es })}
+                        {formatSafeDate(factura.fecha)}
                       </td>
                       <td className="p-3">{factura.cliente}</td>
                       <td className="p-3">{formatCurrency(factura.subtotal)}</td>
@@ -204,7 +203,7 @@ export default function Facturas() {
                       <td className="p-3 font-medium">{formatCurrency(factura.total)}</td>
                       <td className="p-3">
                         <div>
-                          {format(factura.fechaVencimiento, "dd/MM/yyyy", { locale: es })}
+                          {formatSafeDate(factura.fechaVencimiento)}
                           {factura.estado === 'pendiente' && (
                             <div className="text-xs text-muted-foreground">
                               {factura.diasVencimiento > 0 ? `${factura.diasVencimiento} días` : 'Vence hoy'}
@@ -279,7 +278,7 @@ export default function Facturas() {
                         <input
                           type="date"
                           className="px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                          value={paymentDates[factura.id] || format(new Date(), "yyyy-MM-dd")}
+                          value={paymentDates[factura.id] || new Date().toISOString().split('T')[0]}
                           onChange={(e) => handlePaymentDateChange(factura.id, e.target.value)}
                         />
                       </div>
