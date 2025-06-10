@@ -60,20 +60,19 @@ export const useUpdateCliente = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: { id: string } & Partial<{ razonSocial: string; rut: string; telefono: string; email: string; direccion: string; activo: boolean }>) => {
+    mutationFn: async (params: { id: string; razonSocial: string; rut: string; telefono: string; email: string; direccion: string; activo: boolean }) => {
       const { id, ...cliente } = params;
-      const updateData: any = {};
-      
-      if (cliente.razonSocial !== undefined) updateData.razon_social = cliente.razonSocial;
-      if (cliente.rut !== undefined) updateData.rut = cliente.rut;
-      if (cliente.telefono !== undefined) updateData.telefono = cliente.telefono;
-      if (cliente.email !== undefined) updateData.email = cliente.email;
-      if (cliente.direccion !== undefined) updateData.direccion = cliente.direccion;
-      if (cliente.activo !== undefined) updateData.activo = cliente.activo;
       
       const { data, error } = await supabase
         .from('clientes')
-        .update(updateData)
+        .update({
+          razon_social: cliente.razonSocial,
+          rut: cliente.rut,
+          telefono: cliente.telefono,
+          email: cliente.email,
+          direccion: cliente.direccion,
+          activo: cliente.activo
+        })
         .eq('id', id)
         .select()
         .single();

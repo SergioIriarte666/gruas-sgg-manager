@@ -58,19 +58,18 @@ export const useUpdateGrua = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: { id: string } & Partial<{ patente: string; marca: string; modelo: string; tipo: 'Liviana' | 'Mediana' | 'Pesada'; activo: boolean }>) => {
+    mutationFn: async (params: { id: string; patente: string; marca: string; modelo: string; tipo: 'Liviana' | 'Mediana' | 'Pesada'; activo: boolean }) => {
       const { id, ...grua } = params;
-      const updateData: any = {};
-      
-      if (grua.patente !== undefined) updateData.patente = grua.patente;
-      if (grua.marca !== undefined) updateData.marca = grua.marca;
-      if (grua.modelo !== undefined) updateData.modelo = grua.modelo;
-      if (grua.tipo !== undefined) updateData.tipo = grua.tipo;
-      if (grua.activo !== undefined) updateData.activo = grua.activo;
       
       const { data, error } = await supabase
         .from('gruas')
-        .update(updateData)
+        .update({
+          patente: grua.patente,
+          marca: grua.marca,
+          modelo: grua.modelo,
+          tipo: grua.tipo,
+          activo: grua.activo
+        })
         .eq('id', id)
         .select()
         .single();
