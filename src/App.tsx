@@ -1,9 +1,21 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+
+// Pages
 import Index from "./pages/Index";
+import Clientes from "./pages/Clientes";
+import Gruas from "./pages/Gruas";
+import Operadores from "./pages/Operadores";
+import TiposServicio from "./pages/TiposServicio";
+import Cierres from "./pages/Cierres";
+import Facturas from "./pages/Facturas";
+import Reportes from "./pages/Reportes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -14,11 +26,27 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full">
+            <AppSidebar />
+            <main className="flex-1">
+              <div className="p-4">
+                <SidebarTrigger className="mb-4" />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/clientes" element={<Clientes />} />
+                  <Route path="/gruas" element={<Gruas />} />
+                  <Route path="/operadores" element={<Operadores />} />
+                  <Route path="/tipos-servicio" element={<TiposServicio />} />
+                  <Route path="/cierres" element={<Cierres />} />
+                  <Route path="/facturas" element={<Facturas />} />
+                  <Route path="/reportes" element={<Reportes />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </main>
+          </div>
+        </SidebarProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
