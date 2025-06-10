@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { servicioFormSchema, type ServicioFormData } from "@/components/forms/schemas/servicioSchema";
 import { DatePickerField } from "@/components/forms/fields/DatePickerField";
 import { VehicleInfoFields } from "@/components/forms/fields/VehicleInfoFields";
@@ -14,7 +16,7 @@ import { useUpdateServicio } from "@/hooks/useServicios";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useTiposServicio } from "@/hooks/useTiposServicio";
-import { Form } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 
 interface FormularioServicioProps {
@@ -82,8 +84,8 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   }, [servicio, form]);
 
   const onSubmit = async (data: ServicioFormData) => {
-    console.log('Iniciando envío del formulario de servicio...');
-    console.log('Datos del formulario:', data);
+    console.log('FormularioServicio.onSubmit: Iniciando envío del formulario...');
+    console.log('FormularioServicio.onSubmit: Datos del formulario:', data);
     
     try {
       setIsSubmitting(true);
@@ -109,10 +111,10 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
         valor: Number(data.valor),
       };
       
-      console.log('Datos validados:', validatedData);
+      console.log('FormularioServicio.onSubmit: Datos validados:', validatedData);
       
       if (isEditing) {
-        console.log('Actualizando servicio:', servicio.id);
+        console.log('FormularioServicio.onSubmit: Actualizando servicio:', servicio.id);
         await updateServicio.mutateAsync({
           id: servicio.id,
           ...validatedData,
@@ -122,9 +124,9 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
           description: "El servicio ha sido actualizado exitosamente.",
         });
       } else {
-        console.log('Creando nuevo servicio...');
+        console.log('FormularioServicio.onSubmit: Creando nuevo servicio...');
         const result = await createServicio.mutateAsync(validatedData);
-        console.log('Servicio creado exitosamente:', result);
+        console.log('FormularioServicio.onSubmit: Servicio creado exitosamente:', result);
         toast({
           title: "Servicio creado",
           description: "El servicio ha sido creado exitosamente.",
@@ -133,7 +135,7 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
       
       onSuccess();
     } catch (error: any) {
-      console.error('Error al guardar servicio:', error);
+      console.error('FormularioServicio.onSubmit: Error al guardar servicio:', error);
       
       const errorMessage = error?.message || `Error al ${isEditing ? 'actualizar' : 'crear'} el servicio. Intenta nuevamente.`;
       
@@ -162,18 +164,86 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
                 label="Fecha del Servicio"
               />
               
-              <div className="space-y-4">
-                <VehicleInfoFields control={form.control} />
-              </div>
+              <FormField
+                control={form.control}
+                name="folio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Folio (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Folio manual (opcional)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <VehicleInfoFields control={form.control} />
             </div>
 
             <LocationFields control={form.control} />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="ordenCompra"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Orden de Compra (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Número de orden de compra" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="valor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor del Servicio</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="0"
+                        placeholder="Valor en pesos" 
+                        {...field} 
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <ServiceAssignmentFields 
               control={form.control}
               gruas={gruas}
               operadores={operadores}
               tiposServicio={tiposServicio}
+            />
+
+            <FormField
+              control={form.control}
+              name="observaciones"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observaciones (Opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Observaciones adicionales sobre el servicio"
+                      className="min-h-[100px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <div className="flex justify-end gap-4 pt-6">
