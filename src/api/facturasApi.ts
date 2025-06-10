@@ -29,7 +29,7 @@ export const facturasApi = {
         throw new Error(`Error al obtener facturas: ${error.message}`);
       }
 
-      console.log('Facturas obtenidas:', data);
+      console.log('Facturas obtenidas exitosamente:', data);
       return data || [];
     } catch (error) {
       console.error('Error en getAll facturas:', error);

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { facturasApi } from "@/api/facturasApi";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,17 +22,17 @@ export const useFacturas = () => {
     queryKey: ["facturas"],
     queryFn: async () => {
       try {
-        console.log('Obteniendo facturas...');
+        console.log('useFacturas: Obteniendo facturas...');
         const data = await facturasApi.getAll();
 
         if (!data || data.length === 0) {
-          console.log('No hay facturas disponibles');
+          console.log('useFacturas: No hay facturas disponibles');
           return [];
         }
 
         // Transform data to match expected format
         const facturas = data.map((factura: any) => {
-          console.log('Procesando factura:', factura);
+          console.log('useFacturas: Procesando factura:', factura);
           
           // Safe date parsing
           const fechaFactura = factura.fecha ? new Date(factura.fecha) : new Date();
@@ -49,17 +48,22 @@ export const useFacturas = () => {
             estado = 'vencida';
           }
 
-          // Get client name safely
+          // Get client name safely - handle both direct client data and through cierres
           let clienteNombre = 'Cliente no encontrado';
           try {
+            // Try to get client from cierres relationship first
             if (factura.cierres?.clientes?.razon_social) {
               clienteNombre = factura.cierres.clientes.razon_social;
             }
+            // If no cierres, this might be a direct invoice, need to implement client lookup
+            else {
+              console.warn('useFacturas: No se encontró información del cliente en cierres para factura:', factura.id);
+            }
           } catch (err) {
-            console.warn('Error al obtener nombre del cliente:', err);
+            console.warn('useFacturas: Error al obtener nombre del cliente:', err);
           }
 
-          return {
+          const transformedFactura = {
             id: factura.id,
             folio: factura.folio || 'Sin folio',
             fecha: fechaFactura.toISOString().split('T')[0],
@@ -72,18 +76,21 @@ export const useFacturas = () => {
             fechaPago: fechaPago ? fechaPago.toISOString().split('T')[0] : undefined,
             diasVencimiento
           };
+
+          console.log('useFacturas: Factura transformada:', transformedFactura);
+          return transformedFactura;
         });
 
-        console.log('Facturas procesadas:', facturas);
+        console.log('useFacturas: Facturas procesadas exitosamente:', facturas);
         return facturas;
       } catch (error) {
-        console.error("Error fetching facturas:", error);
+        console.error("useFacturas: Error fetching facturas:", error);
         throw new Error(`Error al obtener facturas: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
     },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 30 * 1000, // 30 seconds
   });
 };
 
