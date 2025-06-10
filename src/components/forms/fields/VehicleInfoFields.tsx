@@ -18,11 +18,11 @@ export function VehicleInfoFields<TFieldValues extends FieldValues>({
   control,
 }: VehicleInfoFieldsProps<TFieldValues>) {
   return (
-    <>
+    <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-4">
         <FormField
           control={control}
-          name="marcaVehiculo" as any
+          name={"marcaVehiculo" as any}
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel>Marca del Vehículo</FormLabel>
@@ -30,7 +30,7 @@ export function VehicleInfoFields<TFieldValues extends FieldValues>({
                 <Input placeholder="Marca" {...field} />
               </FormControl>
               <FormDescription>
-                Marca del vehículo a remolcar.
+                Marca del vehículo a transportar.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -38,7 +38,7 @@ export function VehicleInfoFields<TFieldValues extends FieldValues>({
         />
         <FormField
           control={control}
-          name="modeloVehiculo" as any
+          name={"modeloVehiculo" as any}
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel>Modelo del Vehículo</FormLabel>
@@ -46,7 +46,7 @@ export function VehicleInfoFields<TFieldValues extends FieldValues>({
                 <Input placeholder="Modelo" {...field} />
               </FormControl>
               <FormDescription>
-                Modelo del vehículo a remolcar.
+                Modelo del vehículo a transportar.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -55,20 +55,20 @@ export function VehicleInfoFields<TFieldValues extends FieldValues>({
       </div>
       <FormField
         control={control}
-        name="patente" as any
+        name={"patente" as any}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Patente del Vehículo</FormLabel>
+            <FormLabel>Patente</FormLabel>
             <FormControl>
-              <Input placeholder="Patente" {...field} />
+              <Input placeholder="Patente del vehículo" {...field} />
             </FormControl>
             <FormDescription>
-              Patente del vehículo a remolcar.
+              Patente del vehículo a transportar.
             </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
-    </>
+    </div>
   );
 }

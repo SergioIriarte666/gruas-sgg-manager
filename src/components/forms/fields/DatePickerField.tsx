@@ -1,6 +1,5 @@
 
-import { useState, useEffect } from "react";
-import { Controller, Control, FieldPath, FieldValues } from "react-hook-form";
+import { Control, FieldPath, FieldValues } from "react-hook-form";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   FormField,
@@ -18,7 +17,6 @@ interface DatePickerFieldProps<
   name: TName;
   label: string;
   description?: string;
-  onDateChange?: (date: Date | undefined) => void;
 }
 
 export function DatePickerField<TFieldValues extends FieldValues>({
@@ -26,16 +24,7 @@ export function DatePickerField<TFieldValues extends FieldValues>({
   name,
   label,
   description,
-  onDateChange,
 }: DatePickerFieldProps<TFieldValues>) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-
-  useEffect(() => {
-    if (onDateChange) {
-      onDateChange(selectedDate);
-    }
-  }, [selectedDate, onDateChange]);
-
   return (
     <FormField
       control={control}
@@ -43,16 +32,10 @@ export function DatePickerField<TFieldValues extends FieldValues>({
       render={({ field }) => (
         <FormItem className="flex flex-col">
           <FormLabel>{label}</FormLabel>
-          <Controller
-            name={name}
-            control={control}
-            render={({ field }) => (
-              <DatePicker
-                selected={field.value}
-                onSelect={setSelectedDate}
-                dateFormat="dd/MM/yyyy"
-              />
-            )}
+          <DatePicker
+            selected={field.value}
+            onSelect={field.onChange}
+            placeholder="Seleccionar fecha"
           />
           {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />

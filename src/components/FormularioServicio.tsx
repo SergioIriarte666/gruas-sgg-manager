@@ -35,7 +35,7 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
   const { data: gruas = [] } = useGruas();
   const { data: operadores = [] } = useOperadores();
   const { data: tiposServicio = [] } = useTiposServicio();
-  const { mutate: crearServicio, isLoading, error } = useCreateServicio();
+  const { mutate: crearServicio, isPending, error } = useCreateServicio();
 
   const form = useForm<ServicioFormData>({
     resolver: zodResolver(servicioFormSchema),
@@ -58,7 +58,7 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
   });
 
   function onSubmit(values: ServicioFormData) {
-    console.log(values);
+    console.log('Form values:', values);
     crearServicio(values, {
       onSuccess: () => {
         form.reset();
@@ -75,11 +75,6 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
           name="fecha"
           label="Fecha"
           description="Fecha en la que se realizó el servicio."
-          onDateChange={(date) => {
-            if (date) {
-              form.setValue("fecha", date);
-            }
-          }}
         />
 
         <FormField
@@ -214,8 +209,8 @@ export const FormularioServicio: React.FC<FormularioServicioProps> = ({ onSucces
 
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Creando...' : 'Crear Servicio'}
+          <Button type="submit" disabled={isPending}>
+            {isPending ? 'Creando...' : 'Crear Servicio'}
           </Button>
         </div>
       </form>

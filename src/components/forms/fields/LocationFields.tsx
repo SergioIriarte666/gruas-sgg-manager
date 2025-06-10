@@ -21,7 +21,7 @@ export function LocationFields<TFieldValues extends FieldValues>({
     <div className="flex flex-col md:flex-row gap-4">
       <FormField
         control={control}
-        name="ubicacionOrigen" as any
+        name={"ubicacionOrigen" as any}
         render={({ field }) => (
           <FormItem className="w-full">
             <FormLabel>Ubicación de Origen</FormLabel>
@@ -37,7 +37,7 @@ export function LocationFields<TFieldValues extends FieldValues>({
       />
       <FormField
         control={control}
-        name="ubicacionDestino" as any
+        name={"ubicacionDestino" as any}
         render={({ field }) => (
           <FormItem className="w-full">
             <FormLabel>Ubicación de Destino</FormLabel>

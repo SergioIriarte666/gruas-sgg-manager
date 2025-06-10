@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface ServiceAssignmentFieldsProps<TFieldValues extends FieldValues> {
   control: Control<TFieldValues>;
   gruas: Array<{ id: string; patente: string; marca: string; modelo: string }>;
-  operadores: Array<{ id: string; nombreCompleto: string }>;
+  operadores: Array<{ id: string; nombre: string; apellido: string }>;
   tiposServicio: Array<{ id: string; nombre: string }>;
 }
 
@@ -24,13 +24,13 @@ export function ServiceAssignmentFields<TFieldValues extends FieldValues>({
   tiposServicio,
 }: ServiceAssignmentFieldsProps<TFieldValues>) {
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={control}
-        name="gruaId" as any
+        name={"gruaId" as any}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Grúa Asignada</FormLabel>
+            <FormLabel>Grúa</FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
                 <SelectTrigger>
@@ -46,18 +46,19 @@ export function ServiceAssignmentFields<TFieldValues extends FieldValues>({
               </SelectContent>
             </Select>
             <FormDescription>
-              Grúa asignada para realizar el servicio.
+              Grúa asignada al servicio.
             </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
+
       <FormField
         control={control}
-        name="operadorId" as any
+        name={"operadorId" as any}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Operador Asignado</FormLabel>
+            <FormLabel>Operador</FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
                 <SelectTrigger>
@@ -67,21 +68,22 @@ export function ServiceAssignmentFields<TFieldValues extends FieldValues>({
               <SelectContent>
                 {operadores.map((operador) => (
                   <SelectItem key={operador.id} value={operador.id}>
-                    {operador.nombreCompleto}
+                    {operador.nombre} {operador.apellido}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <FormDescription>
-              Operador asignado para realizar el servicio.
+              Operador asignado al servicio.
             </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
+
       <FormField
         control={control}
-        name="tipoServicioId" as any
+        name={"tipoServicioId" as any}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Tipo de Servicio</FormLabel>
@@ -92,20 +94,20 @@ export function ServiceAssignmentFields<TFieldValues extends FieldValues>({
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {tiposServicio.map((tipoServicio) => (
-                  <SelectItem key={tipoServicio.id} value={tipoServicio.id}>
-                    {tipoServicio.nombre}
+                {tiposServicio.map((tipo) => (
+                  <SelectItem key={tipo.id} value={tipo.id}>
+                    {tipo.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <FormDescription>
-              Tipo de servicio realizado.
+              Tipo de servicio a realizar.
             </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
-    </>
+    </div>
   );
 }
