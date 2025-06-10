@@ -44,3 +44,6 @@ export const servicioFormSchema = z.object({
 });
 
 export type ServicioFormData = z.infer<typeof servicioFormSchema>;
+
+// Alias para compatibilidad
+export const servicioSchema = servicioFormSchema;

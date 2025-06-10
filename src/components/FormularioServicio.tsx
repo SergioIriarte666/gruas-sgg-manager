@@ -4,13 +4,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { servicioSchema, type ServicioFormData } from "@/components/forms/schemas/servicioSchema";
+import { servicioFormSchema, type ServicioFormData } from "@/components/forms/schemas/servicioSchema";
 import { DatePickerField } from "@/components/forms/fields/DatePickerField";
 import { VehicleInfoFields } from "@/components/forms/fields/VehicleInfoFields";
 import { LocationFields } from "@/components/forms/fields/LocationFields";
 import { ServiceAssignmentFields } from "@/components/forms/fields/ServiceAssignmentFields";
 import { useCreateServicio } from "@/hooks/useCreateServicio";
 import { useUpdateServicio } from "@/hooks/useServicios";
+import { useGruas } from "@/hooks/useGruas";
+import { useOperadores } from "@/hooks/useOperadores";
+import { useTiposServicio } from "@/hooks/useTiposServicio";
 import { Form } from "@/components/ui/form";
 
 interface FormularioServicioProps {
@@ -23,10 +26,13 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createServicio = useCreateServicio();
   const updateServicio = useUpdateServicio();
+  const { data: gruas = [] } = useGruas();
+  const { data: operadores = [] } = useOperadores();
+  const { data: tiposServicio = [] } = useTiposServicio();
   const isEditing = !!servicio;
 
   const form = useForm<ServicioFormData>({
-    resolver: zodResolver(servicioSchema),
+    resolver: zodResolver(servicioFormSchema),
     defaultValues: {
       fecha: new Date(),
       clienteId: "",
@@ -71,13 +77,30 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
     try {
       setIsSubmitting(true);
       
+      // Validar datos con Zod antes de enviar
+      const validatedData = servicioFormSchema.parse(data);
+      
       if (isEditing) {
+        // Asegurar que todos los campos requeridos estén presentes para la actualización
         await updateServicio.mutateAsync({
           id: servicio.id,
-          ...data
+          fecha: validatedData.fecha,
+          clienteId: validatedData.clienteId,
+          ordenCompra: validatedData.ordenCompra,
+          marcaVehiculo: validatedData.marcaVehiculo,
+          modeloVehiculo: validatedData.modeloVehiculo,
+          patente: validatedData.patente,
+          ubicacionOrigen: validatedData.ubicacionOrigen,
+          ubicacionDestino: validatedData.ubicacionDestino,
+          valor: validatedData.valor,
+          gruaId: validatedData.gruaId,
+          operadorId: validatedData.operadorId,
+          tipoServicioId: validatedData.tipoServicioId,
+          estado: validatedData.estado,
+          observaciones: validatedData.observaciones,
         });
       } else {
-        await createServicio.mutateAsync(data);
+        await createServicio.mutateAsync(validatedData);
       }
       
       onSuccess();
@@ -97,16 +120,25 @@ export const FormularioServicio = ({ servicio, onSuccess, onCancel }: Formulario
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <DatePickerField form={form} />
+              <DatePickerField 
+                control={form.control}
+                name="fecha"
+                label="Fecha del Servicio"
+              />
               
               <div className="space-y-4">
-                <VehicleInfoFields form={form} />
+                <VehicleInfoFields control={form.control} />
               </div>
             </div>
 
-            <LocationFields form={form} />
+            <LocationFields control={form.control} />
             
-            <ServiceAssignmentFields form={form} />
+            <ServiceAssignmentFields 
+              control={form.control}
+              gruas={gruas}
+              operadores={operadores}
+              tiposServicio={tiposServicio}
+            />
 
             <div className="flex justify-end gap-4 pt-6">
               <Button 
