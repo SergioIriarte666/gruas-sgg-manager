@@ -1,4 +1,5 @@
 
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Clock } from "lucide-react";
@@ -6,11 +7,17 @@ import { mockServicios } from "@/lib/mockData";
 
 export function AlertasPendientes() {
   // Simular servicios pendientes de facturación (más de 30 días)
-  const serviciosPendientes = mockServicios.filter(s => 
-    s.estado === 'en_curso' && 
-    (new Date().getTime() - s.createdAt.getTime()) > (30 * 24 * 60 * 60 * 1000)
-  );
+  const serviciosPendientes = mockServicios.filter(s => {
+    const diasTranscurridos = (new Date().getTime() - s.createdAt.getTime()) / (24 * 60 * 60 * 1000);
+    
+    return (
+      s.estado === 'en_curso' && 
+      diasTranscurridos > 30 &&
+      diasTranscurridos < 365 // Filtrar servicios muy antiguos (probablemente datos de prueba)
+    );
+  });
 
+  // No mostrar el componente si no hay servicios pendientes válidos
   if (serviciosPendientes.length === 0) {
     return null;
   }
@@ -52,3 +59,4 @@ export function AlertasPendientes() {
     </Card>
   );
 }
+
