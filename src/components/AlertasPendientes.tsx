@@ -1,19 +1,24 @@
 
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Clock } from "lucide-react";
-import { mockServicios } from "@/lib/mockData";
+import { useServicios } from "@/hooks/useServicios";
 
 export function AlertasPendientes() {
-  // Simular servicios pendientes de facturación (más de 30 días)
-  const serviciosPendientes = mockServicios.filter(s => {
+  const { data: servicios = [], isLoading } = useServicios();
+
+  if (isLoading) {
+    return null;
+  }
+
+  // Filtrar servicios pendientes de facturación (más de 30 días y en curso)
+  const serviciosPendientes = servicios.filter(s => {
     const diasTranscurridos = (new Date().getTime() - s.createdAt.getTime()) / (24 * 60 * 60 * 1000);
     
     return (
       s.estado === 'en_curso' && 
       diasTranscurridos > 30 &&
-      diasTranscurridos < 365 // Filtrar servicios muy antiguos (probablemente datos de prueba)
+      diasTranscurridos < 365 // Filtrar servicios muy antiguos
     );
   });
 
@@ -59,4 +64,3 @@ export function AlertasPendientes() {
     </Card>
   );
 }
-
