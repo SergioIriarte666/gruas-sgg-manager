@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EstadisticasCard } from "@/components/EstadisticasCard";
@@ -17,18 +16,68 @@ import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  generateServiciosReport, 
+  generateFinancialReport, 
+  generateClientesReport, 
+  generateDashboardReport 
+} from "@/utils/reportGenerator";
 
 export default function Reportes() {
   const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
   const { data: gruas = [], isLoading: gruasLoading } = useGruas();
   const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
+  const { toast } = useToast();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
       style: 'currency',
       currency: 'CLP'
     }).format(amount);
+  };
+
+  const handleExportReport = (type: 'servicios' | 'financiero' | 'clientes' | 'dashboard') => {
+    try {
+      let doc;
+      let filename;
+      
+      switch (type) {
+        case 'servicios':
+          doc = generateServiciosReport(servicios);
+          filename = `reporte-servicios-${new Date().toISOString().split('T')[0]}.pdf`;
+          break;
+        case 'financiero':
+          doc = generateFinancialReport(servicios);
+          filename = `reporte-financiero-${new Date().toISOString().split('T')[0]}.pdf`;
+          break;
+        case 'clientes':
+          doc = generateClientesReport(clientes, servicios);
+          filename = `reporte-clientes-${new Date().toISOString().split('T')[0]}.pdf`;
+          break;
+        case 'dashboard':
+          doc = generateDashboardReport(servicios, clientes, gruas, operadores);
+          filename = `dashboard-ejecutivo-${new Date().toISOString().split('T')[0]}.pdf`;
+          break;
+        default:
+          throw new Error('Tipo de reporte no válido');
+      }
+      
+      doc.save(filename);
+      
+      toast({
+        title: "Reporte generado",
+        description: `El reporte se ha descargado exitosamente como ${filename}`,
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo generar el reporte. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Mostrar skeletons mientras cargan los datos
@@ -76,11 +125,11 @@ export default function Reportes() {
           <p className="text-muted-foreground">Dashboard ejecutivo y reportes del sistema</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => handleExportReport('dashboard')}>
             <Download className="h-4 w-4 mr-2" />
             Exportar Datos
           </Button>
-          <Button className="bg-primary hover:bg-primary-dark text-white">
+          <Button className="bg-primary hover:bg-primary-dark text-white" onClick={() => handleExportReport('dashboard')}>
             <Eye className="h-4 w-4 mr-2" />
             Generar Reporte
           </Button>
@@ -316,19 +365,35 @@ export default function Reportes() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-16 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-16 flex-col"
+              onClick={() => handleExportReport('servicios')}
+            >
               <FileText className="h-6 w-6 mb-2" />
               Reporte de Servicios
             </Button>
-            <Button variant="outline" className="h-16 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-16 flex-col"
+              onClick={() => handleExportReport('financiero')}
+            >
               <DollarSign className="h-6 w-6 mb-2" />
               Reporte Financiero
             </Button>
-            <Button variant="outline" className="h-16 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-16 flex-col"
+              onClick={() => handleExportReport('clientes')}
+            >
               <Users className="h-6 w-6 mb-2" />
               Reporte de Clientes
             </Button>
-            <Button variant="outline" className="h-16 flex-col">
+            <Button 
+              variant="outline" 
+              className="h-16 flex-col"
+              onClick={() => handleExportReport('dashboard')}
+            >
               <BarChart3 className="h-6 w-6 mb-2" />
               Dashboard Ejecutivo
             </Button>
