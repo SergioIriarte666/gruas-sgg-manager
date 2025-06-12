@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Operador } from "@/types";
@@ -21,8 +20,8 @@ export const useOperadores = () => {
         telefono: operador.telefono,
         numeroLicencia: operador.numero_licencia,
         activo: operador.activo,
-        vencimientoLicencia: operador.vencimiento_licencia ? new Date(operador.vencimiento_licencia) : undefined,
-        vencimientoExamenes: operador.vencimiento_examenes ? new Date(operador.vencimiento_examenes) : undefined,
+        vencimientoLicencia: operador.vencimiento_licencia ? new Date(operador.vencimiento_licencia + 'T00:00:00') : undefined,
+        vencimientoExamenes: operador.vencimiento_examenes ? new Date(operador.vencimiento_examenes + 'T00:00:00') : undefined,
         createdAt: new Date(operador.created_at),
         updatedAt: new Date(operador.updated_at)
       })) as Operador[];
@@ -43,6 +42,14 @@ export const useCreateOperador = () => {
       vencimientoLicencia?: Date;
       vencimientoExamenes?: Date;
     }) => {
+      const formatDateForDB = (date: Date | undefined) => {
+        if (!date) return null;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const { data, error } = await supabase
         .from('operadores')
         .insert({
@@ -51,8 +58,8 @@ export const useCreateOperador = () => {
           telefono: operador.telefono,
           numero_licencia: operador.numeroLicencia,
           activo: operador.activo,
-          vencimiento_licencia: operador.vencimientoLicencia?.toISOString().split('T')[0],
-          vencimiento_examenes: operador.vencimientoExamenes?.toISOString().split('T')[0]
+          vencimiento_licencia: formatDateForDB(operador.vencimientoLicencia),
+          vencimiento_examenes: formatDateForDB(operador.vencimientoExamenes)
         })
         .select()
         .single();
@@ -82,6 +89,14 @@ export const useUpdateOperador = () => {
     }) => {
       const { id, ...operador } = params;
       
+      const formatDateForDB = (date: Date | undefined) => {
+        if (!date) return null;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
       const { data, error } = await supabase
         .from('operadores')
         .update({
@@ -90,8 +105,8 @@ export const useUpdateOperador = () => {
           telefono: operador.telefono,
           numero_licencia: operador.numeroLicencia,
           activo: operador.activo,
-          vencimiento_licencia: operador.vencimientoLicencia?.toISOString().split('T')[0],
-          vencimiento_examenes: operador.vencimientoExamenes?.toISOString().split('T')[0]
+          vencimiento_licencia: formatDateForDB(operador.vencimientoLicencia),
+          vencimiento_examenes: formatDateForDB(operador.vencimientoExamenes)
         })
         .eq('id', id)
         .select()
