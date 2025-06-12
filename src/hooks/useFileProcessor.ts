@@ -54,12 +54,12 @@ export const useFileProcessor = () => {
           }
 
           const headers = results.meta.fields || [];
-          const data = results.data;
+          const csvData = results.data;
 
           resolve({
-            data,
+            data: csvData,
             headers,
-            totalRows: data.length,
+            totalRows: csvData.length,
             errors: []
           });
         },
@@ -76,8 +76,8 @@ export const useFileProcessor = () => {
       
       reader.onload = (e) => {
         try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' });
           
           // Usar la primera hoja
           const sheetName = workbook.SheetNames[0];
@@ -98,7 +98,7 @@ export const useFileProcessor = () => {
           );
 
           // Convertir filas a objetos
-          const data = rows.map(row => {
+          const processedData = rows.map(row => {
             const obj: any = {};
             headers.forEach((header, index) => {
               obj[header] = row[index] || '';
@@ -107,9 +107,9 @@ export const useFileProcessor = () => {
           });
 
           resolve({
-            data,
+            data: processedData,
             headers,
-            totalRows: data.length,
+            totalRows: processedData.length,
             errors: []
           });
         } catch (error) {
