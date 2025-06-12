@@ -115,6 +115,7 @@ const MigracionNueva = () => {
         return estado.datos ? (
           <ProcesarMigracion
             datos={estado.datos}
+            headers={result?.headers}
             onVolver={() => retrocederPaso()}
             onFinalizar={handleFinalizarMigracion}
           />

@@ -12,6 +12,7 @@ interface ProcesamientoEstado {
   exitos: number;
   errores: number;
   registroActual?: string;
+  resultados?: Array<{ exito: boolean; error?: string; folio?: string }>;
 }
 
 interface ProcesamientoEstadoProps {
@@ -54,7 +55,7 @@ export const ProcesamientoEstadoCard: React.FC<ProcesamientoEstadoProps> = ({
                   <ul className="space-y-1 text-muted-foreground">
                     <li>• {totalRegistros} registros de servicios</li>
                     <li>• Validación de datos completa</li>
-                    <li>• Respaldo automático antes de insertar</li>
+                    <li>• Creación real en base de datos</li>
                     <li>• Verificación de integridad</li>
                   </ul>
                 </div>
@@ -75,7 +76,7 @@ export const ProcesamientoEstadoCard: React.FC<ProcesamientoEstadoProps> = ({
                   <div>
                     <div className="font-medium text-yellow-400">Importante</div>
                     <div className="text-sm text-muted-foreground">
-                      Este proceso no se puede deshacer. Asegúrate de que los datos son correctos antes de continuar.
+                      Este proceso creará servicios reales en la base de datos. Asegúrate de que los datos son correctos.
                     </div>
                   </div>
                 </div>
@@ -121,20 +122,32 @@ export const ProcesamientoEstadoCard: React.FC<ProcesamientoEstadoProps> = ({
           {/* Resultados finales */}
           {estado.completado && (
             <div className="space-y-4">
-              <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/30">
-                <div className="flex items-center gap-2 text-green-400">
+              <div className={`p-4 rounded-lg border ${
+                estado.errores === 0 
+                  ? 'bg-green-500/10 border-green-500/30' 
+                  : 'bg-yellow-500/10 border-yellow-500/30'
+              }`}>
+                <div className={`flex items-center gap-2 ${
+                  estado.errores === 0 ? 'text-green-400' : 'text-yellow-400'
+                }`}>
                   <CheckCircle className="h-4 w-4" />
-                  <span className="font-medium">Migración completada exitosamente</span>
+                  <span className="font-medium">
+                    {estado.errores === 0 
+                      ? 'Migración completada exitosamente' 
+                      : 'Migración completada con errores'
+                    }
+                  </span>
                 </div>
                 <div className="text-sm text-muted-foreground mt-1">
-                  Se han migrado {estado.exitos} servicios de {totalRegistros} registros procesados.
+                  Se crearon {estado.exitos} servicios de {totalRegistros} registros procesados.
+                  {estado.errores > 0 && ` ${estado.errores} registros fallaron.`}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/30">
                   <div className="text-xl font-bold text-green-400">{estado.exitos}</div>
-                  <div className="text-sm text-muted-foreground">Servicios Migrados</div>
+                  <div className="text-sm text-muted-foreground">Servicios Creados</div>
                 </div>
                 <div className="text-center p-4 bg-red-500/10 rounded-lg border border-red-500/30">
                   <div className="text-xl font-bold text-red-400">{estado.errores}</div>
