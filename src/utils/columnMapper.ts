@@ -5,87 +5,89 @@ export const mapearColumnas = (headers: string[]): Record<string, string> => {
   headers.forEach(header => {
     const headerLower = header.toLowerCase().trim().replace(/[_\s\-\.]/g, '');
     
-    // Mapeo para fecha_servicio - más patrones
+    // Mapeo para fecha_servicio
     if (headerLower.includes('fecha') && (headerLower.includes('servic') || headerLower.includes('atencion'))) {
       mapeo['fecha_servicio'] = header;
-    } else if (headerLower === 'fecha') {
+    } else if (headerLower === 'fecha' || headerLower === 'fechaservicio') {
       mapeo['fecha_servicio'] = header;
     }
     
-    // Mapeo para marca_vehiculo - más patrones
+    // Mapeo para marca_vehiculo
     if ((headerLower.includes('marca') && (headerLower.includes('vehic') || headerLower.includes('auto'))) || 
-        headerLower === 'marca') {
+        headerLower === 'marca' || headerLower === 'marcavehiculo') {
       mapeo['marca_vehiculo'] = header;
     }
     
-    // Mapeo para modelo_vehiculo - más patrones
+    // Mapeo para modelo_vehiculo
     if ((headerLower.includes('modelo') && (headerLower.includes('vehic') || headerLower.includes('auto'))) || 
-        headerLower === 'modelo') {
+        headerLower === 'modelo' || headerLower === 'modelovehiculo') {
       mapeo['modelo_vehiculo'] = header;
     }
     
-    // Mapeo para patente - más patrones
+    // Mapeo para patente
     if (headerLower.includes('patente') || headerLower.includes('placa')) {
       mapeo['patente'] = header;
     }
     
-    // Mapeo para ubicacion_origen - más patrones
+    // Mapeo para ubicacion_origen
     if ((headerLower.includes('ubicacion') && headerLower.includes('or')) || 
-        headerLower.includes('origen') || 
+        headerLower.includes('origen') || headerLower === 'ubicacionorigen' ||
         (headerLower.includes('desde') || headerLower.includes('retiro'))) {
       mapeo['ubicacion_origen'] = header;
     }
     
-    // Mapeo para ubicacion_destino - más patrones
+    // Mapeo para ubicacion_destino
     if ((headerLower.includes('ubicacion') && headerLower.includes('de')) || 
-        headerLower.includes('destino') || 
+        headerLower.includes('destino') || headerLower === 'ubicaciondestino' ||
         (headerLower.includes('hasta') || headerLower.includes('entrega'))) {
       mapeo['ubicacion_destino'] = header;
     }
     
-    // Mapeo para cliente_nombre - más patrones
+    // Mapeo para cliente_nombre
     if ((headerLower.includes('cliente') && headerLower.includes('nom')) ||
         (headerLower.includes('razon') && headerLower.includes('social')) ||
-        headerLower.includes('empresa')) {
+        headerLower.includes('empresa') || headerLower === 'clientenombre') {
       mapeo['cliente_nombre'] = header;
     }
     
-    // Mapeo para cliente_rut - más patrones flexibles
-    if ((headerLower.includes('cliente') && headerLower.includes('rut')) ||
-        (headerLower.includes('rut') && headerLower.includes('cliente')) ||
+    // Mapeo para cliente_rut - CORREGIDO para detectar "cliente_rut" exacto
+    if (headerLower === 'clienterut' || 
         headerLower === 'rut' ||
         headerLower === 'rutcliente' ||
-        headerLower.includes('rutempresa')) {
+        headerLower.includes('rutempresa') ||
+        (headerLower.includes('cliente') && headerLower.includes('rut')) ||
+        (headerLower.includes('rut') && headerLower.includes('cliente'))) {
       mapeo['cliente_rut'] = header;
     }
     
-    // Mapeo para grua_patente - más patrones
+    // Mapeo para grua_patente
     if ((headerLower.includes('grua') && headerLower.includes('pat')) ||
         (headerLower.includes('camion') && headerLower.includes('pat')) ||
-        headerLower.includes('patentagrua')) {
+        headerLower.includes('patentagrua') || headerLower === 'gruapatente') {
       mapeo['grua_patente'] = header;
     }
     
-    // Mapeo para operador_nombre - más patrones
+    // Mapeo para operador_nombre
     if ((headerLower.includes('operador') && headerLower.includes('nom')) ||
         (headerLower.includes('conductor') && headerLower.includes('nom')) ||
         headerLower.includes('chofer') ||
-        headerLower.includes('operadornombre')) {
+        headerLower.includes('operadornombre') || headerLower === 'operadornombre') {
       mapeo['operador_nombre'] = header;
     }
     
-    // Mapeo para tipo_servicio - más patrones
+    // Mapeo para tipo_servicio
     if ((headerLower.includes('tipo') && headerLower.includes('servic')) ||
         headerLower.includes('tiposervicio') ||
-        headerLower.includes('servicio')) {
+        headerLower.includes('servicio') || headerLower === 'tiposervicio') {
       mapeo['tipo_servicio'] = header;
     }
     
-    // Mapeo para valor_servicio - más patrones
+    // Mapeo para valor_servicio
     if ((headerLower.includes('valor') && headerLower.includes('servic')) ||
         headerLower.includes('precio') ||
         headerLower.includes('monto') ||
-        headerLower.includes('costo')) {
+        headerLower.includes('costo') ||
+        headerLower === 'total') {
       mapeo['valor_servicio'] = header;
     }
 
@@ -104,6 +106,7 @@ export const mapearColumnas = (headers: string[]): Record<string, string> => {
     }
   });
   
+  console.log('Headers originales:', headers);
   console.log('Mapeo de columnas detectado:', mapeo);
   return mapeo;
 };
