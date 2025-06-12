@@ -35,7 +35,7 @@ export const normalizeRut = (rut: string): string => {
     .replace(/[^0-9k]/g, ''); // Solo números y k
 };
 
-// Función para normalizar texto general
+// Función para normalizar texto general (más agresiva)
 export const normalizeText = (text: string): string => {
   if (!text) return '';
   return String(text)
@@ -44,7 +44,18 @@ export const normalizeText = (text: string): string => {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // Remover acentos
     .replace(/[^\w\s]/g, '') // Remover caracteres especiales excepto espacios
-    .replace(/\s+/g, ' '); // Normalizar espacios múltiples
+    .replace(/\s+/g, ' ') // Normalizar espacios múltiples
+    .trim();
+};
+
+// Función para normalizar patentes específicamente
+export const normalizePatente = (patente: string): string => {
+  if (!patente) return '';
+  return String(patente)
+    .toUpperCase()
+    .trim()
+    .replace(/[.\s\-]/g, '') // Remover puntos, espacios y guiones
+    .replace(/[^A-Z0-9]/g, ''); // Solo letras y números
 };
 
 export const buildEntityCache = async (): Promise<EntityCache> => {
@@ -80,7 +91,7 @@ export const buildEntityCache = async (): Promise<EntityCache> => {
 
   // Construir cache de grúas con patente normalizada
   gruasRes.data?.forEach(grua => {
-    const patenteNormalizada = normalizeText(grua.patente);
+    const patenteNormalizada = normalizePatente(grua.patente);
     if (patenteNormalizada) {
       cache.gruas.set(patenteNormalizada, grua.id);
       console.log(`Grúa cacheada: ${grua.patente} -> ${patenteNormalizada} -> ID: ${grua.id}`);
@@ -112,39 +123,94 @@ export const buildEntityCache = async (): Promise<EntityCache> => {
     tiposServicio: cache.tiposServicio.size
   });
 
-  console.log('Cache de clientes completo:', Array.from(cache.clientes.entries()));
-  console.log('Cache de grúas completo:', Array.from(cache.gruas.entries()));
-  console.log('Cache de operadores completo:', Array.from(cache.operadores.entries()));
-  console.log('Cache de tipos servicio completo:', Array.from(cache.tiposServicio.entries()));
-
   return cache;
 };
 
-// Función para búsqueda fuzzy de entidades
+// Función mejorada para búsqueda fuzzy de entidades
 const buscarEntidadFuzzy = (cache: Map<string, string>, valorBusqueda: string, tipo: string): string | null => {
-  const valorNormalizado = tipo === 'rut' ? normalizeRut(valorBusqueda) : normalizeText(valorBusqueda);
+  let valorNormalizado: string;
+  
+  // Aplicar normalización específica según el tipo
+  if (tipo === 'rut') {
+    valorNormalizado = normalizeRut(valorBusqueda);
+  } else if (tipo === 'patente') {
+    valorNormalizado = normalizePatente(valorBusqueda);
+  } else {
+    valorNormalizado = normalizeText(valorBusqueda);
+  }
   
   console.log(`Buscando ${tipo}: "${valorBusqueda}" -> normalizado: "${valorNormalizado}"`);
   
   // Búsqueda exacta primero
   if (cache.has(valorNormalizado)) {
     const id = cache.get(valorNormalizado)!;
-    console.log(`Encontrado exacto para ${tipo}: ${valorNormalizado} -> ${id}`);
+    console.log(`✅ Encontrado exacto para ${tipo}: ${valorNormalizado} -> ${id}`);
     return id;
   }
 
-  // Si no se encuentra exacto, buscar similares (solo para texto, no RUT)
-  if (tipo !== 'rut' && valorNormalizado.length > 3) {
+  // Búsqueda fuzzy más agresiva
+  const allKeys = Array.from(cache.keys());
+  
+  // Para RUTs, no hacer búsqueda fuzzy
+  if (tipo === 'rut') {
+    console.log(`❌ RUT no encontrado: "${valorBusqueda}" (normalizado: "${valorNormalizado}")`);
+    console.log(`RUTs disponibles:`, allKeys.slice(0, 10));
+    return null;
+  }
+
+  // Para otros tipos, intentar múltiples estrategias de búsqueda
+  if (valorNormalizado.length > 2) {
+    // 1. Buscar si alguna clave contiene el valor buscado
     for (const [cacheKey, id] of cache.entries()) {
-      if (cacheKey.includes(valorNormalizado) || valorNormalizado.includes(cacheKey)) {
-        console.log(`Encontrado fuzzy para ${tipo}: "${valorBusqueda}" similar a "${cacheKey}" -> ${id}`);
+      if (cacheKey.includes(valorNormalizado)) {
+        console.log(`✅ Encontrado fuzzy (contiene) para ${tipo}: "${valorBusqueda}" -> "${cacheKey}" -> ${id}`);
         return id;
+      }
+    }
+    
+    // 2. Buscar si el valor buscado contiene alguna clave
+    for (const [cacheKey, id] of cache.entries()) {
+      if (valorNormalizado.includes(cacheKey) && cacheKey.length > 3) {
+        console.log(`✅ Encontrado fuzzy (es contenido) para ${tipo}: "${valorBusqueda}" -> "${cacheKey}" -> ${id}`);
+        return id;
+      }
+    }
+    
+    // 3. Búsqueda por palabras individuales (para nombres compuestos)
+    if (tipo === 'nombre') {
+      const palabrasBuscadas = valorNormalizado.split(' ').filter(p => p.length > 2);
+      for (const [cacheKey, id] of cache.entries()) {
+        const palabrasCache = cacheKey.split(' ');
+        const coincidencias = palabrasBuscadas.filter(palabra => 
+          palabrasCache.some(palabraCache => 
+            palabraCache.includes(palabra) || palabra.includes(palabraCache)
+          )
+        );
+        
+        if (coincidencias.length >= Math.min(2, palabrasBuscadas.length)) {
+          console.log(`✅ Encontrado fuzzy (palabras) para ${tipo}: "${valorBusqueda}" -> "${cacheKey}" -> ${id}`);
+          return id;
+        }
+      }
+    }
+    
+    // 4. Para tipos de servicio, buscar por palabras clave
+    if (tipo === 'tipo') {
+      for (const [cacheKey, id] of cache.entries()) {
+        // Buscar palabras clave comunes
+        const palabrasImportantes = ['remolque', 'grua', 'traslado', 'rescate', 'auxilio'];
+        for (const palabra of palabrasImportantes) {
+          if (valorNormalizado.includes(palabra) && cacheKey.includes(palabra)) {
+            console.log(`✅ Encontrado fuzzy (palabra clave) para ${tipo}: "${valorBusqueda}" -> "${cacheKey}" -> ${id}`);
+            return id;
+          }
+        }
       }
     }
   }
 
-  console.log(`No encontrado ${tipo}: "${valorBusqueda}" (normalizado: "${valorNormalizado}")`);
-  console.log(`Valores disponibles en cache de ${tipo}:`, Array.from(cache.keys()).slice(0, 5));
+  console.log(`❌ No encontrado ${tipo}: "${valorBusqueda}" (normalizado: "${valorNormalizado}")`);
+  console.log(`Valores disponibles en cache de ${tipo}:`, allKeys.slice(0, 5));
   return null;
 };
 
@@ -173,16 +239,16 @@ export const mapearDatosMigracion = (fila: MigracionDataRow, cache: EntityCache)
 
   // Validar que encontramos todas las entidades
   if (!clienteId) {
-    throw new Error(`Cliente no encontrado con RUT: "${fila.cliente_rut}". Verifica que el cliente esté registrado y activo en el sistema.`);
+    throw new Error(`Cliente no encontrado con RUT: "${fila.cliente_rut}". RUT normalizado: "${normalizeRut(String(fila.cliente_rut))}". Verifica que el cliente esté registrado y activo en el sistema.`);
   }
   if (!gruaId) {
-    throw new Error(`Grúa no encontrada con patente: "${fila.grua_patente}". Verifica que la grúa esté registrada y activa en el sistema.`);
+    throw new Error(`Grúa no encontrada con patente: "${fila.grua_patente}". Patente normalizada: "${normalizePatente(String(fila.grua_patente))}". Verifica que la grúa esté registrada y activa en el sistema.`);
   }
   if (!operadorId) {
-    throw new Error(`Operador no encontrado con nombre: "${fila.operador_nombre}". Verifica que el operador esté registrado y activo en el sistema.`);
+    throw new Error(`Operador no encontrado con nombre: "${fila.operador_nombre}". Nombre normalizado: "${normalizeText(String(fila.operador_nombre))}". Verifica que el operador esté registrado y activo en el sistema.`);
   }
   if (!tipoServicioId) {
-    throw new Error(`Tipo de servicio no encontrado: "${fila.tipo_servicio}". Verifica que el tipo de servicio esté registrado y activo en el sistema.`);
+    throw new Error(`Tipo de servicio no encontrado: "${fila.tipo_servicio}". Nombre normalizado: "${normalizeText(String(fila.tipo_servicio))}". Verifica que el tipo de servicio esté registrado y activo en el sistema.`);
   }
 
   // Parsear fecha
@@ -209,7 +275,7 @@ export const mapearDatosMigracion = (fila: MigracionDataRow, cache: EntityCache)
     ordenCompra: fila.orden_compra?.trim() || undefined,
     marcaVehiculo: String(fila.marca_vehiculo).trim(),
     modeloVehiculo: String(fila.modelo_vehiculo).trim(),
-    patente: String(fila.patente).toUpperCase().trim(),
+    patente: normalizePatente(String(fila.patente)), // Normalizar patente del vehículo también
     ubicacionOrigen: String(fila.ubicacion_origen).trim(),
     ubicacionDestino: String(fila.ubicacion_destino).trim(),
     valor,
