@@ -36,6 +36,8 @@ export const useMigracionProcessor = () => {
 
   const procesarMigracion = async (datos: any[], headers?: string[]) => {
     console.log('useMigracionProcessor: Iniciando procesamiento de migración');
+    console.log('useMigracionProcessor: Headers disponibles:', headers);
+    console.log('useMigracionProcessor: Primeros 3 registros de datos:', datos.slice(0, 3));
     
     setEstado(prev => ({ 
       ...prev, 
@@ -57,20 +59,37 @@ export const useMigracionProcessor = () => {
       let mapeoColumnas: Record<string, string> = {};
       if (headers) {
         mapeoColumnas = mapearColumnas(headers);
-        console.log('useMigracionProcessor: Mapeo de columnas:', mapeoColumnas);
+        console.log('useMigracionProcessor: Mapeo de columnas aplicado:', mapeoColumnas);
+      }
+
+      // Validar que tenemos las columnas mínimas requeridas
+      const columnasRequeridas = ['fecha_servicio', 'marca_vehiculo', 'modelo_vehiculo', 'patente', 
+                                 'ubicacion_origen', 'ubicacion_destino', 'cliente_rut', 'grua_patente', 
+                                 'operador_nombre', 'tipo_servicio'];
+      
+      const columnasFaltantes = columnasRequeridas.filter(col => !mapeoColumnas[col]);
+      if (columnasFaltantes.length > 0) {
+        throw new Error(`Columnas requeridas no encontradas: ${columnasFaltantes.join(', ')}. Headers disponibles: ${headers?.join(', ')}`);
       }
 
       const obtenerValor = (fila: any, campo: string): any => {
         const columnaReal = mapeoColumnas[campo] || campo;
-        return fila[columnaReal];
+        const valor = fila[columnaReal];
+        console.log(`Obteniendo valor para ${campo} (columna: ${columnaReal}): "${valor}"`);
+        return valor;
       };
 
       const total = datos.length;
       const resultados: ProcesamientoResultado[] = [];
 
+      console.log(`useMigracionProcessor: Iniciando procesamiento de ${total} registros`);
+
       for (let i = 0; i < total; i++) {
         const filaOriginal = datos[i];
         const progreso = ((i + 1) / total) * 100;
+        
+        console.log(`\n=== Procesando registro ${i + 1}/${total} ===`);
+        console.log('Fila original:', filaOriginal);
         
         try {
           // Mapear datos usando el mapeo de columnas
@@ -91,7 +110,12 @@ export const useMigracionProcessor = () => {
             observaciones: obtenerValor(filaOriginal, 'observaciones')
           };
 
-          console.log(`useMigracionProcessor: Procesando registro ${i + 1}/${total}:`, filaMapeada);
+          console.log('Fila mapeada:', filaMapeada);
+
+          // Validar datos críticos antes del mapeo
+          if (!filaMapeada.cliente_rut || filaMapeada.cliente_rut === '') {
+            throw new Error(`RUT del cliente está vacío en la fila ${i + 1}. Valor original: "${obtenerValor(filaOriginal, 'cliente_rut')}"`);
+          }
 
           // Transformar datos al formato esperado por el servicio
           const servicioData = mapearDatosMigracion(filaMapeada, cache);
@@ -104,6 +128,8 @@ export const useMigracionProcessor = () => {
             procesados: i + 1,
             registroActual
           }));
+
+          console.log(`Creando servicio para: ${registroActual}`);
 
           // Crear el servicio
           const resultado = await crearServicio(servicioData);
@@ -119,26 +145,27 @@ export const useMigracionProcessor = () => {
             resultados: [...prev.resultados, { exito: true, folio: resultado.folio }]
           }));
 
-          console.log(`useMigracionProcessor: Servicio creado exitosamente: ${resultado.folio}`);
+          console.log(`✅ Servicio creado exitosamente: ${resultado.folio}`);
 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-          console.error(`useMigracionProcessor: Error procesando registro ${i + 1}:`, errorMessage);
+          console.error(`❌ Error procesando registro ${i + 1}:`, errorMessage);
+          console.error('Datos de la fila con error:', filaOriginal);
           
           resultados.push({
             exito: false,
-            error: errorMessage
+            error: `Fila ${i + 1}: ${errorMessage}`
           });
 
           setEstado(prev => ({
             ...prev,
             errores: prev.errores + 1,
-            resultados: [...prev.resultados, { exito: false, error: errorMessage }]
+            resultados: [...prev.resultados, { exito: false, error: `Fila ${i + 1}: ${errorMessage}` }]
           }));
         }
 
         // Pequeña pausa para permitir que la UI se actualice
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       setEstado(prev => ({ 
