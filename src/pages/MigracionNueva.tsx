@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, FileUp, Eye, CheckCircle, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { FileUploader } from '@/components/migracion/FileUploader';
+import { ValidacionDatos } from '@/components/migracion/ValidacionDatos';
+import { ProcesarMigracion } from '@/components/migracion/ProcesarMigracion';
 import { useFileProcessor } from '@/hooks/useFileProcessor';
+import { useMigracionValidator } from '@/hooks/useMigracionValidator';
 import { EstadoProceso } from '@/types/migracion';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +17,7 @@ const MigracionNueva = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { processFile, isProcessing, result, error, reset } = useFileProcessor();
+  const { validarDatos } = useMigracionValidator();
   
   const [estado, setEstado] = useState<EstadoProceso>({
     paso: 1,
@@ -62,6 +66,43 @@ const MigracionNueva = () => {
       procesando: false,
       completado: false
     });
+  };
+
+  const handleContinuarValidacion = () => {
+    if (estado.datos) {
+      const validaciones = validarDatos(estado.datos);
+      setEstado(prev => ({
+        ...prev,
+        validaciones,
+        paso: 3
+      }));
+      
+      toast({
+        title: "Validación completada",
+        description: `Se validaron ${estado.datos.length} registros`,
+      });
+    }
+  };
+
+  const handleContinuarProcesamiento = () => {
+    setEstado(prev => ({ ...prev, paso: 4 }));
+  };
+
+  const handleVolverValidacion = () => {
+    setEstado(prev => ({ ...prev, paso: 2 }));
+  };
+
+  const handleVolverProcesamiento = () => {
+    setEstado(prev => ({ ...prev, paso: 3 }));
+  };
+
+  const handleFinalizarMigracion = () => {
+    setEstado(prev => ({ ...prev, completado: true }));
+    toast({
+      title: "Migración finalizada",
+      description: "La migración se ha completado exitosamente",
+    });
+    navigate('/migraciones');
   };
 
   const renderPaso1 = () => (
@@ -164,7 +205,7 @@ const MigracionNueva = () => {
         <Button variant="outline" onClick={() => setEstado(prev => ({ ...prev, paso: 1 }))}>
           Cambiar Archivo
         </Button>
-        <Button onClick={() => setEstado(prev => ({ ...prev, paso: 3 }))}>
+        <Button onClick={handleContinuarValidacion}>
           Continuar a Validación
         </Button>
       </div>
@@ -178,27 +219,22 @@ const MigracionNueva = () => {
       case 2:
         return renderPaso2();
       case 3:
-        return (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <h3 className="text-lg font-medium mb-2">Validación de Datos</h3>
-              <p className="text-muted-foreground">
-                Esta funcionalidad se implementará en la siguiente fase
-              </p>
-            </CardContent>
-          </Card>
-        );
+        return estado.datos && estado.validaciones ? (
+          <ValidacionDatos
+            datos={estado.datos}
+            validaciones={estado.validaciones}
+            onContinuar={handleContinuarProcesamiento}
+            onVolver={handleVolverValidacion}
+          />
+        ) : null;
       case 4:
-        return (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <h3 className="text-lg font-medium mb-2">Procesamiento</h3>
-              <p className="text-muted-foreground">
-                Esta funcionalidad se implementará en la siguiente fase
-              </p>
-            </CardContent>
-          </Card>
-        );
+        return estado.datos ? (
+          <ProcesarMigracion
+            datos={estado.datos}
+            onVolver={handleVolverProcesamiento}
+            onFinalizar={handleFinalizarMigracion}
+          />
+        ) : null;
       default:
         return null;
     }
