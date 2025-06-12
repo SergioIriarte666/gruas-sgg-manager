@@ -4,11 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, DollarSign, CheckCircle } from "lucide-react";
+import { FileText, DollarSign, CheckCircle, Eye, Clock } from "lucide-react";
 import { formatSafeDate } from "@/lib/utils";
 import { useCreateCierre } from "@/hooks/useCierres";
 import { useClientes } from "@/hooks/useClientes";
 import { useServicios } from "@/hooks/useServicios";
+import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 
 interface ServiciosSelectionModalProps {
   isOpen: boolean;
@@ -27,13 +28,17 @@ export const ServiciosSelectionModal = ({
   const { data: clientes = [] } = useClientes();
   const { data: servicios = [] } = useServicios();
   const createCierre = useCreateCierre();
+  const updateServicioEstado = useUpdateServicioEstado();
 
-  // Filtrar servicios elegibles (cerrados sin cierre asignado)
+  // Filtrar servicios elegibles (cerrados sin cierre asignado O en curso)
   const serviciosElegibles = servicios.filter(servicio => {
     console.log('Evaluando servicio:', servicio.id, 'Estado:', servicio.estado, 'CierreId:', servicio.cierreId);
     
-    // Debe estar cerrado y sin cierre asignado
-    if (servicio.estado !== 'cerrado' || servicio.cierreId) {
+    // Debe estar cerrado sin cierre asignado O en curso
+    const isElegible = (servicio.estado === 'cerrado' && !servicio.cierreId) || 
+                      (servicio.estado === 'en_curso');
+    
+    if (!isElegible) {
       return false;
     }
     
@@ -74,48 +79,79 @@ export const ServiciosSelectionModal = ({
     }
   };
 
-  const handleCreateCierre = () => {
+  const handleFinalizarYCrearCierre = async () => {
     if (selectedServicios.length === 0) return;
 
     const serviciosSeleccionados = serviciosElegibles.filter(s => selectedServicios.includes(s.id));
-    const total = serviciosSeleccionados.reduce((sum, s) => sum + Number(s.valor), 0);
-
-    // Determinar fechas del cierre
-    const servicioFechas = serviciosSeleccionados.map(s => new Date(s.fecha).toISOString().split('T')[0]);
-    const minFecha = fechaInicio || servicioFechas.sort()[0];
-    const maxFecha = fechaFin || servicioFechas.sort().reverse()[0];
-
-    console.log('Creando cierre con datos:', {
-      fechaInicio: minFecha,
-      fechaFin: maxFecha,
-      clienteId: clienteId || undefined,
-      servicioIds: selectedServicios,
-      total
-    });
-
-    createCierre.mutate({
-      fechaInicio: minFecha,
-      fechaFin: maxFecha,
-      clienteId: clienteId || undefined,
-      servicioIds: selectedServicios,
-      total
-    }, {
-      onSuccess: () => {
-        setSelectedServicios([]);
-        setFechaInicio("");
-        setFechaFin("");
-        setClienteId("");
-        onClose();
-      },
-      onError: (error) => {
-        console.error('Error al crear cierre desde modal:', error);
+    
+    // Primero, finalizar todos los servicios que están en curso
+    const serviciosEnCurso = serviciosSeleccionados.filter(s => s.estado === 'en_curso');
+    
+    console.log(`Finalizando ${serviciosEnCurso.length} servicios en curso...`);
+    
+    try {
+      // Finalizar servicios en curso uno por uno
+      for (const servicio of serviciosEnCurso) {
+        await new Promise<void>((resolve, reject) => {
+          updateServicioEstado.mutate(
+            { id: servicio.id, estado: 'cerrado' },
+            {
+              onSuccess: () => resolve(),
+              onError: (error) => reject(error)
+            }
+          );
+        });
       }
-    });
+
+      // Pequeña pausa para que la base de datos se actualice
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Ahora crear el cierre
+      const total = serviciosSeleccionados.reduce((sum, s) => sum + Number(s.valor), 0);
+
+      // Determinar fechas del cierre
+      const servicioFechas = serviciosSeleccionados.map(s => new Date(s.fecha).toISOString().split('T')[0]);
+      const minFecha = fechaInicio || servicioFechas.sort()[0];
+      const maxFecha = fechaFin || servicioFechas.sort().reverse()[0];
+
+      console.log('Creando cierre con datos:', {
+        fechaInicio: minFecha,
+        fechaFin: maxFecha,
+        clienteId: clienteId || undefined,
+        servicioIds: selectedServicios,
+        total
+      });
+
+      createCierre.mutate({
+        fechaInicio: minFecha,
+        fechaFin: maxFecha,
+        clienteId: clienteId || undefined,
+        servicioIds: selectedServicios,
+        total
+      }, {
+        onSuccess: () => {
+          setSelectedServicios([]);
+          setFechaInicio("");
+          setFechaFin("");
+          setClienteId("");
+          onClose();
+        },
+        onError: (error) => {
+          console.error('Error al crear cierre desde modal:', error);
+        }
+      });
+
+    } catch (error) {
+      console.error('Error al finalizar servicios:', error);
+    }
   };
 
   const totalSeleccionado = serviciosElegibles
     .filter(s => selectedServicios.includes(s.id))
     .reduce((sum, s) => sum + Number(s.valor), 0);
+
+  const serviciosEnCursoSeleccionados = serviciosElegibles
+    .filter(s => selectedServicios.includes(s.id) && s.estado === 'en_curso').length;
 
   // Reset selections when modal closes
   useEffect(() => {
@@ -202,7 +238,7 @@ export const ServiciosSelectionModal = ({
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {serviciosElegibles.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No hay servicios elegibles para cierre. Los servicios deben estar en estado "Cerrado" y sin cierre asignado.
+                    No hay servicios elegibles para cierre. Los servicios deben estar en estado "En Curso" o "Cerrado" sin cierre asignado.
                   </div>
                 ) : (
                   serviciosElegibles.map((servicio) => (
@@ -215,7 +251,20 @@ export const ServiciosSelectionModal = ({
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h3 className="font-medium text-primary">{servicio.folio}</h3>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-medium text-primary">{servicio.folio}</h3>
+                                {servicio.estado === 'en_curso' ? (
+                                  <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                                    <Clock className="h-3 w-3" />
+                                    En Curso
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                                    <CheckCircle className="h-3 w-3" />
+                                    Cerrado
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm text-muted-foreground">
                                 {formatSafeDate(servicio.fecha)} - {servicio.cliente?.razonSocial || 'Cliente no encontrado'}
                               </p>
@@ -248,6 +297,11 @@ export const ServiciosSelectionModal = ({
                     <DollarSign className="h-5 w-5 text-primary" />
                     <span className="font-medium">
                       {selectedServicios.length} servicios seleccionados
+                      {serviciosEnCursoSeleccionados > 0 && (
+                        <span className="text-sm text-muted-foreground ml-2">
+                          ({serviciosEnCursoSeleccionados} se finalizarán automáticamente)
+                        </span>
+                      )}
                     </span>
                   </div>
                   <span className="text-2xl font-bold text-primary">
@@ -264,12 +318,13 @@ export const ServiciosSelectionModal = ({
               Cancelar
             </Button>
             <Button 
-              onClick={handleCreateCierre}
-              disabled={createCierre.isPending || selectedServicios.length === 0}
+              onClick={handleFinalizarYCrearCierre}
+              disabled={createCierre.isPending || updateServicioEstado.isPending || selectedServicios.length === 0}
               className="bg-primary hover:bg-primary-dark"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              {createCierre.isPending ? "Creando..." : "Crear Cierre"}
+              {createCierre.isPending || updateServicioEstado.isPending ? "Procesando..." : 
+               serviciosEnCursoSeleccionados > 0 ? "Finalizar y Crear Cierre" : "Crear Cierre"}
             </Button>
           </div>
         </div>
