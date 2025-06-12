@@ -24,9 +24,22 @@ export const mapearColumnas = (headers: string[]): Record<string, string> => {
       mapeo['modelo_vehiculo'] = header;
     }
     
-    // Mapeo para patente
-    if (headerLower.includes('patente') || headerLower.includes('placa')) {
-      mapeo['patente'] = header;
+    // Mapeo para grua_patente - PRIMERO Y MÁS ESPECÍFICO
+    if ((headerLower.includes('grua') && headerLower.includes('pat')) ||
+        (headerLower.includes('camion') && headerLower.includes('pat')) ||
+        headerLower.includes('patentagrua') || 
+        headerLower === 'gruapatente' ||
+        headerLower === 'patentegrua') {
+      mapeo['grua_patente'] = header;
+      console.log(`Mapeando grua_patente: ${header} -> ${headerLower}`);
+    }
+    // Mapeo para patente del vehículo - SEGUNDO Y EXCLUYENDO GRÚAS
+    else if (headerLower.includes('patente') || headerLower.includes('placa')) {
+      // Solo mapear si NO es una patente de grúa
+      if (!headerLower.includes('grua') && !headerLower.includes('camion')) {
+        mapeo['patente'] = header;
+        console.log(`Mapeando patente vehículo: ${header} -> ${headerLower}`);
+      }
     }
     
     // Mapeo para ubicacion_origen
@@ -58,13 +71,6 @@ export const mapearColumnas = (headers: string[]): Record<string, string> => {
         (headerLower.includes('cliente') && headerLower.includes('rut')) ||
         (headerLower.includes('rut') && headerLower.includes('cliente'))) {
       mapeo['cliente_rut'] = header;
-    }
-    
-    // Mapeo para grua_patente
-    if ((headerLower.includes('grua') && headerLower.includes('pat')) ||
-        (headerLower.includes('camion') && headerLower.includes('pat')) ||
-        headerLower.includes('patentagrua') || headerLower === 'gruapatente') {
-      mapeo['grua_patente'] = header;
     }
     
     // Mapeo para operador_nombre
@@ -108,5 +114,17 @@ export const mapearColumnas = (headers: string[]): Record<string, string> => {
   
   console.log('Headers originales:', headers);
   console.log('Mapeo de columnas detectado:', mapeo);
+  
+  // Validación adicional para evitar conflictos
+  if (mapeo['patente'] && mapeo['grua_patente']) {
+    console.log(`✅ Mapeo correcto detectado:
+      - Patente vehículo: ${mapeo['patente']}
+      - Patente grúa: ${mapeo['grua_patente']}`);
+  } else if (!mapeo['patente']) {
+    console.warn('⚠️ No se detectó columna para patente del vehículo');
+  } else if (!mapeo['grua_patente']) {
+    console.warn('⚠️ No se detectó columna para patente de grúa');
+  }
+  
   return mapeo;
 };

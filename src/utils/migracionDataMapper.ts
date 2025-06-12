@@ -216,6 +216,19 @@ const buscarEntidadFuzzy = (cache: Map<string, string>, valorBusqueda: string, t
 
 export const mapearDatosMigracion = (fila: MigracionDataRow, cache: EntityCache) => {
   console.log('migracionDataMapper: Mapeando fila:', fila);
+  
+  // VALIDACIÓN CRÍTICA: Verificar que las patentes sean diferentes
+  const patenteVehiculo = normalizePatente(String(fila.patente));
+  const patenteGrua = normalizePatente(String(fila.grua_patente));
+  
+  console.log(`🚗 Patente vehículo: "${fila.patente}" -> normalizada: "${patenteVehiculo}"`);
+  console.log(`🚛 Patente grúa: "${fila.grua_patente}" -> normalizada: "${patenteGrua}"`);
+  
+  if (patenteVehiculo === patenteGrua && patenteVehiculo !== '') {
+    console.error(`❌ ERROR: La patente del vehículo y la grúa son iguales: "${patenteVehiculo}"`);
+    console.error('Datos originales:', { patente: fila.patente, grua_patente: fila.grua_patente });
+    throw new Error(`Las patentes del vehículo ("${fila.patente}") y la grúa ("${fila.grua_patente}") no pueden ser iguales. Verifica el mapeo de columnas.`);
+  }
 
   // Validar que tenemos los datos mínimos requeridos
   if (!fila.cliente_rut) {
@@ -275,7 +288,7 @@ export const mapearDatosMigracion = (fila: MigracionDataRow, cache: EntityCache)
     ordenCompra: fila.orden_compra?.trim() || undefined,
     marcaVehiculo: String(fila.marca_vehiculo).trim(),
     modeloVehiculo: String(fila.modelo_vehiculo).trim(),
-    patente: normalizePatente(String(fila.patente)), // Normalizar patente del vehículo también
+    patente: patenteVehiculo, // Usar la patente normalizada del vehículo
     ubicacionOrigen: String(fila.ubicacion_origen).trim(),
     ubicacionDestino: String(fila.ubicacion_destino).trim(),
     valor,
@@ -287,5 +300,9 @@ export const mapearDatosMigracion = (fila: MigracionDataRow, cache: EntityCache)
   };
 
   console.log('migracionDataMapper: Servicio mapeado exitosamente:', servicioData);
+  console.log(`✅ Patentes correctamente asignadas:
+    - Vehículo: ${servicioData.patente}
+    - Grúa ID: ${servicioData.gruaId} (patente original: ${fila.grua_patente})`);
+    
   return servicioData;
 };
