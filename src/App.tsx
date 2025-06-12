@@ -15,6 +15,8 @@ import TiposServicio from "./pages/TiposServicio";
 import Cierres from "./pages/Cierres";
 import Facturas from "./pages/Facturas";
 import Reportes from "./pages/Reportes";
+import Migraciones from "./pages/Migraciones";
+import MigracionNueva from "./pages/MigracionNueva";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 const App = () => <QueryClientProvider client={queryClient}>
@@ -37,6 +39,8 @@ const App = () => <QueryClientProvider client={queryClient}>
                   <Route path="/cierres" element={<Cierres />} />
                   <Route path="/facturas" element={<Facturas />} />
                   <Route path="/reportes" element={<Reportes />} />
+                  <Route path="/migraciones" element={<Migraciones />} />
+                  <Route path="/migraciones/nueva" element={<MigracionNueva />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
