@@ -7,6 +7,14 @@ import { useOperadores } from '@/hooks/useOperadores';
 import { useTiposServicio } from '@/hooks/useTiposServicio';
 import { useCreateServicio } from '@/hooks/useCreateServicio';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 const SGGGruaPWA = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -212,435 +220,450 @@ const SGGGruaPWA = () => {
   };
 
   const renderStep1 = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-green-400 mb-4">📊 Datos Básicos del Servicio</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Fecha del Servicio</label>
-          <input
-            type="date"
-            value={formData.fecha.toISOString().split('T')[0]}
-            onChange={(e) => handleInputChange('fecha', new Date(e.target.value))}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-primary">
+          <FileText className="h-5 w-5" />
+          Datos Básicos del Servicio
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="fecha">Fecha del Servicio</Label>
+            <Input
+              id="fecha"
+              type="date"
+              value={formData.fecha.toISOString().split('T')[0]}
+              onChange={(e) => handleInputChange('fecha', new Date(e.target.value))}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="folio">Folio (Opcional)</Label>
+            <Input
+              id="folio"
+              type="text"
+              value={formData.folio}
+              onChange={(e) => handleInputChange('folio', e.target.value)}
+              placeholder="Folio manual"
+            />
+          </div>
         </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Folio (Opcional)</label>
-          <input
-            type="text"
-            value={formData.folio}
-            onChange={(e) => handleInputChange('folio', e.target.value)}
-            placeholder="Folio manual"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Marca del Vehículo *</label>
-          <input
-            type="text"
-            value={formData.marcaVehiculo}
-            onChange={(e) => handleInputChange('marcaVehiculo', e.target.value)}
-            placeholder="Toyota, Mercedes, etc."
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="marcaVehiculo">Marca del Vehículo *</Label>
+            <Input
+              id="marcaVehiculo"
+              type="text"
+              value={formData.marcaVehiculo}
+              onChange={(e) => handleInputChange('marcaVehiculo', e.target.value)}
+              placeholder="Toyota, Mercedes, etc."
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="modeloVehiculo">Modelo del Vehículo *</Label>
+            <Input
+              id="modeloVehiculo"
+              type="text"
+              value={formData.modeloVehiculo}
+              onChange={(e) => handleInputChange('modeloVehiculo', e.target.value)}
+              placeholder="Corolla, Sprinter, etc."
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="patente">Patente *</Label>
+            <Input
+              id="patente"
+              type="text"
+              value={formData.patente}
+              onChange={(e) => handleInputChange('patente', e.target.value.toUpperCase())}
+              placeholder="ABCD12"
+              required
+            />
+          </div>
         </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Modelo del Vehículo *</label>
-          <input
-            type="text"
-            value={formData.modeloVehiculo}
-            onChange={(e) => handleInputChange('modeloVehiculo', e.target.value)}
-            placeholder="Corolla, Sprinter, etc."
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Patente *</label>
-          <input
-            type="text"
-            value={formData.patente}
-            onChange={(e) => handleInputChange('patente', e.target.value.toUpperCase())}
-            placeholder="ABCD12"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Ubicación de Origen *</label>
-          <input
-            type="text"
-            value={formData.ubicacionOrigen}
-            onChange={(e) => handleInputChange('ubicacionOrigen', e.target.value)}
-            placeholder="Dirección donde se recogió el vehículo"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="ubicacionOrigen">Ubicación de Origen *</Label>
+            <Input
+              id="ubicacionOrigen"
+              type="text"
+              value={formData.ubicacionOrigen}
+              onChange={(e) => handleInputChange('ubicacionOrigen', e.target.value)}
+              placeholder="Dirección donde se recogió el vehículo"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="ubicacionDestino">Ubicación de Destino *</Label>
+            <Input
+              id="ubicacionDestino"
+              type="text"
+              value={formData.ubicacionDestino}
+              onChange={(e) => handleInputChange('ubicacionDestino', e.target.value)}
+              placeholder="Dirección de entrega"
+              required
+            />
+          </div>
         </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Ubicación de Destino *</label>
-          <input
-            type="text"
-            value={formData.ubicacionDestino}
-            onChange={(e) => handleInputChange('ubicacionDestino', e.target.value)}
-            placeholder="Dirección de entrega"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          />
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 
   const renderStep2 = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-green-400 mb-4">🏢 Asignación del Servicio</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Orden de Compra (Opcional)</label>
-          <input
-            type="text"
-            value={formData.ordenCompra}
-            onChange={(e) => handleInputChange('ordenCompra', e.target.value)}
-            placeholder="Número de orden de compra"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-primary">
+          <User className="h-5 w-5" />
+          Asignación del Servicio
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="ordenCompra">Orden de Compra (Opcional)</Label>
+            <Input
+              id="ordenCompra"
+              type="text"
+              value={formData.ordenCompra}
+              onChange={(e) => handleInputChange('ordenCompra', e.target.value)}
+              placeholder="Número de orden de compra"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="valor">Valor del Servicio</Label>
+            <Input
+              id="valor"
+              type="number"
+              value={formData.valor}
+              onChange={(e) => handleInputChange('valor', Number(e.target.value))}
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="clienteId">Cliente *</Label>
+            <Select value={formData.clienteId} onValueChange={(value) => handleInputChange('clienteId', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                {clientes.filter(c => c.activo).map(cliente => (
+                  <SelectItem key={cliente.id} value={cliente.id}>
+                    {cliente.razonSocial} - {cliente.rut}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="gruaId">Grúa *</Label>
+            <Select value={formData.gruaId} onValueChange={(value) => handleInputChange('gruaId', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar grúa" />
+              </SelectTrigger>
+              <SelectContent>
+                {gruas.filter(g => g.activo).map(grua => (
+                  <SelectItem key={grua.id} value={grua.id}>
+                    {grua.patente} - {grua.marca} {grua.modelo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="operadorId">Operador *</Label>
+            <Select value={formData.operadorId} onValueChange={(value) => handleInputChange('operadorId', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar operador" />
+              </SelectTrigger>
+              <SelectContent>
+                {operadores.filter(o => o.activo).map(operador => (
+                  <SelectItem key={operador.id} value={operador.id}>
+                    {operador.nombreCompleto} - {operador.telefono}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="tipoServicioId">Tipo de Servicio *</Label>
+            <Select value={formData.tipoServicioId} onValueChange={(value) => handleInputChange('tipoServicioId', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {tiposServicio.filter(t => t.activo).map(tipo => (
+                  <SelectItem key={tipo.id} value={tipo.id}>
+                    {tipo.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="observaciones">Observaciones (Opcional)</Label>
+          <Input
+            id="observaciones"
+            value={formData.observaciones}
+            onChange={(e) => handleInputChange('observaciones', e.target.value)}
+            placeholder="Observaciones adicionales sobre el servicio"
           />
         </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Valor del Servicio</label>
-          <input
-            type="number"
-            value={formData.valor}
-            onChange={(e) => handleInputChange('valor', Number(e.target.value))}
-            placeholder="0"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Cliente *</label>
-          <select
-            value={formData.clienteId}
-            onChange={(e) => handleInputChange('clienteId', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          >
-            <option value="">Seleccionar cliente</option>
-            {clientes.filter(c => c.activo).map(cliente => (
-              <option key={cliente.id} value={cliente.id}>
-                {cliente.razonSocial} - {cliente.rut}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Grúa *</label>
-          <select
-            value={formData.gruaId}
-            onChange={(e) => handleInputChange('gruaId', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          >
-            <option value="">Seleccionar grúa</option>
-            {gruas.filter(g => g.activo).map(grua => (
-              <option key={grua.id} value={grua.id}>
-                {grua.patente} - {grua.marca} {grua.modelo}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Operador *</label>
-          <select
-            value={formData.operadorId}
-            onChange={(e) => handleInputChange('operadorId', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          >
-            <option value="">Seleccionar operador</option>
-            {operadores.filter(o => o.activo).map(operador => (
-              <option key={operador.id} value={operador.id}>
-                {operador.nombreCompleto} - {operador.telefono}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Tipo de Servicio *</label>
-          <select
-            value={formData.tipoServicioId}
-            onChange={(e) => handleInputChange('tipoServicioId', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-            required
-          >
-            <option value="">Seleccionar tipo</option>
-            {tiposServicio.filter(t => t.activo).map(tipo => (
-              <option key={tipo.id} value={tipo.id}>
-                {tipo.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-gray-300 mb-2">Observaciones (Opcional)</label>
-        <textarea
-          value={formData.observaciones}
-          onChange={(e) => handleInputChange('observaciones', e.target.value)}
-          placeholder="Observaciones adicionales sobre el servicio"
-          rows={3}
-          className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-        />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 
   const renderStep3 = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-green-400 mb-4">📋 Detalles para Reporte Cliente</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">Hora Asignación</label>
-          <input
-            type="time"
-            value={formData.hora_asignacion}
-            onChange={(e) => handleInputChange('hora_asignacion', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Hora Llegada</label>
-          <input
-            type="time"
-            value={formData.hora_llegada}
-            onChange={(e) => handleInputChange('hora_llegada', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Hora Término</label>
-          <input
-            type="time"
-            value={formData.hora_termino}
-            onChange={(e) => handleInputChange('hora_termino', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label className="block text-gray-300 mb-2">KM Inicial</label>
-          <input
-            type="number"
-            value={formData.km_inicial}
-            onChange={(e) => handleInputChange('km_inicial', e.target.value)}
-            placeholder="0"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">KM Final</label>
-          <input
-            type="number"
-            value={formData.km_final}
-            onChange={(e) => handleInputChange('km_final', e.target.value)}
-            placeholder="0"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">KM Vehículo</label>
-          <input
-            type="number"
-            value={formData.km_vehiculo}
-            onChange={(e) => handleInputChange('km_vehiculo', e.target.value)}
-            placeholder="0"
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-300 mb-2">Nivel Combustible</label>
-          <select
-            value={formData.nivel_combustible}
-            onChange={(e) => handleInputChange('nivel_combustible', e.target.value)}
-            className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-          >
-            {nivelesGasolina.map(nivel => (
-              <option key={nivel} value={nivel}>{nivel}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <label className="block text-gray-300">Equipamiento Presente</label>
-          <div className="flex space-x-2">
-            <button
-              type="button"
-              onClick={() => setFormData(prev => ({ ...prev, equipamiento: [...equipamientoCompleto] }))}
-              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500 transition-colors"
-            >
-              ✅ Seleccionar Todo
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormData(prev => ({ ...prev, equipamiento: [] }))}
-              className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-500 transition-colors"
-            >
-              ❌ Deseleccionar Todo
-            </button>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-primary">
+          <Clock className="h-5 w-5" />
+          Detalles para Reporte Cliente
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="hora_asignacion">Hora Asignación</Label>
+            <Input
+              id="hora_asignacion"
+              type="time"
+              value={formData.hora_asignacion}
+              onChange={(e) => handleInputChange('hora_asignacion', e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="hora_llegada">Hora Llegada</Label>
+            <Input
+              id="hora_llegada"
+              type="time"
+              value={formData.hora_llegada}
+              onChange={(e) => handleInputChange('hora_llegada', e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="hora_termino">Hora Término</Label>
+            <Input
+              id="hora_termino"
+              type="time"
+              value={formData.hora_termino}
+              onChange={(e) => handleInputChange('hora_termino', e.target.value)}
+            />
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {equipamientoCompleto.map(item => (
-            <label key={item} className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={formData.equipamiento.includes(item)}
-                onChange={(e) => handleEquipamientoChange(item, e.target.checked)}
-                className="text-green-400"
-              />
-              <span className="text-gray-300">{item}</span>
-            </label>
-          ))}
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="km_inicial">KM Inicial</Label>
+            <Input
+              id="km_inicial"
+              type="number"
+              value={formData.km_inicial}
+              onChange={(e) => handleInputChange('km_inicial', e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="km_final">KM Final</Label>
+            <Input
+              id="km_final"
+              type="number"
+              value={formData.km_final}
+              onChange={(e) => handleInputChange('km_final', e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="km_vehiculo">KM Vehículo</Label>
+            <Input
+              id="km_vehiculo"
+              type="number"
+              value={formData.km_vehiculo}
+              onChange={(e) => handleInputChange('km_vehiculo', e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="nivel_combustible">Nivel Combustible</Label>
+            <Select value={formData.nivel_combustible} onValueChange={(value) => handleInputChange('nivel_combustible', value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {nivelesGasolina.map(nivel => (
+                  <SelectItem key={nivel} value={nivel}>{nivel}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <label className="block text-gray-300 mb-2">Tipo de Asistencia Detallado</label>
-        <input
-          type="text"
-          value={formData.tipo_asistencia_detallado}
-          onChange={(e) => handleInputChange('tipo_asistencia_detallado', e.target.value)}
-          placeholder="Descripción específica del tipo de asistencia"
-          className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-        />
-      </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Equipamiento Presente</Label>
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormData(prev => ({ ...prev, equipamiento: [...equipamientoCompleto] }))}
+              >
+                ✅ Todo
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormData(prev => ({ ...prev, equipamiento: [] }))}
+              >
+                ❌ Ninguno
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {equipamientoCompleto.map(item => (
+              <label key={item} className="flex items-center space-x-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={formData.equipamiento.includes(item)}
+                  onChange={(e) => handleEquipamientoChange(item, e.target.checked)}
+                  className="rounded border-border"
+                />
+                <span className="text-muted-foreground">{item}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
-      <div>
-        <label className="block text-gray-300 mb-2">Daños y Condiciones</label>
-        <textarea
-          value={formData.danos_condiciones}
-          onChange={(e) => handleInputChange('danos_condiciones', e.target.value)}
-          placeholder="Descripción de daños visibles y condiciones generales"
-          rows={3}
-          className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="tipo_asistencia_detallado">Tipo de Asistencia Detallado</Label>
+          <Input
+            id="tipo_asistencia_detallado"
+            value={formData.tipo_asistencia_detallado}
+            onChange={(e) => handleInputChange('tipo_asistencia_detallado', e.target.value)}
+            placeholder="Descripción específica del tipo de asistencia"
+          />
+        </div>
 
-      <div>
-        <label className="block text-gray-300 mb-2">Observaciones Técnicas</label>
-        <textarea
-          value={formData.observaciones_tecnicas}
-          onChange={(e) => handleInputChange('observaciones_tecnicas', e.target.value)}
-          placeholder="Observaciones técnicas detalladas"
-          rows={3}
-          className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-        />
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="danos_condiciones">Daños y Condiciones</Label>
+          <Input
+            id="danos_condiciones"
+            value={formData.danos_condiciones}
+            onChange={(e) => handleInputChange('danos_condiciones', e.target.value)}
+            placeholder="Descripción de daños visibles y condiciones generales"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="observaciones_tecnicas">Observaciones Técnicas</Label>
+          <Input
+            id="observaciones_tecnicas"
+            value={formData.observaciones_tecnicas}
+            onChange={(e) => handleInputChange('observaciones_tecnicas', e.target.value)}
+            placeholder="Observaciones técnicas detalladas"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-gray-800 p-4 border-b border-gray-700">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-green-400">
-            <Truck className="inline mr-2" />
-            SGG Grúa PWA
-          </h1>
-          <div className="text-sm text-gray-400">
-            Paso {currentStep} de 3
+      <div className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
+              <Truck className="h-6 w-6" />
+              SGG Grúa PWA
+            </h1>
+            <Badge variant="outline">
+              Paso {currentStep} de 3
+            </Badge>
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-gray-800 px-4 py-2">
-        <div className="w-full bg-gray-700 rounded-full h-2">
-          <div 
-            className="bg-green-400 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / 3) * 100}%` }}
-          />
+      <div className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 py-2">
+          <Progress value={(currentStep / 3) * 100} className="h-2" />
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4 max-w-4xl mx-auto">
-        {currentStep === 1 && renderStep1()}
-        {currentStep === 2 && renderStep2()}
-        {currentStep === 3 && renderStep3()}
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <div className="animate-fade-in">
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
+        </div>
 
         {/* Status Messages */}
         {submitStatus && (
-          <div className={`mt-6 p-4 rounded-lg flex items-center space-x-2 ${
+          <Alert className={`mt-6 ${
             submitStatus.type === 'success' 
-              ? 'bg-green-900 border border-green-700' 
-              : 'bg-red-900 border border-red-700'
+              ? 'border-primary bg-primary/10' 
+              : 'border-destructive bg-destructive/10'
           }`}>
             {submitStatus.type === 'success' ? 
-              <CheckCircle className="text-green-400" /> : 
-              <AlertCircle className="text-red-400" />
+              <CheckCircle className="h-4 w-4 text-primary" /> : 
+              <AlertCircle className="h-4 w-4 text-destructive" />
             }
-            <span>{submitStatus.message}</span>
-          </div>
+            <AlertDescription>
+              {submitStatus.message}
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Navigation */}
         <div className="flex justify-between mt-8">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
             disabled={currentStep === 1}
-            className="px-6 py-3 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
           >
             Anterior
-          </button>
+          </Button>
 
           {currentStep < 3 ? (
-            <button
+            <Button
               onClick={() => setCurrentStep(currentStep + 1)}
               disabled={currentStep === 1 ? !isStep1Valid() : currentStep === 2 ? !isFormValid() : false}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-500 transition-colors"
             >
               Siguiente
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={!isFormValid() || isSubmitting}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-500 transition-colors flex items-center space-x-2"
+              className="flex items-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -649,42 +672,59 @@ const SGGGruaPWA = () => {
                 </>
               ) : (
                 <>
-                  <CheckCircle size={20} />
+                  <CheckCircle className="h-4 w-4" />
                   <span>Crear Servicio</span>
                 </>
               )}
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Debug Info */}
-        <div className="mt-8 p-4 bg-gray-800 rounded-lg">
-          <h3 className="text-green-400 font-bold mb-2">🔧 Estado del Sistema:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <strong>Paso 1 (Datos Básicos):</strong> {isStep1Valid() ? '✅ Completo' : '❌ Incompleto'}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="text-primary flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Estado del Sistema
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="flex justify-between">
+                <span>Paso 1 (Datos Básicos):</span>
+                <Badge variant={isStep1Valid() ? "default" : "secondary"}>
+                  {isStep1Valid() ? '✅ Completo' : '❌ Incompleto'}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span>Paso 2 (Asignación):</span>
+                <Badge variant={isStep2Valid() ? "default" : "secondary"}>
+                  {isStep2Valid() ? '✅ Completo' : '❌ Pendiente'}
+                </Badge>
+              </div>
+              <div className="flex justify-between">
+                <span>Equipamiento Seleccionado:</span>
+                <Badge variant="outline">{formData.equipamiento.length}/15</Badge>
+              </div>
+              <div className="flex justify-between">
+                <span>Tiempo de Servicio:</span>
+                <Badge variant="outline">{calculateServiceTime()}</Badge>
+              </div>
             </div>
-            <div>
-              <strong>Paso 2 (Asignación):</strong> {isStep2Valid() ? '✅ Completo' : '❌ Pendiente'}
-            </div>
-            <div>
-              <strong>Equipamiento Seleccionado:</strong> {formData.equipamiento.length}/15
-            </div>
-            <div>
-              <strong>Tiempo de Servicio:</strong> {calculateServiceTime()}
-            </div>
-          </div>
-          
-          {currentStep <= 2 && (
-            <div className="mt-4 p-3 bg-gray-700 rounded text-sm">
-              <strong>Estado Actual:</strong> 
-              {currentStep === 1 && isStep1Valid() && ' ✅ Paso 1 completo - Puedes continuar al Paso 2'}
-              {currentStep === 1 && !isStep1Valid() && ' ❌ Completa los campos básicos del vehículo'}
-              {currentStep === 2 && !isStep2Valid() && ' ❌ Selecciona cliente, grúa, operador y tipo de servicio'}
-              {currentStep === 2 && isStep2Valid() && ' ✅ Paso 2 completo - Puedes continuar al Paso 3'}
-            </div>
-          )}
-        </div>
+            
+            {currentStep <= 2 && (
+              <Alert className="mt-4">
+                <AlertDescription>
+                  <strong>Estado Actual:</strong> 
+                  {currentStep === 1 && isStep1Valid() && ' ✅ Paso 1 completo - Puedes continuar al Paso 2'}
+                  {currentStep === 1 && !isStep1Valid() && ' ❌ Completa los campos básicos del vehículo'}
+                  {currentStep === 2 && !isStep2Valid() && ' ❌ Selecciona cliente, grúa, operador y tipo de servicio'}
+                  {currentStep === 2 && isStep2Valid() && ' ✅ Paso 2 completo - Puedes continuar al Paso 3'}
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
