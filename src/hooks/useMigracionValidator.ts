@@ -34,14 +34,6 @@ export const useMigracionValidator = () => {
     return dv === dvCalculado;
   };
 
-  const validarPatente = (patente: string): boolean => {
-    if (!patente) return false;
-    
-    // Patentes chilenas: ABCD12 o AB1234
-    const patenteRegex = /^[A-Z]{2}\d{4}$|^[A-Z]{4}\d{2}$/;
-    return patenteRegex.test(patente.toUpperCase());
-  };
-
   const validarFecha = (fecha: string): boolean => {
     if (!fecha) return false;
     
@@ -97,7 +89,7 @@ export const useMigracionValidator = () => {
         });
       }
       
-      // Validar patente
+      // Validar patente (obligatoria pero sin validar formato)
       if (!fila.patente) {
         validaciones.push({
           fila: numeroFila,
@@ -105,15 +97,6 @@ export const useMigracionValidator = () => {
           campo: 'patente',
           mensaje: 'Patente es obligatoria',
           valorOriginal: fila.patente
-        });
-      } else if (!validarPatente(fila.patente)) {
-        validaciones.push({
-          fila: numeroFila,
-          nivel: 'error',
-          campo: 'patente',
-          mensaje: 'Formato de patente inválido',
-          valorOriginal: fila.patente,
-          sugerencia: 'Use formato chileno: ABCD12 o AB1234'
         });
       }
       
@@ -149,15 +132,8 @@ export const useMigracionValidator = () => {
         });
       }
       
-      if (!fila.cliente_rut) {
-        validaciones.push({
-          fila: numeroFila,
-          nivel: 'error',
-          campo: 'cliente_rut',
-          mensaje: 'RUT del cliente es obligatorio',
-          valorOriginal: fila.cliente_rut
-        });
-      } else if (!validarRUT(fila.cliente_rut)) {
+      // RUT del cliente es opcional, pero si existe debe ser válido
+      if (fila.cliente_rut && !validarRUT(fila.cliente_rut)) {
         validaciones.push({
           fila: numeroFila,
           nivel: 'error',
