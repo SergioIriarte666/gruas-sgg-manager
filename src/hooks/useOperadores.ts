@@ -21,6 +21,8 @@ export const useOperadores = () => {
         telefono: operador.telefono,
         numeroLicencia: operador.numero_licencia,
         activo: operador.activo,
+        vencimientoLicencia: operador.vencimiento_licencia ? new Date(operador.vencimiento_licencia) : undefined,
+        vencimientoExamenes: operador.vencimiento_examenes ? new Date(operador.vencimiento_examenes) : undefined,
         createdAt: new Date(operador.created_at),
         updatedAt: new Date(operador.updated_at)
       })) as Operador[];
@@ -32,7 +34,15 @@ export const useCreateOperador = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (operador: { nombreCompleto: string; rut: string; telefono: string; numeroLicencia: string; activo: boolean }) => {
+    mutationFn: async (operador: { 
+      nombreCompleto: string; 
+      rut: string; 
+      telefono: string; 
+      numeroLicencia: string; 
+      activo: boolean;
+      vencimientoLicencia?: Date;
+      vencimientoExamenes?: Date;
+    }) => {
       const { data, error } = await supabase
         .from('operadores')
         .insert({
@@ -40,7 +50,9 @@ export const useCreateOperador = () => {
           rut: operador.rut,
           telefono: operador.telefono,
           numero_licencia: operador.numeroLicencia,
-          activo: operador.activo
+          activo: operador.activo,
+          vencimiento_licencia: operador.vencimientoLicencia?.toISOString().split('T')[0],
+          vencimiento_examenes: operador.vencimientoExamenes?.toISOString().split('T')[0]
         })
         .select()
         .single();
@@ -58,7 +70,16 @@ export const useUpdateOperador = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: { id: string; nombreCompleto: string; rut: string; telefono: string; numeroLicencia: string; activo: boolean }) => {
+    mutationFn: async (params: { 
+      id: string; 
+      nombreCompleto: string; 
+      rut: string; 
+      telefono: string; 
+      numeroLicencia: string; 
+      activo: boolean;
+      vencimientoLicencia?: Date;
+      vencimientoExamenes?: Date;
+    }) => {
       const { id, ...operador } = params;
       
       const { data, error } = await supabase
@@ -68,7 +89,9 @@ export const useUpdateOperador = () => {
           rut: operador.rut,
           telefono: operador.telefono,
           numero_licencia: operador.numeroLicencia,
-          activo: operador.activo
+          activo: operador.activo,
+          vencimiento_licencia: operador.vencimientoLicencia?.toISOString().split('T')[0],
+          vencimiento_examenes: operador.vencimientoExamenes?.toISOString().split('T')[0]
         })
         .eq('id', id)
         .select()

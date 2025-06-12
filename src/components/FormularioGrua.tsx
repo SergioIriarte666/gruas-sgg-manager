@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Loader2 } from "lucide-react";
 import { useCreateGrua, useUpdateGrua } from "@/hooks/useGruas";
 import { Grua } from "@/types";
@@ -20,6 +21,9 @@ const esquemaGrua = z.object({
     required_error: "Debe seleccionar un tipo",
   }),
   activo: z.boolean(),
+  vencimientoPermisoCirculacion: z.date().optional(),
+  vencimientoSeguroObligatorio: z.date().optional(),
+  vencimientoRevisionTecnica: z.date().optional(),
 });
 
 type DatosFormulario = z.infer<typeof esquemaGrua>;
@@ -42,18 +46,23 @@ export function FormularioGrua({ grua, onSuccess, onCancel }: Props) {
       modelo: grua?.modelo || "",
       tipo: grua?.tipo || "Liviana",
       activo: grua?.activo ?? true,
+      vencimientoPermisoCirculacion: grua?.vencimientoPermisoCirculacion,
+      vencimientoSeguroObligatorio: grua?.vencimientoSeguroObligatorio,
+      vencimientoRevisionTecnica: grua?.vencimientoRevisionTecnica,
     },
   });
 
   const onSubmit = async (datos: DatosFormulario) => {
     try {
-      // Asegurarse de que todos los campos obligatorios existan
       const datosValidados = {
         patente: datos.patente || "",
         marca: datos.marca || "",
         modelo: datos.modelo || "",
         tipo: datos.tipo as 'Liviana' | 'Mediana' | 'Pesada',
         activo: datos.activo,
+        vencimientoPermisoCirculacion: datos.vencimientoPermisoCirculacion,
+        vencimientoSeguroObligatorio: datos.vencimientoSeguroObligatorio,
+        vencimientoRevisionTecnica: datos.vencimientoRevisionTecnica,
       };
 
       if (grua) {
@@ -126,6 +135,35 @@ export function FormularioGrua({ grua, onSuccess, onCancel }: Props) {
         {form.formState.errors.tipo && (
           <p className="text-sm text-red-500">{form.formState.errors.tipo.message}</p>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Venc. Permiso de Circulación</Label>
+          <DatePicker
+            selected={form.watch("vencimientoPermisoCirculacion")}
+            onSelect={(date) => form.setValue("vencimientoPermisoCirculacion", date)}
+            placeholder="Seleccionar fecha"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Venc. Seguro Obligatorio</Label>
+          <DatePicker
+            selected={form.watch("vencimientoSeguroObligatorio")}
+            onSelect={(date) => form.setValue("vencimientoSeguroObligatorio", date)}
+            placeholder="Seleccionar fecha"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Venc. Revisión Técnica</Label>
+          <DatePicker
+            selected={form.watch("vencimientoRevisionTecnica")}
+            onSelect={(date) => form.setValue("vencimientoRevisionTecnica", date)}
+            placeholder="Seleccionar fecha"
+          />
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">

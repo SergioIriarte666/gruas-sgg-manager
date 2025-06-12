@@ -1,4 +1,3 @@
-
 export interface Cliente {
   id: string;
   razonSocial: string;
@@ -18,6 +17,9 @@ export interface Grua {
   modelo: string;
   tipo: 'Liviana' | 'Mediana' | 'Pesada';
   activo: boolean;
+  vencimientoPermisoCirculacion?: Date;
+  vencimientoSeguroObligatorio?: Date;
+  vencimientoRevisionTecnica?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +31,8 @@ export interface Operador {
   telefono: string;
   numeroLicencia: string;
   activo: boolean;
+  vencimientoLicencia?: Date;
+  vencimientoExamenes?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -21,6 +21,9 @@ export const useGruas = () => {
         modelo: grua.modelo,
         tipo: grua.tipo as 'Liviana' | 'Mediana' | 'Pesada',
         activo: grua.activo,
+        vencimientoPermisoCirculacion: grua.vencimiento_permiso_circulacion ? new Date(grua.vencimiento_permiso_circulacion) : undefined,
+        vencimientoSeguroObligatorio: grua.vencimiento_seguro_obligatorio ? new Date(grua.vencimiento_seguro_obligatorio) : undefined,
+        vencimientoRevisionTecnica: grua.vencimiento_revision_tecnica ? new Date(grua.vencimiento_revision_tecnica) : undefined,
         createdAt: new Date(grua.created_at),
         updatedAt: new Date(grua.updated_at)
       })) as Grua[];
@@ -32,7 +35,16 @@ export const useCreateGrua = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (grua: { patente: string; marca: string; modelo: string; tipo: 'Liviana' | 'Mediana' | 'Pesada'; activo: boolean }) => {
+    mutationFn: async (grua: { 
+      patente: string; 
+      marca: string; 
+      modelo: string; 
+      tipo: 'Liviana' | 'Mediana' | 'Pesada'; 
+      activo: boolean;
+      vencimientoPermisoCirculacion?: Date;
+      vencimientoSeguroObligatorio?: Date;
+      vencimientoRevisionTecnica?: Date;
+    }) => {
       const { data, error } = await supabase
         .from('gruas')
         .insert({
@@ -40,7 +52,10 @@ export const useCreateGrua = () => {
           marca: grua.marca,
           modelo: grua.modelo,
           tipo: grua.tipo,
-          activo: grua.activo
+          activo: grua.activo,
+          vencimiento_permiso_circulacion: grua.vencimientoPermisoCirculacion?.toISOString().split('T')[0],
+          vencimiento_seguro_obligatorio: grua.vencimientoSeguroObligatorio?.toISOString().split('T')[0],
+          vencimiento_revision_tecnica: grua.vencimientoRevisionTecnica?.toISOString().split('T')[0]
         })
         .select()
         .single();
@@ -58,7 +73,17 @@ export const useUpdateGrua = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: { id: string; patente: string; marca: string; modelo: string; tipo: 'Liviana' | 'Mediana' | 'Pesada'; activo: boolean }) => {
+    mutationFn: async (params: { 
+      id: string; 
+      patente: string; 
+      marca: string; 
+      modelo: string; 
+      tipo: 'Liviana' | 'Mediana' | 'Pesada'; 
+      activo: boolean;
+      vencimientoPermisoCirculacion?: Date;
+      vencimientoSeguroObligatorio?: Date;
+      vencimientoRevisionTecnica?: Date;
+    }) => {
       const { id, ...grua } = params;
       
       const { data, error } = await supabase
@@ -68,7 +93,10 @@ export const useUpdateGrua = () => {
           marca: grua.marca,
           modelo: grua.modelo,
           tipo: grua.tipo,
-          activo: grua.activo
+          activo: grua.activo,
+          vencimiento_permiso_circulacion: grua.vencimientoPermisoCirculacion?.toISOString().split('T')[0],
+          vencimiento_seguro_obligatorio: grua.vencimientoSeguroObligatorio?.toISOString().split('T')[0],
+          vencimiento_revision_tecnica: grua.vencimientoRevisionTecnica?.toISOString().split('T')[0]
         })
         .eq('id', id)
         .select()

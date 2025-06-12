@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Loader2 } from "lucide-react";
 import { useCreateOperador, useUpdateOperador } from "@/hooks/useOperadores";
 import { Operador } from "@/types";
@@ -17,6 +18,8 @@ const esquemaOperador = z.object({
   telefono: z.string().min(1, "El teléfono es requerido"),
   numeroLicencia: z.string().min(1, "El número de licencia es requerido"),
   activo: z.boolean(),
+  vencimientoLicencia: z.date().optional(),
+  vencimientoExamenes: z.date().optional(),
 });
 
 type DatosFormulario = z.infer<typeof esquemaOperador>;
@@ -39,18 +42,21 @@ export function FormularioOperador({ operador, onSuccess, onCancel }: Props) {
       telefono: operador?.telefono || "",
       numeroLicencia: operador?.numeroLicencia || "",
       activo: operador?.activo ?? true,
+      vencimientoLicencia: operador?.vencimientoLicencia,
+      vencimientoExamenes: operador?.vencimientoExamenes,
     },
   });
 
   const onSubmit = async (datos: DatosFormulario) => {
     try {
-      // Asegurarse de que todos los campos obligatorios existan
       const datosValidados = {
         nombreCompleto: datos.nombreCompleto || "",
         rut: datos.rut || "",
         telefono: datos.telefono || "",
         numeroLicencia: datos.numeroLicencia || "",
         activo: datos.activo,
+        vencimientoLicencia: datos.vencimientoLicencia,
+        vencimientoExamenes: datos.vencimientoExamenes,
       };
 
       if (operador) {
@@ -117,6 +123,26 @@ export function FormularioOperador({ operador, onSuccess, onCancel }: Props) {
         {form.formState.errors.numeroLicencia && (
           <p className="text-sm text-red-500">{form.formState.errors.numeroLicencia.message}</p>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Vencimiento Licencia de Conducir</Label>
+          <DatePicker
+            selected={form.watch("vencimientoLicencia")}
+            onSelect={(date) => form.setValue("vencimientoLicencia", date)}
+            placeholder="Seleccionar fecha"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Vencimiento de Exámenes</Label>
+          <DatePicker
+            selected={form.watch("vencimientoExamenes")}
+            onSelect={(date) => form.setValue("vencimientoExamenes", date)}
+            placeholder="Seleccionar fecha"
+          />
+        </div>
       </div>
 
       <div className="flex items-center space-x-2">

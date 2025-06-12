@@ -162,6 +162,9 @@ export type Database = {
           patente: string
           tipo: string
           updated_at: string
+          vencimiento_permiso_circulacion: string | null
+          vencimiento_revision_tecnica: string | null
+          vencimiento_seguro_obligatorio: string | null
         }
         Insert: {
           activo?: boolean
@@ -172,6 +175,9 @@ export type Database = {
           patente: string
           tipo: string
           updated_at?: string
+          vencimiento_permiso_circulacion?: string | null
+          vencimiento_revision_tecnica?: string | null
+          vencimiento_seguro_obligatorio?: string | null
         }
         Update: {
           activo?: boolean
@@ -182,6 +188,9 @@ export type Database = {
           patente?: string
           tipo?: string
           updated_at?: string
+          vencimiento_permiso_circulacion?: string | null
+          vencimiento_revision_tecnica?: string | null
+          vencimiento_seguro_obligatorio?: string | null
         }
         Relationships: []
       }
@@ -195,6 +204,8 @@ export type Database = {
           rut: string
           telefono: string
           updated_at: string
+          vencimiento_examenes: string | null
+          vencimiento_licencia: string | null
         }
         Insert: {
           activo?: boolean
@@ -205,6 +216,8 @@ export type Database = {
           rut: string
           telefono: string
           updated_at?: string
+          vencimiento_examenes?: string | null
+          vencimiento_licencia?: string | null
         }
         Update: {
           activo?: boolean
@@ -215,6 +228,8 @@ export type Database = {
           rut?: string
           telefono?: string
           updated_at?: string
+          vencimiento_examenes?: string | null
+          vencimiento_licencia?: string | null
         }
         Relationships: []
       }
