@@ -17,6 +17,8 @@ interface DatePickerFieldProps<
   name: TName;
   label: string;
   description?: string;
+  placeholder?: string;
+  disabled?: boolean;
 }
 
 export function DatePickerField<TFieldValues extends FieldValues>({
@@ -24,20 +26,30 @@ export function DatePickerField<TFieldValues extends FieldValues>({
   name,
   label,
   description,
+  placeholder = "Seleccionar fecha",
+  disabled = false,
 }: DatePickerFieldProps<TFieldValues>) {
   return (
     <FormField
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className="flex flex-col">
-          <FormLabel>{label}</FormLabel>
+        <FormItem className="flex flex-col space-y-2">
+          <FormLabel className="text-sm font-medium text-foreground">
+            {label}
+          </FormLabel>
           <DatePicker
-            selected={field.value ? new Date(field.value) : new Date()}
-            onSelect={(date) => field.onChange(date || new Date())}
-            placeholder="Seleccionar fecha"
+            selected={field.value ? new Date(field.value) : undefined}
+            onSelect={(date) => field.onChange(date)}
+            placeholder={placeholder}
+            disabled={disabled}
+            className="w-full"
           />
-          {description && <FormDescription>{description}</FormDescription>}
+          {description && (
+            <FormDescription className="text-xs text-muted-foreground">
+              {description}
+            </FormDescription>
+          )}
           <FormMessage />
         </FormItem>
       )}

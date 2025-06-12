@@ -27,3 +27,11 @@ export function formatSafeDate(date: string | Date | null | undefined, formatStr
     return "Error en fecha";
   }
 }
+
+export function formatDateSpanish(date: Date | string | null | undefined): string {
+  return formatSafeDate(date, "dd/MM/yyyy");
+}
+
+export function formatDateTimeSpanish(date: Date | string | null | undefined): string {
+  return formatSafeDate(date, "dd/MM/yyyy HH:mm");
+}
