@@ -20,6 +20,9 @@ import Migraciones from "./pages/Migraciones";
 import MigracionNueva from "./pages/MigracionNueva";
 import NotFound from "./pages/NotFound";
 
+// PWA Component
+import SGGGruaPWA from "./components/SGGGruaPWA";
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -29,29 +32,37 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              <AppSidebar />
-              <main className="flex-1">
-                <div className="p-4 bg-inherit">
-                  <SidebarTrigger className="mb-4" />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/clientes" element={<Clientes />} />
-                    <Route path="/gruas" element={<Gruas />} />
-                    <Route path="/operadores" element={<Operadores />} />
-                    <Route path="/tipos-servicio" element={<TiposServicio />} />
-                    <Route path="/cierres" element={<Cierres />} />
-                    <Route path="/facturas" element={<Facturas />} />
-                    <Route path="/reportes" element={<Reportes />} />
-                    <Route path="/migraciones" element={<Migraciones />} />
-                    <Route path="/migraciones/nueva" element={<MigracionNueva />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+          <Routes>
+            {/* PWA Route - Standalone layout */}
+            <Route path="/pwa-grua" element={<SGGGruaPWA />} />
+            
+            {/* Main App Routes with Sidebar */}
+            <Route path="/*" element={
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full">
+                  <AppSidebar />
+                  <main className="flex-1">
+                    <div className="p-4 bg-inherit">
+                      <SidebarTrigger className="mb-4" />
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/clientes" element={<Clientes />} />
+                        <Route path="/gruas" element={<Gruas />} />
+                        <Route path="/operadores" element={<Operadores />} />
+                        <Route path="/tipos-servicio" element={<TiposServicio />} />
+                        <Route path="/cierres" element={<Cierres />} />
+                        <Route path="/facturas" element={<Facturas />} />
+                        <Route path="/reportes" element={<Reportes />} />
+                        <Route path="/migraciones" element={<Migraciones />} />
+                        <Route path="/migraciones/nueva" element={<MigracionNueva />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </div>
+                  </main>
                 </div>
-              </main>
-            </div>
-          </SidebarProvider>
+              </SidebarProvider>
+            } />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

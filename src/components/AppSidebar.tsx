@@ -1,4 +1,5 @@
-import { Truck, Users, FileText, DollarSign, BarChart3, Settings, Home, UserCheck, Wrench, Calendar, Upload } from "lucide-react";
+
+import { Truck, Users, FileText, DollarSign, BarChart3, Settings, Home, UserCheck, Wrench, Calendar, Upload, Smartphone } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router-dom";
 
@@ -6,6 +7,10 @@ const mainMenuItems = [{
   title: "Servicios",
   url: "/",
   icon: Home
+}, {
+  title: "PWA Grúa",
+  url: "/pwa-grua",
+  icon: Smartphone
 }, {
   title: "Cierres",
   url: "/cierres",
@@ -23,6 +28,7 @@ const mainMenuItems = [{
   url: "/reportes",
   icon: BarChart3
 }];
+
 const maestrosItems = [{
   title: "Clientes",
   url: "/clientes",

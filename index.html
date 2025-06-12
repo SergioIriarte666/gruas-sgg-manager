@@ -1,14 +1,27 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>gruas-sgg-manager</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <meta name="description" content="Sistema de Gestión de Grúas - SGG Manager" />
+    <meta name="author" content="SGG Team" />
 
-    <meta property="og:title" content="gruas-sgg-manager" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SGG Grúa">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+
+    <meta property="og:title" content="SGG Grúa Manager" />
+    <meta property="og:description" content="Sistema de Gestión de Grúas" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
@@ -20,5 +33,51 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registrado exitosamente: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed') {
+                      if (navigator.serviceWorker.controller) {
+                        console.log('Nueva versión disponible');
+                        // You could show a notification here
+                      }
+                    }
+                  });
+                }
+              });
+            })
+            .catch((registrationError) => {
+              console.log('SW falló al registrarse: ', registrationError);
+            });
+        });
+      }
+
+      // PWA Install prompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('PWA install prompt available');
+        
+        // You could show a custom install button here
+        // For now, just log to console
+      });
+
+      // Track PWA usage
+      window.addEventListener('appinstalled', (evt) => {
+        console.log('PWA installed successfully');
+      });
+    </script>
   </body>
 </html>
