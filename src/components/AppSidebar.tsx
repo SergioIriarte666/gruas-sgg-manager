@@ -1,6 +1,7 @@
-import { Truck, Users, FileText, DollarSign, BarChart3, Settings, Home, UserCheck, Wrench, Calendar } from "lucide-react";
+import { Truck, Users, FileText, DollarSign, BarChart3, Settings, Home, UserCheck, Wrench, Calendar, Upload } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router-dom";
+
 const mainMenuItems = [{
   title: "Servicios",
   url: "/",
@@ -13,6 +14,10 @@ const mainMenuItems = [{
   title: "Facturas",
   url: "/facturas",
   icon: FileText
+}, {
+  title: "Migración Masiva",
+  url: "/migraciones",
+  icon: Upload
 }, {
   title: "Reportes",
   url: "/reportes",
@@ -35,6 +40,7 @@ const maestrosItems = [{
   url: "/tipos-servicio",
   icon: Wrench
 }];
+
 export function AppSidebar() {
   const location = useLocation();
   return <Sidebar>
