@@ -69,8 +69,8 @@ const MigracionNueva = () => {
   };
 
   const handleContinuarValidacion = () => {
-    if (estado.datos) {
-      const validaciones = validarDatos(estado.datos);
+    if (estado.datos && result) {
+      const validaciones = validarDatos(estado.datos, result.headers);
       setEstado(prev => ({
         ...prev,
         validaciones,
