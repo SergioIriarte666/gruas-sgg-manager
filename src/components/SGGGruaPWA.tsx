@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Camera, Download, Share, Trash2, Eye } from 'lucide-react';
+import { Camera, Download, Share, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
+import { EquipmentChecklist, EQUIPMENT_ITEMS } from '@/components/EquipmentChecklist';
 
 interface CapturedImage {
   id: string;
@@ -27,7 +28,7 @@ export default function SGGGruaPWA() {
     marcaVehiculo: '',
     modeloVehiculo: '',
     patente: '',
-    kilometraje: '', // Changed from "Km Vehículo"
+    kilometraje: '',
     ubicacionOrigen: '',
     ubicacionDestino: '',
     grua: '',
@@ -36,16 +37,36 @@ export default function SGGGruaPWA() {
     observaciones: ''
   });
 
-  // Image capture states
-  const [equipmentImages, setEquipmentImages] = useState<CapturedImage[]>([]);
+  // Equipment checklist state
+  const [equipmentChecked, setEquipmentChecked] = useState<Record<string, boolean>>({});
+
+  // Damage images state
   const [damageImages, setDamageImages] = useState<CapturedImage[]>([]);
-  const [captureMode, setCaptureMode] = useState<'equipment' | 'damage' | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleEquipmentToggle = (itemId: string) => {
+    setEquipmentChecked(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
+  };
+
+  const handleSelectAllEquipment = () => {
+    const allSelected: Record<string, boolean> = {};
+    EQUIPMENT_ITEMS.forEach(item => {
+      allSelected[item.id] = true;
+    });
+    setEquipmentChecked(allSelected);
+  };
+
+  const handleDeselectAllEquipment = () => {
+    setEquipmentChecked({});
   };
 
   const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,58 +84,38 @@ export default function SGGGruaPWA() {
       timestamp: new Date()
     };
 
-    if (captureMode === 'equipment') {
-      setEquipmentImages(prev => [...prev, newImage]);
+    if (damageImages.length >= 6) {
       toast({
-        title: "Imagen de equipamiento capturada",
-        description: "La imagen se ha agregado correctamente"
+        title: "Límite alcanzado",
+        description: "Solo se pueden capturar 6 fotografías de daños",
+        variant: "destructive"
       });
-    } else if (captureMode === 'damage') {
-      if (damageImages.length >= 6) {
-        toast({
-          title: "Límite alcanzado",
-          description: "Solo se pueden capturar 6 fotografías de daños",
-          variant: "destructive"
-        });
-        return;
-      }
-      setDamageImages(prev => [...prev, newImage]);
-      toast({
-        title: "Imagen de daños capturada",
-        description: `Imagen ${damageImages.length + 1}/6 agregada`
-      });
+      return;
     }
+    
+    setDamageImages(prev => [...prev, newImage]);
+    toast({
+      title: "Imagen de daños capturada",
+      description: `Imagen ${damageImages.length + 1}/6 agregada`
+    });
 
-    setCaptureMode(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const removeImage = (imageId: string, type: 'equipment' | 'damage') => {
-    if (type === 'equipment') {
-      setEquipmentImages(prev => {
-        const updated = prev.filter(img => img.id !== imageId);
-        const imageToRemove = prev.find(img => img.id === imageId);
-        if (imageToRemove) {
-          URL.revokeObjectURL(imageToRemove.preview);
-        }
-        return updated;
-      });
-    } else {
-      setDamageImages(prev => {
-        const updated = prev.filter(img => img.id !== imageId);
-        const imageToRemove = prev.find(img => img.id === imageId);
-        if (imageToRemove) {
-          URL.revokeObjectURL(imageToRemove.preview);
-        }
-        return updated;
-      });
-    }
+  const removeImage = (imageId: string) => {
+    setDamageImages(prev => {
+      const updated = prev.filter(img => img.id !== imageId);
+      const imageToRemove = prev.find(img => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+      return updated;
+    });
   };
 
-  const openCamera = (mode: 'equipment' | 'damage') => {
-    setCaptureMode(mode);
+  const openCamera = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -156,17 +157,58 @@ export default function SGGGruaPWA() {
       yPosition += 15;
 
       // Equipment section
-      if (equipmentImages.length > 0) {
+      const checkedEquipment = EQUIPMENT_ITEMS.filter(item => equipmentChecked[item.id]);
+      const uncheckedEquipment = EQUIPMENT_ITEMS.filter(item => !equipmentChecked[item.id]);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('EQUIPAMIENTO VERIFICADO:', 20, yPosition);
+      yPosition += 10;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Total verificado: ${checkedEquipment.length}/${EQUIPMENT_ITEMS.length}`, 20, yPosition);
+      yPosition += 10;
+
+      if (checkedEquipment.length > 0) {
         pdf.setFont('helvetica', 'bold');
-        pdf.text('EQUIPAMIENTO IDENTIFICADO:', 20, yPosition);
-        yPosition += 10;
+        pdf.text('PRESENTE:', 20, yPosition);
+        yPosition += 8;
         pdf.setFont('helvetica', 'normal');
-        pdf.text(`Total de elementos capturados: ${equipmentImages.length}`, 20, yPosition);
+        checkedEquipment.forEach(item => {
+          if (yPosition > 270) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+          pdf.text(`✓ ${item.name}`, 30, yPosition);
+          yPosition += 6;
+        });
+        yPosition += 5;
+      }
+
+      if (uncheckedEquipment.length > 0) {
+        if (yPosition > 250) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('NO VERIFICADO/AUSENTE:', 20, yPosition);
+        yPosition += 8;
+        pdf.setFont('helvetica', 'normal');
+        uncheckedEquipment.forEach(item => {
+          if (yPosition > 270) {
+            pdf.addPage();
+            yPosition = 20;
+          }
+          pdf.text(`✗ ${item.name}`, 30, yPosition);
+          yPosition += 6;
+        });
         yPosition += 10;
       }
 
       // Damage section
       if (damageImages.length > 0) {
+        if (yPosition > 250) {
+          pdf.addPage();
+          yPosition = 20;
+        }
         pdf.setFont('helvetica', 'bold');
         pdf.text('DAÑOS Y CONDICIONES:', 20, yPosition);
         yPosition += 10;
@@ -177,6 +219,10 @@ export default function SGGGruaPWA() {
 
       // Observations
       if (formData.observaciones) {
+        if (yPosition > 250) {
+          pdf.addPage();
+          yPosition = 20;
+        }
         pdf.setFont('helvetica', 'bold');
         pdf.text('OBSERVACIONES:', 20, yPosition);
         yPosition += 8;
@@ -412,58 +458,13 @@ export default function SGGGruaPWA() {
           </CardContent>
         </Card>
 
-        {/* Equipment Section */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary flex items-center gap-2">
-              <Camera className="h-5 w-5" />
-              Equipamiento del Vehículo
-            </CardTitle>
-            <p className="text-primary/70 text-sm">
-              Capture imágenes para identificar y marcar elementos del equipamiento
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={() => openCamera('equipment')}
-              className="w-full bg-primary text-black hover:bg-primary/90"
-              size="lg"
-            >
-              <Camera className="h-5 w-5 mr-2" />
-              Capturar Equipamiento
-            </Button>
-            
-            {equipmentImages.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {equipmentImages.map((image) => (
-                  <div key={image.id} className="relative group">
-                    <img
-                      src={image.preview}
-                      alt="Equipamiento"
-                      className="w-full h-32 object-cover rounded-lg border border-primary/30"
-                    />
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => removeImage(image.id, 'equipment')}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-primary/70 mt-1">
-                      {image.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <p className="text-sm text-primary/70">
-              Total de elementos capturados: {equipmentImages.length}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Equipment Checklist Section */}
+        <EquipmentChecklist
+          checkedItems={equipmentChecked}
+          onItemToggle={handleEquipmentToggle}
+          onSelectAll={handleSelectAllEquipment}
+          onDeselectAll={handleDeselectAllEquipment}
+        />
 
         {/* Damage and Conditions Section */}
         <Card className="bg-black border-primary/20">
@@ -478,7 +479,7 @@ export default function SGGGruaPWA() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
-              onClick={() => openCamera('damage')}
+              onClick={openCamera}
               disabled={damageImages.length >= 6}
               className="w-full bg-primary text-black hover:bg-primary/90 disabled:opacity-50"
               size="lg"
@@ -503,9 +504,9 @@ export default function SGGGruaPWA() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => removeImage(image.id, 'damage')}
+                        onClick={() => removeImage(image.id)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        ✕
                       </Button>
                     </div>
                     <p className="text-xs text-primary/70 mt-1">
