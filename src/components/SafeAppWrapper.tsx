@@ -12,7 +12,7 @@ function SafeAppWrapper({ children, fallback }: SafeAppWrapperProps) {
   useEffect(() => {
     console.log("SafeAppWrapper: Initializing...");
     
-    // Simple delay to ensure React and all contexts are ready
+    // Simple delay to ensure React is fully initialized
     const timer = setTimeout(() => {
       console.log("SafeAppWrapper: Ready!");
       setIsReady(true);
