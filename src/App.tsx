@@ -34,51 +34,55 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppContent() {
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <div className="min-h-screen bg-black text-primary flex w-full">
+        <AppSidebar />
+        <SidebarInset className="flex-1">
+          <Header showMenuButton />
+          <main className="flex-1 p-4 bg-black">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/gruas" element={<Gruas />} />
+              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/operadores" element={<Operadores />} />
+              <Route path="/servicios" element={<Servicios />} />
+              <Route path="/facturas" element={<Facturas />} />
+              <Route path="/cierres" element={<Cierres />} />
+              <Route path="/tipos-servicio" element={<TiposServicio />} />
+              <Route path="/reportes" element={<Reportes />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/migracion-nueva" element={<MigracionNueva />} />
+              <Route path="/migraciones" element={<Migraciones />} />
+              <Route path="/pwa-grua" element={<SGGGruaPWA />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
+          
+          {/* PWA Update/Install Prompts */}
+          <PWAUpdatePrompt position="bottom" autoShow />
+          
+          {/* Toast notifications */}
+          <Toaster />
+          <Sonner />
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
+  );
+}
+
 function App() {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <PWAProvider initialConfig={PWAPresets.production}>
-          <TooltipProvider>
-            <BrowserRouter>
-              <SidebarProvider defaultOpen={false}>
-                <div className="min-h-screen bg-black text-primary flex w-full">
-                  <AppSidebar />
-                  <SidebarInset className="flex-1">
-                    <Header showMenuButton />
-                    <main className="flex-1 p-4 bg-black">
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/gruas" element={<Gruas />} />
-                        <Route path="/clientes" element={<Clientes />} />
-                        <Route path="/operadores" element={<Operadores />} />
-                        <Route path="/servicios" element={<Servicios />} />
-                        <Route path="/facturas" element={<Facturas />} />
-                        <Route path="/cierres" element={<Cierres />} />
-                        <Route path="/tipos-servicio" element={<TiposServicio />} />
-                        <Route path="/reportes" element={<Reportes />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/migracion-nueva" element={<MigracionNueva />} />
-                        <Route path="/migraciones" element={<Migraciones />} />
-                        <Route path="/pwa-grua" element={<SGGGruaPWA />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </main>
-                    
-                    {/* PWA Update/Install Prompts */}
-                    <PWAUpdatePrompt position="bottom" autoShow />
-                    
-                    {/* Toast notifications */}
-                    <Toaster />
-                    <Sonner />
-                  </SidebarInset>
-                </div>
-              </SidebarProvider>
-            </BrowserRouter>
-          </TooltipProvider>
-        </PWAProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <PWAProvider initialConfig={PWAPresets.production}>
+        <TooltipProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </PWAProvider>
+    </QueryClientProvider>
   );
 }
 
