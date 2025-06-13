@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { ReportesLoadingSkeleton } from "@/components/reportes/ReportesLoadingSkeleton";
 
 interface QuerySafeWrapperProps {
@@ -19,16 +18,7 @@ export function QuerySafeWrapper({ children }: QuerySafeWrapperProps) {
     return () => clearTimeout(timer);
   }, []);
   
-  // Try to access QueryClient safely
-  let queryClient;
-  try {
-    queryClient = useQueryClient();
-  } catch (error) {
-    console.log('QueryClient not ready yet:', error);
-    return <ReportesLoadingSkeleton />;
-  }
-  
-  if (!isContextReady || !queryClient) {
+  if (!isContextReady) {
     console.log('QuerySafeWrapper: Context not ready yet');
     return <ReportesLoadingSkeleton />;
   }
