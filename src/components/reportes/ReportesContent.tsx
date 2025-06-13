@@ -10,22 +10,11 @@ import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useReportExport } from "@/hooks/useReportExport";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { ReportesLoadingSkeleton } from "@/components/reportes/ReportesLoadingSkeleton";
 
 export function ReportesContent() {
-  const [isReady, setIsReady] = useState(false);
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    // Simple check to ensure QueryClient is properly initialized
-    if (queryClient) {
-      console.log('QueryClient is available');
-      setIsReady(true);
-    }
-  }, [queryClient]);
-
+  console.log('ReportesContent: Starting to render...');
+  
   const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
   const { data: gruas = [], isLoading: gruasLoading } = useGruas();
@@ -52,9 +41,12 @@ export function ReportesContent() {
       servicio.valor
     ]);
 
-  if (!isReady || serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
+  if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
+    console.log('ReportesContent: Still loading data...');
     return <ReportesLoadingSkeleton />;
   }
+
+  console.log('ReportesContent: All data loaded, rendering main content');
 
   return (
     <div className="min-h-screen bg-gray-50">
