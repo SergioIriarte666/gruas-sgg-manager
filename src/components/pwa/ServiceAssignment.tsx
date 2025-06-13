@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Truck, Users, Settings } from 'lucide-react';
 import { useGruas } from '@/hooks/useGruas';
 import { useOperadores } from '@/hooks/useOperadores';
@@ -16,12 +17,6 @@ interface ServiceAssignmentProps {
   onOperadorSelect: (id: string) => void;
   onTipoServicioSelect: (id: string) => void;
   onClearSelection: (field: 'gruaId' | 'operadorId' | 'tipoServicioId') => void;
-  showGruaSelection: boolean;
-  showOperadorSelection: boolean;
-  showTipoServicioSelection: boolean;
-  onShowGruaSelection: (show: boolean) => void;
-  onShowOperadorSelection: (show: boolean) => void;
-  onShowTipoServicioSelection: (show: boolean) => void;
 }
 
 export function ServiceAssignment({
@@ -31,13 +26,7 @@ export function ServiceAssignment({
   onGruaSelect,
   onOperadorSelect,
   onTipoServicioSelect,
-  onClearSelection,
-  showGruaSelection,
-  showOperadorSelection,
-  showTipoServicioSelection,
-  onShowGruaSelection,
-  onShowOperadorSelection,
-  onShowTipoServicioSelection
+  onClearSelection
 }: ServiceAssignmentProps) {
   const { data: gruas = [] } = useGruas();
   const { data: operadores = [] } = useOperadores();
@@ -77,14 +66,21 @@ export function ServiceAssignment({
                 </div>
               </div>
             ) : (
-              <Button
-                onClick={() => onShowGruaSelection(true)}
-                variant="outline"
-                className="w-full border-2 border-dashed border-primary/30 text-primary hover:border-green-500 hover:bg-green-500/10"
-              >
-                <Truck className="h-4 w-4 mr-2" />
-                Seleccionar Grúa
-              </Button>
+              <Select value={gruaId} onValueChange={onGruaSelect}>
+                <SelectTrigger className="w-full border-2 border-dashed border-primary/30 text-primary bg-black">
+                  <div className="flex items-center">
+                    <Truck className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Seleccionar Grúa" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-black border-primary/30">
+                  {gruas.filter(grua => grua.activo).map((grua) => (
+                    <SelectItem key={grua.id} value={grua.id} className="text-primary hover:bg-primary/10">
+                      {grua.patente} - {grua.marca} {grua.modelo} ({grua.tipo})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
 
@@ -108,14 +104,21 @@ export function ServiceAssignment({
                 </div>
               </div>
             ) : (
-              <Button
-                onClick={() => onShowOperadorSelection(true)}
-                variant="outline"
-                className="w-full border-2 border-dashed border-primary/30 text-primary hover:border-green-500 hover:bg-green-500/10"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Seleccionar Operador
-              </Button>
+              <Select value={operadorId} onValueChange={onOperadorSelect}>
+                <SelectTrigger className="w-full border-2 border-dashed border-primary/30 text-primary bg-black">
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Seleccionar Operador" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-black border-primary/30">
+                  {operadores.filter(operador => operador.activo).map((operador) => (
+                    <SelectItem key={operador.id} value={operador.id} className="text-primary hover:bg-primary/10">
+                      {operador.nombreCompleto} - {operador.rut}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
 
@@ -139,14 +142,21 @@ export function ServiceAssignment({
                 </div>
               </div>
             ) : (
-              <Button
-                onClick={() => onShowTipoServicioSelection(true)}
-                variant="outline"
-                className="w-full border-2 border-dashed border-primary/30 text-primary hover:border-green-500 hover:bg-green-500/10"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Seleccionar Tipo de Servicio
-              </Button>
+              <Select value={tipoServicioId} onValueChange={onTipoServicioSelect}>
+                <SelectTrigger className="w-full border-2 border-dashed border-primary/30 text-primary bg-black">
+                  <div className="flex items-center">
+                    <Settings className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Seleccionar Tipo de Servicio" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-black border-primary/30">
+                  {tiposServicio.filter(tipo => tipo.activo).map((tipo) => (
+                    <SelectItem key={tipo.id} value={tipo.id} className="text-primary hover:bg-primary/10">
+                      {tipo.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
           </div>
         </div>
