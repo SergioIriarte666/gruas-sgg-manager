@@ -35,9 +35,9 @@ function App() {
             <SidebarProvider>
               <div className="min-h-screen bg-background text-foreground flex w-full">
                 <AppSidebar />
-                <SidebarInset>
+                <SidebarInset className="flex-1">
                   <Header showMenuButton />
-                  <main className="flex-1 p-4">
+                  <main className="flex-1 p-4 bg-gradient-to-br from-background via-background to-muted/20">
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/gruas" element={<Gruas />} />

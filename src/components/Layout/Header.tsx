@@ -36,20 +36,20 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
   };
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+    <header className="border-b border-border bg-gradient-to-r from-background via-background to-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Left side - Menu button + Title */}
           <div className="flex items-center gap-4">
             {showMenuButton && (
-              <SidebarTrigger className="md:hidden" />
+              <SidebarTrigger className="md:hidden hover:bg-primary/10 transition-colors" />
             )}
             
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold text-primary">
+              <h1 className="text-xl font-bold text-primary bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
                 {getPageTitle()}
               </h1>
-              <Badge variant="outline" className="hidden sm:flex">
+              <Badge variant="outline" className="hidden sm:flex bg-primary/10 text-primary border-primary/20 font-medium">
                 SGG Manager
               </Badge>
             </div>
@@ -78,10 +78,10 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
               variant="ghost"
               size="icon"
               asChild
-              className="relative"
+              className="relative hover:bg-primary/10 transition-colors group"
             >
               <Link to="/settings">
-                <Settings className="h-5 w-5" />
+                <Settings className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
               </Link>
             </Button>
           </div>
