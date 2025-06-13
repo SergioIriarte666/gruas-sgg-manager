@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
@@ -7,9 +8,20 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { withReactReady } from "@/hooks/useSafeHooks"
 
-export function Toaster() {
-  const { toasts } = useToast()
+function ToasterComponent() {
+  // Safe hook calls with error boundaries
+  let toasts: any[] = [];
+
+  try {
+    const { toasts: toastList } = useToast();
+    toasts = toastList;
+  } catch (error) {
+    console.error('Error in Toaster hooks:', error);
+    // Return null if hooks fail to initialize
+    return null;
+  }
 
   return (
     <ToastProvider>
@@ -31,3 +43,5 @@ export function Toaster() {
     </ToastProvider>
   )
 }
+
+export const Toaster = withReactReady(ToasterComponent);
