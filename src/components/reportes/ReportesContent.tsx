@@ -11,53 +11,16 @@ import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useReportExport } from "@/hooks/useReportExport";
 import { ReportesLoadingSkeleton } from "@/components/reportes/ReportesLoadingSkeleton";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 
 export function ReportesContent() {
   console.log('ReportesContent: Starting to render...');
   
-  const [contextReady, setContextReady] = useState(false);
-  const [dataReady, setDataReady] = useState(false);
-  
-  // Verificar que QueryClient esté disponible
-  const queryClient = useQueryClient();
-  
-  useEffect(() => {
-    console.log('ReportesContent: Checking context readiness...');
-    if (queryClient) {
-      console.log('ReportesContent: QueryClient available');
-      setContextReady(true);
-    }
-  }, [queryClient]);
-  
-  // Solo llamar hooks si el contexto está listo
-  const { data: servicios = [], isLoading: serviciosLoading, error: serviciosError } = contextReady 
-    ? useServicios() 
-    : { data: [], isLoading: true, error: null };
-    
-  const { data: clientes = [], isLoading: clientesLoading, error: clientesError } = contextReady 
-    ? useClientes() 
-    : { data: [], isLoading: true, error: null };
-    
-  const { data: gruas = [], isLoading: gruasLoading, error: gruasError } = contextReady 
-    ? useGruas() 
-    : { data: [], isLoading: true, error: null };
-    
-  const { data: operadores = [], isLoading: operadoresLoading, error: operadoresError } = contextReady 
-    ? useOperadores() 
-    : { data: [], isLoading: true, error: null };
+  const { data: servicios = [], isLoading: serviciosLoading, error: serviciosError } = useServicios();
+  const { data: clientes = [], isLoading: clientesLoading, error: clientesError } = useClientes();
+  const { data: gruas = [], isLoading: gruasLoading, error: gruasError } = useGruas();
+  const { data: operadores = [], isLoading: operadoresLoading, error: operadoresError } = useOperadores();
 
-  const { handleExportReport } = contextReady 
-    ? useReportExport(servicios, clientes, gruas, operadores)
-    : { handleExportReport: () => {} };
-
-  useEffect(() => {
-    if (contextReady && !serviciosLoading && !clientesLoading && !gruasLoading && !operadoresLoading) {
-      console.log('ReportesContent: All data loaded');
-      setDataReady(true);
-    }
-  }, [contextReady, serviciosLoading, clientesLoading, gruasLoading, operadoresLoading]);
+  const { handleExportReport } = useReportExport(servicios, clientes, gruas, operadores);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -78,15 +41,9 @@ export function ReportesContent() {
       servicio.valor
     ]);
 
-  // Mostrar loading si el contexto no está listo
-  if (!contextReady) {
-    console.log('ReportesContent: Context not ready, showing loading...');
-    return <ReportesLoadingSkeleton />;
-  }
-
   // Mostrar loading si los datos están cargando
-  if (!dataReady) {
-    console.log('ReportesContent: Data not ready, showing loading...');
+  if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
+    console.log('ReportesContent: Data loading, showing skeleton...');
     return <ReportesLoadingSkeleton />;
   }
 

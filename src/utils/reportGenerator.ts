@@ -2,190 +2,360 @@
 import jsPDF from 'jspdf';
 import { Servicio, Cliente, Grua, Operador } from '@/types';
 
-export const generateServiciosReport = (servicios: Servicio[]) => {
-  const doc = new jsPDF();
+// Colores corporativos
+const COLORS = {
+  primary: '#1e40af', // Azul corporativo
+  secondary: '#6b7280', // Gris texto
+  accent: '#059669', // Verde para montos
+  background: '#f9fafb', // Fondo claro
+  border: '#e5e7eb' // Bordes
+};
+
+// Función helper para agregar header corporativo
+const addCorporateHeader = (doc: jsPDF, title: string) => {
   const pageWidth = doc.internal.pageSize.width;
-  const margin = 20;
   
-  // Header
-  doc.setFontSize(18);
+  // Fondo del header
+  doc.setFillColor(248, 250, 252); // bg-slate-50
+  doc.rect(0, 0, pageWidth, 60, 'F');
+  
+  // Línea superior azul
+  doc.setFillColor(30, 64, 175); // blue-800
+  doc.rect(0, 0, pageWidth, 4, 'F');
+  
+  // Logo/Título principal
+  doc.setTextColor(30, 64, 175); // blue-800
+  doc.setFontSize(24);
   doc.setFont(undefined, 'bold');
-  doc.text('Reporte de Servicios', pageWidth / 2, 30, { align: 'center' });
+  doc.text('SGG', 20, 25);
   
-  // Date
   doc.setFontSize(10);
   doc.setFont(undefined, 'normal');
-  doc.text(`Generado el: ${new Date().toLocaleDateString('es-CL')}`, margin, 45);
+  doc.setTextColor(107, 114, 128); // gray-500
+  doc.text('Sistema de Gestión de Grúas', 20, 35);
   
-  // Summary
+  // Título del reporte
+  doc.setFontSize(18);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(17, 24, 39); // gray-900
+  doc.text(title, pageWidth / 2, 30, { align: 'center' });
+  
+  // Fecha de generación
+  doc.setFontSize(9);
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(107, 114, 128);
+  doc.text(`Generado el: ${new Date().toLocaleDateString('es-CL', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })}`, pageWidth - 20, 45, { align: 'right' });
+  
+  return 70; // Retorna la posición Y donde continuar
+};
+
+// Función helper para agregar footer
+const addFooter = (doc: jsPDF) => {
+  const pageHeight = doc.internal.pageSize.height;
+  const pageWidth = doc.internal.pageSize.width;
+  
+  // Línea divisoria
+  doc.setDrawColor(229, 231, 235); // gray-200
+  doc.setLineWidth(0.5);
+  doc.line(20, pageHeight - 25, pageWidth - 20, pageHeight - 25);
+  
+  // Texto del footer
+  doc.setFontSize(8);
+  doc.setTextColor(107, 114, 128); // gray-500
+  doc.text('SGG - Sistema de Gestión de Grúas | Reporte Confidencial', 20, pageHeight - 15);
+  doc.text(`Página ${doc.internal.getCurrentPageInfo().pageNumber}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+};
+
+// Función helper para crear secciones con estilo
+const addSection = (doc: jsPDF, title: string, yPos: number, content: () => number) => {
+  // Header de la sección
+  doc.setFillColor(248, 250, 252); // bg-slate-50
+  doc.rect(20, yPos, doc.internal.pageSize.width - 40, 15, 'F');
+  
+  doc.setDrawColor(229, 231, 235); // gray-200
+  doc.setLineWidth(0.5);
+  doc.rect(20, yPos, doc.internal.pageSize.width - 40, 15, 'S');
+  
   doc.setFontSize(12);
   doc.setFont(undefined, 'bold');
-  doc.text('Resumen:', margin, 60);
+  doc.setTextColor(30, 64, 175); // blue-800
+  doc.text(title, 25, yPos + 10);
   
-  doc.setFont(undefined, 'normal');
-  const totalServicios = servicios.length;
-  const serviciosEnCurso = servicios.filter(s => s.estado === 'en_curso').length;
-  const serviciosCerrados = servicios.filter(s => s.estado === 'cerrado').length;
-  const serviciosFacturados = servicios.filter(s => s.estado === 'facturado').length;
+  return content();
+};
+
+export const generateServiciosReport = (servicios: Servicio[]) => {
+  const doc = new jsPDF();
+  let yPos = addCorporateHeader(doc, 'REPORTE DE SERVICIOS');
   
-  doc.text(`Total de Servicios: ${totalServicios}`, margin, 70);
-  doc.text(`En Curso: ${serviciosEnCurso}`, margin, 80);
-  doc.text(`Cerrados: ${serviciosCerrados}`, margin, 90);
-  doc.text(`Facturados: ${serviciosFacturados}`, margin, 100);
-  
-  // Services list
-  if (servicios.length > 0) {
-    doc.setFont(undefined, 'bold');
-    doc.text('Detalle de Servicios:', margin, 120);
+  // Resumen ejecutivo
+  yPos = addSection(doc, 'RESUMEN EJECUTIVO', yPos + 10, () => {
+    const totalServicios = servicios.length;
+    const serviciosEnCurso = servicios.filter(s => s.estado === 'en_curso').length;
+    const serviciosCerrados = servicios.filter(s => s.estado === 'cerrado').length;
+    const serviciosFacturados = servicios.filter(s => s.estado === 'facturado').length;
     
-    let yPos = 135;
-    doc.setFont(undefined, 'normal');
+    let currentY = yPos + 25;
+    
     doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(55, 65, 81); // gray-700
     
-    servicios.forEach((servicio, index) => {
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 30;
-      }
-      
-      doc.text(`${index + 1}. Folio: ${servicio.folio}`, margin, yPos);
-      doc.text(`   Cliente: ${servicio.cliente?.razonSocial || 'N/A'}`, margin, yPos + 10);
-      doc.text(`   Fecha: ${servicio.fecha.toLocaleDateString('es-CL')}`, margin, yPos + 20);
-      doc.text(`   Estado: ${servicio.estado}`, margin, yPos + 30);
-      doc.text(`   Valor: $${servicio.valor.toLocaleString('es-CL')}`, margin, yPos + 40);
-      
-      yPos += 55;
+    const metrics = [
+      ['Total de Servicios:', totalServicios.toString()],
+      ['En Curso:', serviciosEnCurso.toString()],
+      ['Cerrados:', serviciosCerrados.toString()],
+      ['Facturados:', serviciosFacturados.toString()]
+    ];
+    
+    metrics.forEach(([label, value]) => {
+      doc.text(label, 25, currentY);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(30, 64, 175); // blue-800
+      doc.text(value, 120, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(55, 65, 81); // gray-700
+      currentY += 8;
     });
-  } else {
-    doc.text('No hay servicios registrados.', margin, 135);
+    
+    return currentY + 10;
+  });
+  
+  // Detalle de servicios
+  if (servicios.length > 0) {
+    yPos = addSection(doc, 'DETALLE DE SERVICIOS', yPos, () => {
+      let currentY = yPos + 25;
+      
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(55, 65, 81);
+      
+      servicios.slice(0, 20).forEach((servicio, index) => {
+        if (currentY > 250) {
+          doc.addPage();
+          addCorporateHeader(doc, 'REPORTE DE SERVICIOS (Continuación)');
+          currentY = 80;
+        }
+        
+        // Fondo alternado para filas
+        if (index % 2 === 0) {
+          doc.setFillColor(249, 250, 251); // gray-50
+          doc.rect(20, currentY - 5, doc.internal.pageSize.width - 40, 20, 'F');
+        }
+        
+        doc.setFont(undefined, 'bold');
+        doc.text(`${index + 1}. Folio: ${servicio.folio}`, 25, currentY);
+        
+        doc.setFont(undefined, 'normal');
+        doc.text(`Cliente: ${servicio.cliente?.razonSocial || 'N/A'}`, 30, currentY + 6);
+        doc.text(`Fecha: ${new Date(servicio.fecha).toLocaleDateString('es-CL')}`, 30, currentY + 12);
+        
+        // Estado con color
+        const estadoColor = servicio.estado === 'facturado' ? [5, 150, 105] : 
+                           servicio.estado === 'cerrado' ? [59, 130, 246] : [245, 158, 11];
+        doc.setTextColor(...estadoColor);
+        doc.text(`Estado: ${servicio.estado.toUpperCase()}`, 120, currentY + 6);
+        
+        // Valor con formato
+        doc.setTextColor(5, 150, 105); // green-600
+        doc.setFont(undefined, 'bold');
+        doc.text(`Valor: $${servicio.valor.toLocaleString('es-CL')}`, 120, currentY + 12);
+        
+        doc.setTextColor(55, 65, 81);
+        doc.setFont(undefined, 'normal');
+        currentY += 25;
+      });
+      
+      return currentY;
+    });
   }
   
+  addFooter(doc);
   return doc;
 };
 
 export const generateFinancialReport = (servicios: Servicio[]) => {
   const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
-  const margin = 20;
+  let yPos = addCorporateHeader(doc, 'REPORTE FINANCIERO');
   
-  // Header
-  doc.setFontSize(18);
-  doc.setFont(undefined, 'bold');
-  doc.text('Reporte Financiero', pageWidth / 2, 30, { align: 'center' });
-  
-  // Date
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text(`Generado el: ${new Date().toLocaleDateString('es-CL')}`, margin, 45);
-  
-  // Financial summary
   const ingresosTotales = servicios.reduce((acc, s) => acc + s.valor, 0);
   const serviciosFacturados = servicios.filter(s => s.estado === 'facturado');
   const ingresosFacturados = serviciosFacturados.reduce((acc, s) => acc + s.valor, 0);
   const ingresosPendientes = servicios.filter(s => s.estado !== 'facturado').reduce((acc, s) => acc + s.valor, 0);
   
-  doc.setFontSize(12);
-  doc.setFont(undefined, 'bold');
-  doc.text('Resumen Financiero:', margin, 60);
-  
-  doc.setFont(undefined, 'normal');
-  doc.text(`Ingresos Totales: $${ingresosTotales.toLocaleString('es-CL')}`, margin, 75);
-  doc.text(`Ingresos Facturados: $${ingresosFacturados.toLocaleString('es-CL')}`, margin, 85);
-  doc.text(`Ingresos Pendientes: $${ingresosPendientes.toLocaleString('es-CL')}`, margin, 95);
-  doc.text(`Servicios Facturados: ${serviciosFacturados.length}`, margin, 105);
-  
-  if (servicios.length > 0) {
-    const valorPromedio = ingresosTotales / servicios.length;
-    doc.text(`Valor Promedio por Servicio: $${valorPromedio.toLocaleString('es-CL')}`, margin, 115);
-  }
-  
-  // Monthly breakdown (if there are services)
-  if (servicios.length > 0) {
-    doc.setFont(undefined, 'bold');
-    doc.text('Desglose por Estado:', margin, 135);
+  // Métricas principales
+  yPos = addSection(doc, 'MÉTRICAS PRINCIPALES', yPos + 10, () => {
+    let currentY = yPos + 25;
     
-    let yPos = 150;
-    doc.setFont(undefined, 'normal');
+    const financialMetrics = [
+      ['Ingresos Totales:', `$${ingresosTotales.toLocaleString('es-CL')}`],
+      ['Ingresos Facturados:', `$${ingresosFacturados.toLocaleString('es-CL')}`],
+      ['Ingresos Pendientes:', `$${ingresosPendientes.toLocaleString('es-CL')}`],
+      ['Servicios Facturados:', serviciosFacturados.length.toString()],
+      ['Valor Promedio:', servicios.length > 0 ? `$${Math.round(ingresosTotales / servicios.length).toLocaleString('es-CL')}` : '$0']
+    ];
     
-    const estadosSummary = {
-      'en_curso': { count: 0, total: 0 },
-      'cerrado': { count: 0, total: 0 },
-      'facturado': { count: 0, total: 0 }
-    };
+    doc.setFontSize(11);
     
-    servicios.forEach(s => {
-      estadosSummary[s.estado].count++;
-      estadosSummary[s.estado].total += s.valor;
+    financialMetrics.forEach(([label, value]) => {
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(55, 65, 81);
+      doc.text(label, 25, currentY);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(5, 150, 105); // green-600 para valores monetarios
+      doc.text(value, 120, currentY);
+      
+      currentY += 12;
     });
     
-    Object.entries(estadosSummary).forEach(([estado, data]) => {
-      const estadoLabel = estado === 'en_curso' ? 'En Curso' : 
-                         estado === 'cerrado' ? 'Cerrados' : 'Facturados';
-      doc.text(`${estadoLabel}: ${data.count} servicios - $${data.total.toLocaleString('es-CL')}`, margin, yPos);
-      yPos += 15;
-    });
-  }
+    return currentY + 10;
+  });
   
+  // Análisis por estado
+  yPos = addSection(doc, 'ANÁLISIS POR ESTADO', yPos, () => {
+    let currentY = yPos + 25;
+    
+    const estadosSummary = [
+      { 
+        estado: 'En Curso', 
+        count: servicios.filter(s => s.estado === 'en_curso').length,
+        total: servicios.filter(s => s.estado === 'en_curso').reduce((acc, s) => acc + s.valor, 0)
+      },
+      { 
+        estado: 'Cerrados', 
+        count: servicios.filter(s => s.estado === 'cerrado').length,
+        total: servicios.filter(s => s.estado === 'cerrado').reduce((acc, s) => acc + s.valor, 0)
+      },
+      { 
+        estado: 'Facturados', 
+        count: serviciosFacturados.length,
+        total: ingresosFacturados
+      }
+    ];
+    
+    doc.setFontSize(10);
+    
+    estadosSummary.forEach((item) => {
+      const percentage = ingresosTotales > 0 ? ((item.total / ingresosTotales) * 100).toFixed(1) : '0';
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(30, 64, 175);
+      doc.text(item.estado, 25, currentY);
+      
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(55, 65, 81);
+      doc.text(`${item.count} servicios`, 25, currentY + 8);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(5, 150, 105);
+      doc.text(`$${item.total.toLocaleString('es-CL')} (${percentage}%)`, 120, currentY + 4);
+      
+      currentY += 20;
+    });
+    
+    return currentY;
+  });
+  
+  addFooter(doc);
   return doc;
 };
 
 export const generateClientesReport = (clientes: Cliente[], servicios: Servicio[]) => {
   const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
-  const margin = 20;
+  let yPos = addCorporateHeader(doc, 'REPORTE DE CLIENTES');
   
-  // Header
-  doc.setFontSize(18);
-  doc.setFont(undefined, 'bold');
-  doc.text('Reporte de Clientes', pageWidth / 2, 30, { align: 'center' });
-  
-  // Date
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text(`Generado el: ${new Date().toLocaleDateString('es-CL')}`, margin, 45);
-  
-  // Summary
-  doc.setFontSize(12);
-  doc.setFont(undefined, 'bold');
-  doc.text('Resumen:', margin, 60);
-  
-  doc.setFont(undefined, 'normal');
   const clientesActivos = clientes.filter(c => c.activo).length;
-  doc.text(`Total de Clientes: ${clientes.length}`, margin, 75);
-  doc.text(`Clientes Activos: ${clientesActivos}`, margin, 85);
   
-  // Client details
-  if (clientes.length > 0) {
-    doc.setFont(undefined, 'bold');
-    doc.text('Detalle de Clientes:', margin, 105);
+  // Resumen
+  yPos = addSection(doc, 'RESUMEN', yPos + 10, () => {
+    let currentY = yPos + 25;
     
-    let yPos = 120;
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
+    const clienteMetrics = [
+      ['Total de Clientes:', clientes.length.toString()],
+      ['Clientes Activos:', clientesActivos.toString()],
+      ['Tasa de Actividad:', `${((clientesActivos / clientes.length) * 100).toFixed(1)}%`]
+    ];
     
-    clientes.forEach((cliente, index) => {
-      if (yPos > 240) {
-        doc.addPage();
-        yPos = 30;
-      }
+    doc.setFontSize(11);
+    
+    clienteMetrics.forEach(([label, value]) => {
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(55, 65, 81);
+      doc.text(label, 25, currentY);
       
-      const serviciosCliente = servicios.filter(s => s.clienteId === cliente.id);
-      const ingresoCliente = serviciosCliente.reduce((acc, s) => acc + s.valor, 0);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(30, 64, 175);
+      doc.text(value, 120, currentY);
       
-      doc.text(`${index + 1}. ${cliente.razonSocial}`, margin, yPos);
-      doc.text(`   RUT: ${cliente.rut}`, margin, yPos + 10);
-      doc.text(`   Email: ${cliente.email}`, margin, yPos + 20);
-      doc.text(`   Teléfono: ${cliente.telefono}`, margin, yPos + 30);
-      doc.text(`   Servicios: ${serviciosCliente.length}`, margin, yPos + 40);
-      doc.text(`   Ingresos: $${ingresoCliente.toLocaleString('es-CL')}`, margin, yPos + 50);
-      doc.text(`   Estado: ${cliente.activo ? 'Activo' : 'Inactivo'}`, margin, yPos + 60);
-      
-      yPos += 75;
+      currentY += 10;
     });
-  } else {
-    doc.text('No hay clientes registrados.', margin, 120);
+    
+    return currentY + 10;
+  });
+  
+  // Top clientes
+  const topClientes = clientes
+    .map(cliente => {
+      const serviciosCliente = servicios.filter(s => s.clienteId === cliente.id);
+      return {
+        cliente,
+        servicios: serviciosCliente.length,
+        ingresos: serviciosCliente.reduce((acc, s) => acc + s.valor, 0)
+      };
+    })
+    .sort((a, b) => b.ingresos - a.ingresos)
+    .slice(0, 10);
+  
+  if (topClientes.length > 0) {
+    yPos = addSection(doc, 'TOP 10 CLIENTES POR INGRESOS', yPos, () => {
+      let currentY = yPos + 25;
+      
+      doc.setFontSize(9);
+      
+      topClientes.forEach((item, index) => {
+        if (currentY > 250) {
+          doc.addPage();
+          addCorporateHeader(doc, 'REPORTE DE CLIENTES (Continuación)');
+          currentY = 80;
+        }
+        
+        // Fondo alternado
+        if (index % 2 === 0) {
+          doc.setFillColor(249, 250, 251);
+          doc.rect(20, currentY - 5, doc.internal.pageSize.width - 40, 18, 'F');
+        }
+        
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(30, 64, 175);
+        doc.text(`${index + 1}. ${item.cliente.razonSocial}`, 25, currentY);
+        
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(55, 65, 81);
+        doc.text(`RUT: ${item.cliente.rut}`, 25, currentY + 6);
+        doc.text(`Servicios: ${item.servicios}`, 25, currentY + 12);
+        
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(5, 150, 105);
+        doc.text(`Ingresos: $${item.ingresos.toLocaleString('es-CL')}`, 120, currentY + 6);
+        
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(item.cliente.activo ? [5, 150, 105] : [239, 68, 68]);
+        doc.text(`Estado: ${item.cliente.activo ? 'ACTIVO' : 'INACTIVO'}`, 120, currentY + 12);
+        
+        currentY += 22;
+      });
+      
+      return currentY;
+    });
   }
   
+  addFooter(doc);
   return doc;
 };
 
@@ -196,26 +366,7 @@ export const generateDashboardReport = (
   operadores: Operador[]
 ) => {
   const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
-  const margin = 20;
-  
-  // Header
-  doc.setFontSize(18);
-  doc.setFont(undefined, 'bold');
-  doc.text('Dashboard Ejecutivo', pageWidth / 2, 30, { align: 'center' });
-  
-  // Date
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text(`Generado el: ${new Date().toLocaleDateString('es-CL')}`, margin, 45);
-  
-  // Key metrics
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text('Métricas Principales:', margin, 65);
-  
-  doc.setFontSize(12);
-  doc.setFont(undefined, 'normal');
+  let yPos = addCorporateHeader(doc, 'DASHBOARD EJECUTIVO');
   
   const totalServicios = servicios.length;
   const ingresosTotales = servicios.reduce((acc, s) => acc + s.valor, 0);
@@ -225,41 +376,104 @@ export const generateDashboardReport = (
   const serviciosFacturados = servicios.filter(s => s.estado === 'facturado').length;
   const eficiencia = totalServicios > 0 ? Math.round((serviciosFacturados / totalServicios) * 100) : 0;
   
-  let yPos = 80;
-  doc.text(`Total de Servicios: ${totalServicios}`, margin, yPos);
-  yPos += 15;
-  doc.text(`Ingresos Totales: $${ingresosTotales.toLocaleString('es-CL')}`, margin, yPos);
-  yPos += 15;
-  doc.text(`Clientes Activos: ${clientesActivos}`, margin, yPos);
-  yPos += 15;
-  doc.text(`Eficiencia: ${eficiencia}%`, margin, yPos);
-  yPos += 25;
+  // Métricas principales
+  yPos = addSection(doc, 'MÉTRICAS PRINCIPALES', yPos + 10, () => {
+    let currentY = yPos + 25;
+    
+    // Crear un grid de métricas
+    const metrics = [
+      { label: 'Total Servicios', value: totalServicios.toString(), color: [30, 64, 175] },
+      { label: 'Ingresos Totales', value: `$${ingresosTotales.toLocaleString('es-CL')}`, color: [5, 150, 105] },
+      { label: 'Clientes Activos', value: clientesActivos.toString(), color: [59, 130, 246] },
+      { label: 'Eficiencia', value: `${eficiencia}%`, color: [245, 158, 11] }
+    ];
+    
+    doc.setFontSize(12);
+    
+    // Dibujar métricas en grid 2x2
+    metrics.forEach((metric, index) => {
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const x = 25 + (col * 85);
+      const y = currentY + (row * 30);
+      
+      // Caja para la métrica
+      doc.setFillColor(248, 250, 252);
+      doc.rect(x, y - 8, 80, 25, 'F');
+      doc.setDrawColor(229, 231, 235);
+      doc.rect(x, y - 8, 80, 25, 'S');
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...metric.color);
+      doc.text(metric.value, x + 40, y + 2, { align: 'center' });
+      
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(107, 114, 128);
+      doc.setFontSize(9);
+      doc.text(metric.label, x + 40, y + 10, { align: 'center' });
+      doc.setFontSize(12);
+    });
+    
+    return currentY + 70;
+  });
   
-  // Resources
-  doc.setFont(undefined, 'bold');
-  doc.text('Recursos del Sistema:', margin, yPos);
-  yPos += 15;
+  // Recursos y distribución
+  yPos = addSection(doc, 'RECURSOS Y DISTRIBUCIÓN', yPos, () => {
+    let currentY = yPos + 25;
+    
+    // Recursos del sistema
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(30, 64, 175);
+    doc.text('Recursos del Sistema:', 25, currentY);
+    
+    currentY += 15;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(55, 65, 81);
+    
+    const recursos = [
+      `Grúas Activas: ${gruasActivas} de ${gruas.length} registradas`,
+      `Operadores Activos: ${operadoresActivos} de ${operadores.length} registrados`,
+      `Capacidad de Operación: ${gruas.length > 0 ? ((operadoresActivos / gruas.length) * 100).toFixed(0) : 0}%`
+    ];
+    
+    recursos.forEach(recurso => {
+      doc.text(`• ${recurso}`, 30, currentY);
+      currentY += 8;
+    });
+    
+    currentY += 10;
+    
+    // Distribución de servicios
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(30, 64, 175);
+    doc.text('Distribución de Servicios:', 25, currentY);
+    
+    currentY += 15;
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(55, 65, 81);
+    
+    const serviciosEnCurso = servicios.filter(s => s.estado === 'en_curso').length;
+    const serviciosCerrados = servicios.filter(s => s.estado === 'cerrado').length;
+    
+    const distribucion = [
+      { estado: 'En Curso', count: serviciosEnCurso, color: [245, 158, 11] },
+      { estado: 'Cerrados', count: serviciosCerrados, color: [59, 130, 246] },
+      { estado: 'Facturados', count: serviciosFacturados, color: [5, 150, 105] }
+    ];
+    
+    distribucion.forEach(item => {
+      const percentage = totalServicios > 0 ? ((item.count / totalServicios) * 100).toFixed(1) : '0';
+      
+      doc.setTextColor(...item.color);
+      doc.text(`• ${item.estado}: ${item.count} (${percentage}%)`, 30, currentY);
+      currentY += 8;
+    });
+    
+    return currentY;
+  });
   
-  doc.setFont(undefined, 'normal');
-  doc.text(`Grúas Activas: ${gruasActivas} de ${gruas.length} registradas`, margin, yPos);
-  yPos += 10;
-  doc.text(`Operadores Activos: ${operadoresActivos} de ${operadores.length} registrados`, margin, yPos);
-  yPos += 25;
-  
-  // Service distribution
-  doc.setFont(undefined, 'bold');
-  doc.text('Distribución de Servicios:', margin, yPos);
-  yPos += 15;
-  
-  doc.setFont(undefined, 'normal');
-  const serviciosEnCurso = servicios.filter(s => s.estado === 'en_curso').length;
-  const serviciosCerrados = servicios.filter(s => s.estado === 'cerrado').length;
-  
-  doc.text(`En Curso: ${serviciosEnCurso} (${totalServicios > 0 ? ((serviciosEnCurso / totalServicios) * 100).toFixed(1) : 0}%)`, margin, yPos);
-  yPos += 10;
-  doc.text(`Cerrados: ${serviciosCerrados} (${totalServicios > 0 ? ((serviciosCerrados / totalServicios) * 100).toFixed(1) : 0}%)`, margin, yPos);
-  yPos += 10;
-  doc.text(`Facturados: ${serviciosFacturados} (${totalServicios > 0 ? ((serviciosFacturados / totalServicios) * 100).toFixed(1) : 0}%)`, margin, yPos);
-  
+  addFooter(doc);
   return doc;
 };
