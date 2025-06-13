@@ -1,6 +1,4 @@
 
-import React from "react"
-import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
   ToastClose,
@@ -8,35 +6,28 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useToast } from "@/hooks/use-toast"
 
 export function Toaster() {
-  console.log("Toaster: Starting render...");
-  
-  try {
-    const { toasts } = useToast();
-    console.log("Toaster: Got toasts:", toasts);
+  const { toasts } = useToast()
 
-    return (
-      <>
-        {toasts.map(function ({ id, title, description, action, ...props }) {
-          return (
-            <Toast key={id} {...props}>
-              <div className="grid gap-1">
-                {title && <ToastTitle>{title}</ToastTitle>}
-                {description && (
-                  <ToastDescription>{description}</ToastDescription>
-                )}
-              </div>
-              {action}
-              <ToastClose />
-            </Toast>
-          )
-        })}
-        <ToastViewport />
-      </>
-    )
-  } catch (error) {
-    console.error('Toaster: Error rendering:', error);
-    return <ToastViewport />;
-  }
+  return (
+    <>
+      {toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
+      <ToastViewport />
+    </>
+  )
 }
