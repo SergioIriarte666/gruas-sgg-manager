@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+// import { Toaster } from "@/components/ui/toaster";
+// import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -60,12 +60,12 @@ function AppContent() {
             </Routes>
           </main>
           
-          {/* PWA Update/Install Prompts */}
-          <PWAUpdatePrompt position="bottom" autoShow />
+          {/* PWA Update/Install Prompts - COMMENTED OUT FOR DEBUGGING */}
+          {/* <PWAUpdatePrompt position="bottom" autoShow /> */}
           
-          {/* Toast notifications */}
-          <Toaster />
-          <Sonner />
+          {/* Toast notifications - COMMENTED OUT FOR DEBUGGING */}
+          {/* <Toaster /> */}
+          {/* <Sonner /> */}
         </SidebarInset>
       </div>
     </SidebarProvider>
