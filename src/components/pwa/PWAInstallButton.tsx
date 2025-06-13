@@ -21,34 +21,45 @@ export function PWAInstallButton({
 }: PWAInstallButtonProps) {
   // Safe hook calls with error boundaries
   let isEnabled = false;
-  let pwaHookResult = null;
-  let toastHook = null;
+  let canInstall = false;
+  let installPWA = async () => false;
+  let toast = () => {};
 
   try {
     isEnabled = usePWAComponent('showInstallButton');
-    pwaHookResult = usePWA();
-    toastHook = useToast();
+    const pwaState = usePWA();
+    canInstall = pwaState.canInstall;
+    installPWA = pwaState.installPWA;
+    const toastHook = useToast();
+    toast = toastHook.toast;
   } catch (error) {
     console.error('Error in PWAInstallButton hooks:', error);
+    // Return null if hooks fail to initialize
     return null;
   }
-
-  const { canInstall, installPWA } = pwaHookResult || { canInstall: false, installPWA: async () => false };
-  const { toast } = toastHook || { toast: () => {} };
 
   if (!isEnabled || !canInstall) {
     return null;
   }
 
   const handleInstall = async () => {
-    const success = await installPWA();
-    
-    if (success) {
-      toast({
-        title: "¡Aplicación instalada!",
-        description: "SGG Grúa Manager se ha instalado correctamente en tu dispositivo.",
-      });
-    } else {
+    try {
+      const success = await installPWA();
+      
+      if (success) {
+        toast({
+          title: "¡Aplicación instalada!",
+          description: "SGG Grúa Manager se ha instalado correctamente en tu dispositivo.",
+        });
+      } else {
+        toast({
+          title: "Error de instalación",
+          description: "No se pudo instalar la aplicación. Intenta nuevamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error during PWA installation:', error);
       toast({
         title: "Error de instalación",
         description: "No se pudo instalar la aplicación. Intenta nuevamente.",

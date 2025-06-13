@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface PWAState {
@@ -29,7 +30,7 @@ const getDefaultState = (): PWAState => ({
 });
 
 export function usePWA() {
-  // Browser check with early return
+  // Early return for server-side rendering
   if (typeof window === 'undefined') {
     return {
       ...getDefaultState(),
@@ -41,49 +42,22 @@ export function usePWA() {
     };
   }
 
-  const [state, setState] = useState<PWAState>(getDefaultState);
-
+  // Only initialize state if we're in the browser
+  const [state, setState] = useState<PWAState>(() => getDefaultState());
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   // Detectar si está instalado como PWA
   const detectPWAInstall = useCallback(() => {
     if (typeof window === 'undefined') return;
     
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInWebAppiOS = (window.navigator as any).standalone === true;
-    const isPWA = isStandalone || isInWebAppiOS;
-    
-    setState(prev => ({ ...prev, isInstalled: isPWA }));
-  }, []);
-
-  // Registrar Service Worker
-  const registerSW = useCallback(async () => {
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.register('/sw.js');
-        setRegistration(reg);
-        
-        // Detectar actualizaciones
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setState(prev => ({ ...prev, hasUpdate: true, canUpdate: true }));
-              }
-            });
-          }
-        });
-
-        // Obtener versión del SW
-        if (reg.active) {
-          getSWVersion();
-        }
-
-        console.log('✅ Service Worker registrado exitosamente');
-      } catch (error) {
-        console.error('❌ Error registrando Service Worker:', error);
-      }
+    try {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isInWebAppiOS = (window.navigator as any).standalone === true;
+      const isPWA = isStandalone || isInWebAppiOS;
+      
+      setState(prev => ({ ...prev, isInstalled: isPWA }));
+    } catch (error) {
+      console.warn('Error detecting PWA install:', error);
     }
   }, []);
 
@@ -262,96 +236,11 @@ export function usePWA() {
 
   return {
     ...state,
-    installPWA: useCallback(async (): Promise<boolean> => {
-      if (!deferredPrompt) {
-        console.warn('No hay prompt de instalación disponible');
-        return false;
-      }
-
-      try {
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        
-        if (outcome === 'accepted') {
-          console.log('✅ PWA instalada exitosamente');
-          setState(prev => ({ ...prev, canInstall: false, isInstalled: true }));
-          deferredPrompt = null;
-          return true;
-        } else {
-          console.log('❌ Instalación de PWA cancelada');
-          return false;
-        }
-      } catch (error) {
-        console.error('Error instalando PWA:', error);
-        return false;
-      }
-    }, []),
-    updatePWA: useCallback(async (): Promise<boolean> => {
-      if (!registration?.waiting) {
-        console.warn('No hay actualización disponible');
-        return false;
-      }
-
-      try {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        
-        await new Promise<void>((resolve) => {
-          const handleControllerChange = () => {
-            window.location.reload();
-            resolve();
-          };
-          navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-        });
-
-        setState(prev => ({ ...prev, hasUpdate: false, canUpdate: false }));
-        console.log('✅ PWA actualizada exitosamente');
-        return true;
-      } catch (error) {
-        console.error('Error actualizando PWA:', error);
-        return false;
-      }
-    }, [registration]),
-    checkForUpdates: useCallback(async (): Promise<boolean> => {
-      if (!registration) {
-        console.warn('No hay Service Worker registrado');
-        return false;
-      }
-
-      try {
-        await registration.update();
-        console.log('✅ Verificación de actualizaciones completada');
-        return true;
-      } catch (error) {
-        console.error('Error verificando actualizaciones:', error);
-        return false;
-      }
-    }, [registration]),
-    cacheUrls: useCallback(async (urls: string[]): Promise<boolean> => {
-      if (!('caches' in window)) {
-        console.warn('Cache API no disponible');
-        return false;
-      }
-
-      try {
-        const cache = await caches.open('user-cache');
-        await cache.addAll(urls);
-        console.log('✅ URLs cacheadas exitosamente:', urls);
-        return true;
-      } catch (error) {
-        console.error('Error cacheando URLs:', error);
-        return false;
-      }
-    }, []),
-    getSWVersion: useCallback(async () => {
-      if (registration?.active) {
-        try {
-          const version = '1.0.0';
-          setState(prev => ({ ...prev, swVersion: version }));
-        } catch (error) {
-          console.error('Error obteniendo versión SW:', error);
-        }
-      }
-    }, [registration]),
+    installPWA,
+    updatePWA,
+    checkForUpdates,
+    cacheUrls,
+    getSWVersion,
   };
 }
 
@@ -361,9 +250,14 @@ export function useIsPWA() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInWebAppiOS = (window.navigator as any).standalone === true;
-    setIsPWA(isStandalone || isInWebAppiOS);
+    try {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isInWebAppiOS = (window.navigator as any).standalone === true;
+      setIsPWA(isStandalone || isInWebAppiOS);
+    } catch (error) {
+      console.warn('Error checking PWA status:', error);
+      setIsPWA(false);
+    }
   }, []);
 
   return isPWA;
@@ -428,16 +322,20 @@ export function usePushNotifications() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
-    }
+    try {
+      if ('Notification' in window) {
+        setPermission(Notification.permission);
+      }
 
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.pushManager.getSubscription().then(sub => {
-          setSubscription(sub);
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.pushManager.getSubscription().then(sub => {
+            setSubscription(sub);
+          });
         });
-      });
+      }
+    } catch (error) {
+      console.warn('Error initializing push notifications:', error);
     }
   }, []);
 
