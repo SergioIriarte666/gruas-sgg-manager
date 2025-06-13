@@ -2,11 +2,16 @@
 import React from 'react';
 import { ToastProvider } from '@radix-ui/react-toast';
 
-// Check if React dispatcher is available
-function isReactReady(): boolean {
+// More robust React readiness check
+function isReactFullyReady(): boolean {
   try {
+    // Check multiple React internal states
     const ReactInternals = (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-    return ReactInternals?.ReactCurrentDispatcher?.current !== null;
+    const dispatcher = ReactInternals?.ReactCurrentDispatcher?.current;
+    const batchedUpdates = ReactInternals?.ReactCurrentBatchConfig;
+    
+    // Ensure dispatcher and batching system are ready
+    return dispatcher !== null && dispatcher !== undefined && batchedUpdates !== undefined;
   } catch {
     return false;
   }
@@ -17,9 +22,9 @@ interface SafeToastProviderProps {
 }
 
 export function SafeToastProvider({ children }: SafeToastProviderProps) {
-  // Only render ToastProvider when React is ready
-  if (!isReactReady()) {
-    console.log('SafeToastProvider: React not ready, rendering children without provider');
+  // Don't render anything if React isn't ready
+  if (!isReactFullyReady()) {
+    console.log('SafeToastProvider: React not fully ready, rendering children without provider');
     return <>{children}</>;
   }
 
