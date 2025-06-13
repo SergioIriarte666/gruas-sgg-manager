@@ -1,13 +1,10 @@
 
 import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { PWAProvider, PWAPresets } from '@/contexts/PWAContext';
-import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
 import { Header } from '@/components/Layout/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import Index from "./pages/Index";
@@ -63,13 +60,6 @@ function AppContent() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
-          
-          {/* PWA Update/Install Prompts - COMMENTED OUT FOR DEBUGGING */}
-          {/* <PWAUpdatePrompt position="bottom" autoShow /> */}
-          
-          {/* Toast notifications - ENABLED FOR TESTING */}
-          <Toaster />
-          <Sonner />
         </SidebarInset>
       </div>
     </SidebarProvider>

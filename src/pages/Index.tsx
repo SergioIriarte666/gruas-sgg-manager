@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -12,7 +11,7 @@ import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
 import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 import { formatSafeDate } from "@/lib/utils";
 
-function Index() {
+function IndexComponent() {
   console.log("Index component rendering...");
   
   const [showNewForm, setShowNewForm] = useState(false);
@@ -20,15 +19,29 @@ function Index() {
   const [selectedServicio, setSelectedServicio] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  console.log("Index: About to call useServicios...");
-  const { data: servicios = [], isLoading } = useServicios();
-  console.log("Index: useServicios completed, servicios:", servicios);
-  
-  console.log("Index: About to call useEstadisticasServicios...");
-  const { data: estadisticas } = useEstadisticasServicios();
-  console.log("Index: useEstadisticasServicios completed, estadisticas:", estadisticas);
-  
-  const updateServicioEstado = useUpdateServicioEstado();
+  // Wrap hook calls in try-catch to handle initialization issues
+  let servicios: any[] = [];
+  let isLoading = true;
+  let estadisticas: any = {};
+  let updateServicioEstado: any = { mutate: () => {}, isPending: false };
+
+  try {
+    console.log("Index: About to call useServicios...");
+    const serviciosQuery = useServicios();
+    servicios = serviciosQuery.data || [];
+    isLoading = serviciosQuery.isLoading;
+    console.log("Index: useServicios completed, servicios:", servicios);
+    
+    console.log("Index: About to call useEstadisticasServicios...");
+    const estadisticasQuery = useEstadisticasServicios();
+    estadisticas = estadisticasQuery.data || {};
+    console.log("Index: useEstadisticasServicios completed, estadisticas:", estadisticas);
+    
+    updateServicioEstado = useUpdateServicioEstado();
+  } catch (error) {
+    console.error("Error in Index hooks:", error);
+    // Keep default values
+  }
 
   const serviciosRecientes = servicios.slice(0, 5);
 
@@ -396,4 +409,4 @@ function Index() {
   );
 }
 
-export default Index;
+export default IndexComponent;
