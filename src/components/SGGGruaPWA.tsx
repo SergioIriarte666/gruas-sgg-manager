@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, Download, Share, Eye, Clock } from 'lucide-react';
+import { Camera, Download, Share, Eye, CheckSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 
@@ -17,23 +16,47 @@ interface CapturedImage {
   timestamp: Date;
 }
 
-// Equipamiento específico para el reporte
-const EQUIPAMIENTO_REPORTE = [
-  'Gato hidráulico',
-  'Extintor', 
+// Equipamiento completo del vehículo para verificación
+const EQUIPAMIENTO_VEHICULO = [
+  'Radio',
+  'Espejo retrovisor',
+  'Cenicero',
+  'Encendedor',
+  'Alfombras',
+  'Tapasoles',
+  'Guantera',
+  'Consola central',
+  'Aire acondicionado',
+  'Calefacción',
+  'Antena',
+  'Espejos laterales',
+  'Emblemas',
+  'Molduras',
+  'Parachoques',
+  'Rejilla',
+  'Tapacubos',
+  'Llantas',
+  'Faros delanteros',
+  'Faros traseros',
+  'Luces direccionales',
+  'Luz de placa',
+  'Luces de freno',
+  'Luz de reversa',
+  'Cinturones de seguridad',
+  'Extintor',
+  'Triángulos',
+  'Botiquín',
   'Llanta de repuesto',
-  'Documentación completa',
-  'Linterna emergencia',
-  'Herramientas básicas',
-  'Botiquín primeros auxilios',
+  'Gato',
   'Llave de ruedas',
-  'Radio comunicaciones',
-  'Chaleco reflectante',
-  'Triángulos de seguridad',
-  'Cable de remolque',
-  'Manual del vehículo',
-  'GPS navegación',
-  'Conos de seguridad'
+  'Manual de usuario',
+  'Tarjeta de propiedad',
+  'Revisión técnica',
+  'Seguro',
+  'Llaves de contacto',
+  'Control de alarma',
+  'Estuche de llaves',
+  'Tapa de combustible'
 ];
 
 export default function SGGGruaPWA() {
@@ -53,9 +76,6 @@ export default function SGGGruaPWA() {
     operador: '',
     tipoServicio: '',
     observaciones: '',
-    horaAsignacion: '',
-    horaLlegada: '',
-    horaTermino: '',
     kmInicial: '',
     kmFinal: '',
     kmVehiculo: '',
@@ -63,8 +83,8 @@ export default function SGGGruaPWA() {
     tipoAsistenciaDetallado: ''
   });
 
-  // Equipment reporte state - solo equipamiento específico del reporte
-  const [equipmentReporte, setEquipmentReporte] = useState<Record<string, boolean>>({});
+  // Equipment verification state
+  const [equipmentVerification, setEquipmentVerification] = useState<Record<string, boolean>>({});
 
   // Damage images state
   const [damageImages, setDamageImages] = useState<CapturedImage[]>([]);
@@ -76,23 +96,23 @@ export default function SGGGruaPWA() {
     }));
   };
 
-  const handleEquipmentReporteToggle = (item: string) => {
-    setEquipmentReporte(prev => ({
+  const handleEquipmentToggle = (item: string) => {
+    setEquipmentVerification(prev => ({
       ...prev,
       [item]: !prev[item]
     }));
   };
 
-  const handleSelectAllReporte = () => {
+  const handleSelectAllEquipment = () => {
     const allSelected: Record<string, boolean> = {};
-    EQUIPAMIENTO_REPORTE.forEach(item => {
+    EQUIPAMIENTO_VEHICULO.forEach(item => {
       allSelected[item] = true;
     });
-    setEquipmentReporte(allSelected);
+    setEquipmentVerification(allSelected);
   };
 
-  const handleDeselectAllReporte = () => {
-    setEquipmentReporte({});
+  const handleDeselectAllEquipment = () => {
+    setEquipmentVerification({});
   };
 
   const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,18 +190,6 @@ export default function SGGGruaPWA() {
       pdf.text(`Patente: ${formData.patente}`, 20, yPosition);
       yPosition += 15;
 
-      // Detalles de tiempo
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('DETALLES DE TIEMPO:', 20, yPosition);
-      yPosition += 10;
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Hora Asignación: ${formData.horaAsignacion}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Hora Llegada: ${formData.horaLlegada}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Hora Término: ${formData.horaTermino}`, 20, yPosition);
-      yPosition += 15;
-
       // Kilómetros
       pdf.setFont('helvetica', 'bold');
       pdf.text('KILÓMETROS:', 20, yPosition);
@@ -196,12 +204,12 @@ export default function SGGGruaPWA() {
       pdf.text(`Nivel Combustible: ${formData.nivelCombustible}`, 20, yPosition);
       yPosition += 15;
 
-      // Equipamiento presente
-      const equipmentPresente = EQUIPAMIENTO_REPORTE.filter(item => equipmentReporte[item]);
+      // Equipamiento verificado
+      const equipmentPresente = EQUIPAMIENTO_VEHICULO.filter(item => equipmentVerification[item]);
       
       if (equipmentPresente.length > 0) {
         pdf.setFont('helvetica', 'bold');
-        pdf.text('EQUIPAMIENTO PRESENTE:', 20, yPosition);
+        pdf.text('EQUIPAMIENTO VERIFICADO:', 20, yPosition);
         yPosition += 10;
         pdf.setFont('helvetica', 'normal');
         equipmentPresente.forEach(item => {
@@ -405,48 +413,12 @@ export default function SGGGruaPWA() {
           </CardContent>
         </Card>
 
-        {/* Detalles para Reporte Cliente - Tiempos */}
+        {/* Detalles para Reporte Cliente - Kilómetros */}
         <Card className="bg-black border-primary/20">
           <CardHeader>
-            <CardTitle className="text-primary flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Detalles para Reporte Cliente
-            </CardTitle>
+            <CardTitle className="text-primary">Detalles para Reporte Cliente</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="horaAsignacion" className="text-primary">Hora Asignación</Label>
-                <Input
-                  id="horaAsignacion"
-                  type="time"
-                  value={formData.horaAsignacion}
-                  onChange={(e) => handleInputChange('horaAsignacion', e.target.value)}
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="horaLlegada" className="text-primary">Hora Llegada</Label>
-                <Input
-                  id="horaLlegada"
-                  type="time"
-                  value={formData.horaLlegada}
-                  onChange={(e) => handleInputChange('horaLlegada', e.target.value)}
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="horaTermino" className="text-primary">Hora Término</Label>
-                <Input
-                  id="horaTermino"
-                  type="time"
-                  value={formData.horaTermino}
-                  onChange={(e) => handleInputChange('horaTermino', e.target.value)}
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="kmInicial" className="text-primary">KM Inicial</Label>
@@ -569,42 +541,45 @@ export default function SGGGruaPWA() {
           </CardContent>
         </Card>
 
-        {/* Equipamiento Presente */}
+        {/* Verificación de Equipamiento */}
         <Card className="bg-black border-primary/20">
           <CardHeader>
-            <CardTitle className="text-primary">Equipamiento Presente</CardTitle>
+            <CardTitle className="text-primary flex items-center gap-2">
+              <CheckSquare className="h-5 w-5" />
+              Verificación de Equipamiento ({Object.values(equipmentVerification).filter(Boolean).length}/{EQUIPAMIENTO_VEHICULO.length})
+            </CardTitle>
             <div className="flex gap-2">
               <Button
-                onClick={handleSelectAllReporte}
+                onClick={handleSelectAllEquipment}
                 variant="outline"
                 size="sm"
                 className="text-primary border-primary/30 hover:bg-primary/10"
               >
-                ✓ Todo
+                ✓ Seleccionar Todo
               </Button>
               <Button
-                onClick={handleDeselectAllReporte}
+                onClick={handleDeselectAllEquipment}
                 variant="outline"
                 size="sm"
                 className="text-primary border-primary/30 hover:bg-primary/10"
               >
-                ✗ Ninguno
+                ✗ Deseleccionar Todo
               </Button>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              {EQUIPAMIENTO_REPORTE.map(item => (
+              {EQUIPAMIENTO_VEHICULO.map(item => (
                 <div key={item} className="flex items-center space-x-2 p-2 rounded border border-primary/20 hover:bg-primary/5">
                   <input
                     type="checkbox"
-                    id={`reporte-${item}`}
-                    checked={equipmentReporte[item] || false}
-                    onChange={() => handleEquipmentReporteToggle(item)}
+                    id={`equipment-${item}`}
+                    checked={equipmentVerification[item] || false}
+                    onChange={() => handleEquipmentToggle(item)}
                     className="border-primary"
                   />
                   <label
-                    htmlFor={`reporte-${item}`}
+                    htmlFor={`equipment-${item}`}
                     className="text-sm text-primary cursor-pointer flex-1"
                   >
                     {item}
