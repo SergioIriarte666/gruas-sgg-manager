@@ -1,733 +1,581 @@
 
-import React, { useState } from 'react';
-import { Calendar, Truck, User, MapPin, FileText, Camera, Clock, Fuel, Settings, CheckCircle, AlertCircle } from 'lucide-react';
-import { useClientes } from '@/hooks/useClientes';
-import { useGruas } from '@/hooks/useGruas';
-import { useOperadores } from '@/hooks/useOperadores';
-import { useTiposServicio } from '@/hooks/useTiposServicio';
-import { useCreateServicio } from '@/hooks/useCreateServicio';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
+import { Camera, Download, Share, Trash2, Eye } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
 
-const SGGGruaPWA = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  
-  // Hooks para datos
-  const { data: clientes = [] } = useClientes();
-  const { data: gruas = [] } = useGruas();
-  const { data: operadores = [] } = useOperadores();
-  const { data: tiposServicio = [] } = useTiposServicio();
-  const createServicio = useCreateServicio();
+interface CapturedImage {
+  id: string;
+  file: File;
+  preview: string;
+  timestamp: Date;
+}
+
+export default function SGGGruaPWA() {
   const { toast } = useToast();
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Form data state
   const [formData, setFormData] = useState({
-    // === CAMPOS SGG MANAGER (OBLIGATORIOS) ===
-    fecha: new Date(),
-    folio: '',
+    fecha: new Date().toISOString().split('T')[0],
+    cliente: '',
     marcaVehiculo: '',
     modeloVehiculo: '',
     patente: '',
+    kilometraje: '', // Changed from "Km Vehículo"
     ubicacionOrigen: '',
     ubicacionDestino: '',
-    valor: 0,
-    clienteId: '',
-    gruaId: '',
-    operadorId: '',
-    tipoServicioId: '',
-    estado: 'en_curso' as const,
-    observaciones: '',
-    ordenCompra: '',
-    
-    // === CAMPOS ADICIONALES PARA REPORTE CLIENTE ===
-    hora_asignacion: '',
-    hora_llegada: '',
-    hora_termino: '',
-    km_inicial: '',
-    km_final: '',
-    km_vehiculo: '',
-    nivel_combustible: '3/4',
-    equipamiento: [] as string[],
-    tipo_asistencia_detallado: '',
-    danos_condiciones: '',
-    observaciones_tecnicas: ''
+    grua: '',
+    operador: '',
+    tipoServicio: '',
+    observaciones: ''
   });
 
-  const equipamientoCompleto = [
-    'Gato hidráulico', 'Herramientas básicas', 'Triángulos de seguridad',
-    'Extintor', 'Botiquín primeros auxilios', 'Cable de remolque',
-    'Llanta de repuesto', 'Llave de ruedas', 'Manual del vehículo',
-    'Documentación completa', 'Radio comunicaciones', 'GPS navegación',
-    'Linterna emergencia', 'Chaleco reflectante', 'Conos de seguridad'
-  ];
+  // Image capture states
+  const [equipmentImages, setEquipmentImages] = useState<CapturedImage[]>([]);
+  const [damageImages, setDamageImages] = useState<CapturedImage[]>([]);
+  const [captureMode, setCaptureMode] = useState<'equipment' | 'damage' | null>(null);
 
-  const nivelesGasolina = ['Vacío', '1/4', '1/2', '3/4', 'Completo'];
-
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleEquipamientoChange = (item: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      equipamiento: checked 
-        ? [...prev.equipamiento, item]
-        : prev.equipamiento.filter(eq => eq !== item)
-    }));
-  };
+  const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
 
-  // === FUNCIÓN ENVÍO A SGG MANAGER ===
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setSubmitStatus(null);
+    const file = files[0];
+    const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const preview = URL.createObjectURL(file);
 
-    try {
-      console.log('📊 Enviando a SGG Manager:', formData);
-      
-      // Crear servicio usando el hook existente
-      const servicioData = {
-        fecha: formData.fecha,
-        folio: formData.folio,
-        clienteId: formData.clienteId,
-        ordenCompra: formData.ordenCompra,
-        marcaVehiculo: formData.marcaVehiculo,
-        modeloVehiculo: formData.modeloVehiculo,
-        patente: formData.patente.toUpperCase(),
-        ubicacionOrigen: formData.ubicacionOrigen,
-        ubicacionDestino: formData.ubicacionDestino,
-        valor: Number(formData.valor),
-        gruaId: formData.gruaId,
-        operadorId: formData.operadorId,
-        tipoServicioId: formData.tipoServicioId,
-        estado: formData.estado,
-        observaciones: formData.observaciones
-      };
+    const newImage: CapturedImage = {
+      id: imageId,
+      file,
+      preview,
+      timestamp: new Date()
+    };
 
-      const result = await createServicio.mutateAsync(servicioData);
-      console.log('✅ Servicio creado exitosamente:', result);
-
-      // Simular generación de reporte completo para cliente
-      const reporteCompleto = {
-        ...formData,
-        sgg_service_id: result?.id || 'temp-id',
-        equipamiento_faltante: equipamientoCompleto.filter(item => 
-          !formData.equipamiento.includes(item)
-        ),
-        tiempo_total: calculateServiceTime(),
-        generated_at: new Date().toISOString()
-      };
-
-      console.log('📋 Reporte completo generado:', reporteCompleto);
-
-      setSubmitStatus({
-        type: 'success',
-        message: `Servicio creado exitosamente. Reporte disponible para envío al cliente.`
-      });
-
+    if (captureMode === 'equipment') {
+      setEquipmentImages(prev => [...prev, newImage]);
       toast({
-        title: "Servicio creado",
-        description: "El servicio PWA ha sido creado exitosamente.",
+        title: "Imagen de equipamiento capturada",
+        description: "La imagen se ha agregado correctamente"
       });
-
-      // Reset form after 3 seconds
-      setTimeout(() => {
-        setFormData({
-          fecha: new Date(),
-          folio: '',
-          marcaVehiculo: '',
-          modeloVehiculo: '',
-          patente: '',
-          ubicacionOrigen: '',
-          ubicacionDestino: '',
-          valor: 0,
-          clienteId: '',
-          gruaId: '',
-          operadorId: '',
-          tipoServicioId: '',
-          estado: 'en_curso' as const,
-          observaciones: '',
-          ordenCompra: '',
-          hora_asignacion: '',
-          hora_llegada: '',
-          hora_termino: '',
-          km_inicial: '',
-          km_final: '',
-          km_vehiculo: '',
-          nivel_combustible: '3/4',
-          equipamiento: [],
-          tipo_asistencia_detallado: '',
-          danos_condiciones: '',
-          observaciones_tecnicas: ''
+    } else if (captureMode === 'damage') {
+      if (damageImages.length >= 6) {
+        toast({
+          title: "Límite alcanzado",
+          description: "Solo se pueden capturar 6 fotografías de daños",
+          variant: "destructive"
         });
-        setCurrentStep(1);
-        setSubmitStatus(null);
-      }, 3000);
-
-    } catch (error: any) {
-      console.error('❌ Error en envío:', error);
-      setSubmitStatus({
-        type: 'error',
-        message: error.message || 'Error al procesar el servicio. Intente nuevamente.'
+        return;
+      }
+      setDamageImages(prev => [...prev, newImage]);
+      toast({
+        title: "Imagen de daños capturada",
+        description: `Imagen ${damageImages.length + 1}/6 agregada`
       });
+    }
+
+    setCaptureMode(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (imageId: string, type: 'equipment' | 'damage') => {
+    if (type === 'equipment') {
+      setEquipmentImages(prev => {
+        const updated = prev.filter(img => img.id !== imageId);
+        const imageToRemove = prev.find(img => img.id === imageId);
+        if (imageToRemove) {
+          URL.revokeObjectURL(imageToRemove.preview);
+        }
+        return updated;
+      });
+    } else {
+      setDamageImages(prev => {
+        const updated = prev.filter(img => img.id !== imageId);
+        const imageToRemove = prev.find(img => img.id === imageId);
+        if (imageToRemove) {
+          URL.revokeObjectURL(imageToRemove.preview);
+        }
+        return updated;
+      });
+    }
+  };
+
+  const openCamera = (mode: 'equipment' | 'damage') => {
+    setCaptureMode(mode);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const generatePDF = async () => {
+    try {
+      const pdf = new jsPDF();
+      let yPosition = 20;
+
+      // Header
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('INVENTARIO DE VEHÍCULO - SGG GRÚA', 20, yPosition);
+      yPosition += 15;
+
+      // Basic info
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Fecha: ${formData.fecha}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Cliente: ${formData.cliente}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Vehículo: ${formData.marcaVehiculo} ${formData.modeloVehiculo}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Patente: ${formData.patente}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Kilometraje: ${formData.kilometraje}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Origen: ${formData.ubicacionOrigen}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Destino: ${formData.ubicacionDestino}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Grúa: ${formData.grua}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Operador: ${formData.operador}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Tipo de Servicio: ${formData.tipoServicio}`, 20, yPosition);
+      yPosition += 15;
+
+      // Equipment section
+      if (equipmentImages.length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('EQUIPAMIENTO IDENTIFICADO:', 20, yPosition);
+        yPosition += 10;
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Total de elementos capturados: ${equipmentImages.length}`, 20, yPosition);
+        yPosition += 10;
+      }
+
+      // Damage section
+      if (damageImages.length > 0) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('DAÑOS Y CONDICIONES:', 20, yPosition);
+        yPosition += 10;
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Total de fotografías de daños: ${damageImages.length}`, 20, yPosition);
+        yPosition += 10;
+      }
+
+      // Observations
+      if (formData.observaciones) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('OBSERVACIONES:', 20, yPosition);
+        yPosition += 8;
+        pdf.setFont('helvetica', 'normal');
+        const splitObservations = pdf.splitTextToSize(formData.observaciones, 170);
+        pdf.text(splitObservations, 20, yPosition);
+      }
+
+      // Save PDF
+      const pdfBlob = pdf.output('blob');
+      const fileName = `inventario_${formData.patente || 'vehiculo'}_${Date.now()}.pdf`;
+      
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      
+      URL.revokeObjectURL(url);
 
       toast({
-        title: "Error",
-        description: "Error al crear el servicio PWA. Intenta nuevamente.",
-        variant: "destructive",
+        title: "PDF generado exitosamente",
+        description: "El inventario se ha descargado correctamente"
       });
-    } finally {
-      setIsSubmitting(false);
+
+      return pdfBlob;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error al generar PDF",
+        description: "No se pudo crear el documento",
+        variant: "destructive"
+      });
+      return null;
     }
   };
 
-  const calculateServiceTime = () => {
-    if (formData.hora_asignacion && formData.hora_termino) {
-      const inicio = new Date(`2000-01-01T${formData.hora_asignacion}`);
-      const fin = new Date(`2000-01-01T${formData.hora_termino}`);
-      const diff = (fin.getTime() - inicio.getTime()) / (1000 * 60); // minutos
-      if (diff > 0) {
-        return `${Math.floor(diff / 60)}h ${Math.floor(diff % 60)}m`;
+  const shareViaWhatsApp = async () => {
+    const pdfBlob = await generatePDF();
+    if (!pdfBlob) return;
+
+    const message = `Inventario de vehículo - ${formData.patente}\nFecha: ${formData.fecha}\nCliente: ${formData.cliente}`;
+    
+    if (navigator.share) {
+      try {
+        const file = new File([pdfBlob], `inventario_${formData.patente}.pdf`, {
+          type: 'application/pdf'
+        });
+        
+        await navigator.share({
+          title: 'Inventario de Vehículo',
+          text: message,
+          files: [file]
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+        fallbackWhatsAppShare(message);
       }
+    } else {
+      fallbackWhatsAppShare(message);
     }
-    return 'No calculado';
   };
 
-  const isStep1Valid = () => {
-    const step1Fields = ['marcaVehiculo', 'modeloVehiculo', 'patente', 'ubicacionOrigen', 'ubicacionDestino'];
-    return step1Fields.every(field => formData[field as keyof typeof formData] && 
-      String(formData[field as keyof typeof formData]).trim() !== '');
-  };
-
-  const isStep2Valid = () => {
-    const step2Fields = ['clienteId', 'gruaId', 'operadorId', 'tipoServicioId'];
-    return step2Fields.every(field => formData[field as keyof typeof formData] && 
-      String(formData[field as keyof typeof formData]).trim() !== '');
+  const fallbackWhatsAppShare = (message: string) => {
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+    
+    toast({
+      title: "Compartir por WhatsApp",
+      description: "El PDF se descargó. Compártelo manualmente en WhatsApp."
+    });
   };
 
   const isFormValid = () => {
-    return isStep1Valid() && isStep2Valid();
+    return formData.cliente && formData.marcaVehiculo && formData.patente && 
+           formData.grua && formData.operador;
   };
 
-  const renderStep1 = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-primary">
-          <FileText className="h-5 w-5" />
-          Datos Básicos del Servicio
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="fecha">Fecha del Servicio</Label>
-            <Input
-              id="fecha"
-              type="date"
-              value={formData.fecha.toISOString().split('T')[0]}
-              onChange={(e) => handleInputChange('fecha', new Date(e.target.value))}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="folio">Folio (Opcional)</Label>
-            <Input
-              id="folio"
-              type="text"
-              value={formData.folio}
-              onChange={(e) => handleInputChange('folio', e.target.value)}
-              placeholder="Folio manual"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="marcaVehiculo">Marca del Vehículo *</Label>
-            <Input
-              id="marcaVehiculo"
-              type="text"
-              value={formData.marcaVehiculo}
-              onChange={(e) => handleInputChange('marcaVehiculo', e.target.value)}
-              placeholder="Toyota, Mercedes, etc."
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="modeloVehiculo">Modelo del Vehículo *</Label>
-            <Input
-              id="modeloVehiculo"
-              type="text"
-              value={formData.modeloVehiculo}
-              onChange={(e) => handleInputChange('modeloVehiculo', e.target.value)}
-              placeholder="Corolla, Sprinter, etc."
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="patente">Patente *</Label>
-            <Input
-              id="patente"
-              type="text"
-              value={formData.patente}
-              onChange={(e) => handleInputChange('patente', e.target.value.toUpperCase())}
-              placeholder="ABCD12"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="ubicacionOrigen">Ubicación de Origen *</Label>
-            <Input
-              id="ubicacionOrigen"
-              type="text"
-              value={formData.ubicacionOrigen}
-              onChange={(e) => handleInputChange('ubicacionOrigen', e.target.value)}
-              placeholder="Dirección donde se recogió el vehículo"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="ubicacionDestino">Ubicación de Destino *</Label>
-            <Input
-              id="ubicacionDestino"
-              type="text"
-              value={formData.ubicacionDestino}
-              onChange={(e) => handleInputChange('ubicacionDestino', e.target.value)}
-              placeholder="Dirección de entrega"
-              required
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderStep2 = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-primary">
-          <User className="h-5 w-5" />
-          Asignación del Servicio
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="ordenCompra">Orden de Compra (Opcional)</Label>
-            <Input
-              id="ordenCompra"
-              type="text"
-              value={formData.ordenCompra}
-              onChange={(e) => handleInputChange('ordenCompra', e.target.value)}
-              placeholder="Número de orden de compra"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="valor">Valor del Servicio</Label>
-            <Input
-              id="valor"
-              type="number"
-              value={formData.valor}
-              onChange={(e) => handleInputChange('valor', Number(e.target.value))}
-              placeholder="0"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="clienteId">Cliente *</Label>
-            <Select value={formData.clienteId} onValueChange={(value) => handleInputChange('clienteId', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientes.filter(c => c.activo).map(cliente => (
-                  <SelectItem key={cliente.id} value={cliente.id}>
-                    {cliente.razonSocial} - {cliente.rut}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="gruaId">Grúa *</Label>
-            <Select value={formData.gruaId} onValueChange={(value) => handleInputChange('gruaId', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar grúa" />
-              </SelectTrigger>
-              <SelectContent>
-                {gruas.filter(g => g.activo).map(grua => (
-                  <SelectItem key={grua.id} value={grua.id}>
-                    {grua.patente} - {grua.marca} {grua.modelo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="operadorId">Operador *</Label>
-            <Select value={formData.operadorId} onValueChange={(value) => handleInputChange('operadorId', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar operador" />
-              </SelectTrigger>
-              <SelectContent>
-                {operadores.filter(o => o.activo).map(operador => (
-                  <SelectItem key={operador.id} value={operador.id}>
-                    {operador.nombreCompleto} - {operador.telefono}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="tipoServicioId">Tipo de Servicio *</Label>
-            <Select value={formData.tipoServicioId} onValueChange={(value) => handleInputChange('tipoServicioId', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {tiposServicio.filter(t => t.activo).map(tipo => (
-                  <SelectItem key={tipo.id} value={tipo.id}>
-                    {tipo.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="observaciones">Observaciones (Opcional)</Label>
-          <Input
-            id="observaciones"
-            value={formData.observaciones}
-            onChange={(e) => handleInputChange('observaciones', e.target.value)}
-            placeholder="Observaciones adicionales sobre el servicio"
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderStep3 = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-primary">
-          <Clock className="h-5 w-5" />
-          Detalles para Reporte Cliente
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="hora_asignacion">Hora Asignación</Label>
-            <Input
-              id="hora_asignacion"
-              type="time"
-              value={formData.hora_asignacion}
-              onChange={(e) => handleInputChange('hora_asignacion', e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="hora_llegada">Hora Llegada</Label>
-            <Input
-              id="hora_llegada"
-              type="time"
-              value={formData.hora_llegada}
-              onChange={(e) => handleInputChange('hora_llegada', e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="hora_termino">Hora Término</Label>
-            <Input
-              id="hora_termino"
-              type="time"
-              value={formData.hora_termino}
-              onChange={(e) => handleInputChange('hora_termino', e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="km_inicial">KM Inicial</Label>
-            <Input
-              id="km_inicial"
-              type="number"
-              value={formData.km_inicial}
-              onChange={(e) => handleInputChange('km_inicial', e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="km_final">KM Final</Label>
-            <Input
-              id="km_final"
-              type="number"
-              value={formData.km_final}
-              onChange={(e) => handleInputChange('km_final', e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="km_vehiculo">KM Vehículo</Label>
-            <Input
-              id="km_vehiculo"
-              type="number"
-              value={formData.km_vehiculo}
-              onChange={(e) => handleInputChange('km_vehiculo', e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="nivel_combustible">Nivel Combustible</Label>
-            <Select value={formData.nivel_combustible} onValueChange={(value) => handleInputChange('nivel_combustible', value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {nivelesGasolina.map(nivel => (
-                  <SelectItem key={nivel} value={nivel}>{nivel}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Equipamiento Presente</Label>
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFormData(prev => ({ ...prev, equipamiento: [...equipamientoCompleto] }))}
-              >
-                ✅ Todo
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFormData(prev => ({ ...prev, equipamiento: [] }))}
-              >
-                ❌ Ninguno
-              </Button>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {equipamientoCompleto.map(item => (
-              <label key={item} className="flex items-center space-x-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={formData.equipamiento.includes(item)}
-                  onChange={(e) => handleEquipamientoChange(item, e.target.checked)}
-                  className="rounded border-border"
-                />
-                <span className="text-muted-foreground">{item}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="tipo_asistencia_detallado">Tipo de Asistencia Detallado</Label>
-          <Input
-            id="tipo_asistencia_detallado"
-            value={formData.tipo_asistencia_detallado}
-            onChange={(e) => handleInputChange('tipo_asistencia_detallado', e.target.value)}
-            placeholder="Descripción específica del tipo de asistencia"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="danos_condiciones">Daños y Condiciones</Label>
-          <Input
-            id="danos_condiciones"
-            value={formData.danos_condiciones}
-            onChange={(e) => handleInputChange('danos_condiciones', e.target.value)}
-            placeholder="Descripción de daños visibles y condiciones generales"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="observaciones_tecnicas">Observaciones Técnicas</Label>
-          <Input
-            id="observaciones_tecnicas"
-            value={formData.observaciones_tecnicas}
-            onChange={(e) => handleInputChange('observaciones_tecnicas', e.target.value)}
-            placeholder="Observaciones técnicas detalladas"
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
-              <Truck className="h-6 w-6" />
-              SGG Grúa PWA
-            </h1>
-            <Badge variant="outline">
-              Paso {currentStep} de 3
-            </Badge>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-black text-primary p-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-2xl text-primary text-center">
+              🚛 INVENTARIO DE VEHÍCULO
+            </CardTitle>
+            <p className="text-center text-primary/70">
+              Sistema de Gestión de Grúas - Modo PWA
+            </p>
+          </CardHeader>
+        </Card>
 
-      {/* Progress Bar */}
-      <div className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-2">
-          <Progress value={(currentStep / 3) * 100} className="h-2" />
-        </div>
-      </div>
+        {/* Basic Vehicle Information */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary">Información del Vehículo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fecha" className="text-primary">Fecha</Label>
+                <Input
+                  id="fecha"
+                  type="date"
+                  value={formData.fecha}
+                  onChange={(e) => handleInputChange('fecha', e.target.value)}
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cliente" className="text-primary">Cliente *</Label>
+                <Input
+                  id="cliente"
+                  value={formData.cliente}
+                  onChange={(e) => handleInputChange('cliente', e.target.value)}
+                  placeholder="Nombre del cliente"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="marcaVehiculo" className="text-primary">Marca Vehículo *</Label>
+                <Input
+                  id="marcaVehiculo"
+                  value={formData.marcaVehiculo}
+                  onChange={(e) => handleInputChange('marcaVehiculo', e.target.value)}
+                  placeholder="Marca del vehículo"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="modeloVehiculo" className="text-primary">Modelo Vehículo</Label>
+                <Input
+                  id="modeloVehiculo"
+                  value={formData.modeloVehiculo}
+                  onChange={(e) => handleInputChange('modeloVehiculo', e.target.value)}
+                  placeholder="Modelo del vehículo"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="patente" className="text-primary">Patente *</Label>
+                <Input
+                  id="patente"
+                  value={formData.patente}
+                  onChange={(e) => handleInputChange('patente', e.target.value)}
+                  placeholder="Patente del vehículo"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="kilometraje" className="text-primary">Kilometraje</Label>
+                <Input
+                  id="kilometraje"
+                  value={formData.kilometraje}
+                  onChange={(e) => handleInputChange('kilometraje', e.target.value)}
+                  placeholder="Kilometraje actual"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="animate-fade-in">
-          {currentStep === 1 && renderStep1()}
-          {currentStep === 2 && renderStep2()}
-          {currentStep === 3 && renderStep3()}
-        </div>
+        {/* Location Information */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary">Ubicaciones</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="ubicacionOrigen" className="text-primary">Ubicación Origen</Label>
+              <Input
+                id="ubicacionOrigen"
+                value={formData.ubicacionOrigen}
+                onChange={(e) => handleInputChange('ubicacionOrigen', e.target.value)}
+                placeholder="Dirección de origen"
+                className="bg-black border-primary/30 text-primary"
+              />
+            </div>
+            <div>
+              <Label htmlFor="ubicacionDestino" className="text-primary">Ubicación Destino</Label>
+              <Input
+                id="ubicacionDestino"
+                value={formData.ubicacionDestino}
+                onChange={(e) => handleInputChange('ubicacionDestino', e.target.value)}
+                placeholder="Dirección de destino"
+                className="bg-black border-primary/30 text-primary"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Status Messages */}
-        {submitStatus && (
-          <Alert className={`mt-6 ${
-            submitStatus.type === 'success' 
-              ? 'border-primary bg-primary/10' 
-              : 'border-destructive bg-destructive/10'
-          }`}>
-            {submitStatus.type === 'success' ? 
-              <CheckCircle className="h-4 w-4 text-primary" /> : 
-              <AlertCircle className="h-4 w-4 text-destructive" />
-            }
-            <AlertDescription>
-              {submitStatus.message}
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Service Assignment */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary">Asignación del Servicio</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="grua" className="text-primary">Grúa *</Label>
+                <Input
+                  id="grua"
+                  value={formData.grua}
+                  onChange={(e) => handleInputChange('grua', e.target.value)}
+                  placeholder="Identificación de grúa"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="operador" className="text-primary">Operador *</Label>
+                <Input
+                  id="operador"
+                  value={formData.operador}
+                  onChange={(e) => handleInputChange('operador', e.target.value)}
+                  placeholder="Nombre del operador"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="tipoServicio" className="text-primary">Tipo de Servicio</Label>
+                <Input
+                  id="tipoServicio"
+                  value={formData.tipoServicio}
+                  onChange={(e) => handleInputChange('tipoServicio', e.target.value)}
+                  placeholder="Tipo de servicio"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-8">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-            disabled={currentStep === 1}
-          >
-            Anterior
-          </Button>
-
-          {currentStep < 3 ? (
-            <Button
-              onClick={() => setCurrentStep(currentStep + 1)}
-              disabled={currentStep === 1 ? !isStep1Valid() : currentStep === 2 ? !isFormValid() : false}
-            >
-              Siguiente
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={!isFormValid() || isSubmitting}
-              className="flex items-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Procesando...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  <span>Crear Servicio</span>
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-
-        {/* Debug Info */}
-        <Card className="mt-8">
+        {/* Equipment Section */}
+        <Card className="bg-black border-primary/20">
           <CardHeader>
             <CardTitle className="text-primary flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Estado del Sistema
+              <Camera className="h-5 w-5" />
+              Equipamiento del Vehículo
             </CardTitle>
+            <p className="text-primary/70 text-sm">
+              Capture imágenes para identificar y marcar elementos del equipamiento
+            </p>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div className="flex justify-between">
-                <span>Paso 1 (Datos Básicos):</span>
-                <Badge variant={isStep1Valid() ? "default" : "secondary"}>
-                  {isStep1Valid() ? '✅ Completo' : '❌ Incompleto'}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Paso 2 (Asignación):</span>
-                <Badge variant={isStep2Valid() ? "default" : "secondary"}>
-                  {isStep2Valid() ? '✅ Completo' : '❌ Pendiente'}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Equipamiento Seleccionado:</span>
-                <Badge variant="outline">{formData.equipamiento.length}/15</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>Tiempo de Servicio:</span>
-                <Badge variant="outline">{calculateServiceTime()}</Badge>
-              </div>
-            </div>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={() => openCamera('equipment')}
+              className="w-full bg-primary text-black hover:bg-primary/90"
+              size="lg"
+            >
+              <Camera className="h-5 w-5 mr-2" />
+              Capturar Equipamiento
+            </Button>
             
-            {currentStep <= 2 && (
-              <Alert className="mt-4">
-                <AlertDescription>
-                  <strong>Estado Actual:</strong> 
-                  {currentStep === 1 && isStep1Valid() && ' ✅ Paso 1 completo - Puedes continuar al Paso 2'}
-                  {currentStep === 1 && !isStep1Valid() && ' ❌ Completa los campos básicos del vehículo'}
-                  {currentStep === 2 && !isStep2Valid() && ' ❌ Selecciona cliente, grúa, operador y tipo de servicio'}
-                  {currentStep === 2 && isStep2Valid() && ' ✅ Paso 2 completo - Puedes continuar al Paso 3'}
-                </AlertDescription>
-              </Alert>
+            {equipmentImages.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {equipmentImages.map((image) => (
+                  <div key={image.id} className="relative group">
+                    <img
+                      src={image.preview}
+                      alt="Equipamiento"
+                      className="w-full h-32 object-cover rounded-lg border border-primary/30"
+                    />
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => removeImage(image.id, 'equipment')}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-primary/70 mt-1">
+                      {image.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <p className="text-sm text-primary/70">
+              Total de elementos capturados: {equipmentImages.length}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Damage and Conditions Section */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Daños y Condiciones ({damageImages.length}/6)
+            </CardTitle>
+            <p className="text-primary/70 text-sm">
+              Capture hasta 6 fotografías para documentar daños y condiciones del vehículo
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={() => openCamera('damage')}
+              disabled={damageImages.length >= 6}
+              className="w-full bg-primary text-black hover:bg-primary/90 disabled:opacity-50"
+              size="lg"
+            >
+              <Camera className="h-5 w-5 mr-2" />
+              {damageImages.length >= 6 ? 'Límite Alcanzado' : 'Capturar Daños'}
+            </Button>
+            
+            {damageImages.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {damageImages.map((image, index) => (
+                  <div key={image.id} className="relative group">
+                    <img
+                      src={image.preview}
+                      alt={`Daño ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-primary/30"
+                    />
+                    <div className="absolute top-2 left-2 bg-primary text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                      {index + 1}
+                    </div>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => removeImage(image.id, 'damage')}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-primary/70 mt-1">
+                      Foto {index + 1} - {image.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Observations */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary">Observaciones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={formData.observaciones}
+              onChange={(e) => handleInputChange('observaciones', e.target.value)}
+              placeholder="Observaciones adicionales sobre el inventario..."
+              className="bg-black border-primary/30 text-primary min-h-[100px]"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <Card className="bg-black border-primary/20">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button
+                onClick={generatePDF}
+                disabled={!isFormValid()}
+                className="bg-primary text-black hover:bg-primary/90 disabled:opacity-50"
+                size="lg"
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Generar PDF
+              </Button>
+              
+              <Button
+                onClick={shareViaWhatsApp}
+                disabled={!isFormValid()}
+                className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                size="lg"
+              >
+                <Share className="h-5 w-5 mr-2" />
+                Enviar por WhatsApp
+              </Button>
+            </div>
+            
+            {!isFormValid() && (
+              <p className="text-center text-primary/70 text-sm mt-4">
+                Complete los campos obligatorios (*) para continuar
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Hidden file input for camera */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleImageCapture}
+          className="hidden"
+        />
       </div>
     </div>
   );
-};
-
-export default SGGGruaPWA;
+}
