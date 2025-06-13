@@ -1,12 +1,13 @@
 
 import { useEffect, useState } from 'react';
+import React from 'react';
 
 // Check if React dispatcher is available
 function isReactReady(): boolean {
   try {
     // Try to access React's internal dispatcher
-    const React = require('react');
-    return React && React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentDispatcher?.current !== null;
+    const ReactInternals = (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    return ReactInternals?.ReactCurrentDispatcher?.current !== null;
   } catch {
     return false;
   }
@@ -56,7 +57,7 @@ export function withReactReady<P extends object>(
       if (!isReady) {
         return null;
       }
-      return <Component {...props} />;
+      return React.createElement(Component, props);
     } catch {
       return null;
     }
