@@ -19,44 +19,29 @@ import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-export default function Reportes() {
-  const [isReady, setIsReady] = useState(false);
-  
-  useEffect(() => {
-    // Simple delay to ensure React Query context is initialized
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Show loading state while React Query context initializes
-  if (!isReady) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="bg-white border border-gray-300 p-4">
-            <Skeleton className="h-8 w-64 mb-2" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-48" />
-            ))}
-          </div>
+function ReportesLoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="bg-white border border-gray-300 p-4">
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-48" />
+          ))}
         </div>
       </div>
-    );
-  }
-
-  return <ReportesContent />;
+    </div>
+  );
 }
 
 function ReportesContent() {
@@ -130,26 +115,7 @@ function ReportesContent() {
     ]);
 
   if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="bg-white border border-gray-300 p-4">
-            <Skeleton className="h-8 w-64 mb-2" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-48" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <ReportesLoadingSkeleton />;
   }
 
   return (
@@ -281,5 +247,45 @@ function ReportesContent() {
       </div>
     </div>
   );
+}
+
+export default function Reportes() {
+  const [isQueryClientReady, setIsQueryClientReady] = useState(false);
+  
+  useEffect(() => {
+    // Check if we can access the QueryClient without errors
+    let mounted = true;
+    
+    const checkQueryClient = () => {
+      try {
+        // Try to access the query client
+        const queryClient = useQueryClient();
+        if (queryClient && mounted) {
+          console.log('QueryClient is ready');
+          setIsQueryClientReady(true);
+        }
+      } catch (error) {
+        console.log('QueryClient not ready yet, retrying...');
+        // Retry after a short delay
+        if (mounted) {
+          setTimeout(checkQueryClient, 50);
+        }
+      }
+    };
+    
+    // Start checking
+    checkQueryClient();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Show loading state while QueryClient initializes
+  if (!isQueryClientReady) {
+    return <ReportesLoadingSkeleton />;
+  }
+
+  return <ReportesContent />;
 }
 
