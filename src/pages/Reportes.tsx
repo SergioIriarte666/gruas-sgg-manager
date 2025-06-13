@@ -1,8 +1,4 @@
 
-import { useServicios } from "@/hooks/useServicios";
-import { useClientes } from "@/hooks/useClientes";
-import { useGruas } from "@/hooks/useGruas";
-import { useOperadores } from "@/hooks/useOperadores";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -18,13 +14,21 @@ import { DistribucionServicios } from "@/components/reportes/DistribucionServici
 import { IngresosPorCliente } from "@/components/reportes/IngresosPorCliente";
 import { RecursosSistema } from "@/components/reportes/RecursosSistema";
 import { AccionesReportes } from "@/components/reportes/AccionesReportes";
+import { useSafeServicios } from "@/hooks/useSafeServicios";
+import { useSafeClientes } from "@/hooks/useSafeClientes";
+import { useSafeGruas } from "@/hooks/useSafeGruas";
+import { useSafeOperadores } from "@/hooks/useSafeOperadores";
+import { useQueryContextReady } from "@/hooks/useQueryContextReady";
 
 export default function Reportes() {
-  const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
-  const { data: clientes = [], isLoading: clientesLoading } = useClientes();
-  const { data: gruas = [], isLoading: gruasLoading } = useGruas();
-  const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
+  const { isReady: contextReady } = useQueryContextReady();
   const { toast } = useToast();
+
+  // Only call hooks if context is ready
+  const { data: servicios = [], isLoading: serviciosLoading } = contextReady ? useSafeServicios() : { data: [], isLoading: false };
+  const { data: clientes = [], isLoading: clientesLoading } = contextReady ? useSafeClientes() : { data: [], isLoading: false };
+  const { data: gruas = [], isLoading: gruasLoading } = contextReady ? useSafeGruas() : { data: [], isLoading: false };
+  const { data: operadores = [], isLoading: operadoresLoading } = contextReady ? useSafeOperadores() : { data: [], isLoading: false };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -75,14 +79,16 @@ export default function Reportes() {
     }
   };
 
-  // Mostrar skeletons mientras cargan los datos
-  if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
+  // Show loading while context is not ready or data is loading
+  if (!contextReady || serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-primary">Reportes y Estadísticas</h1>
-            <p className="text-muted-foreground">Dashboard ejecutivo y reportes del sistema</p>
+            <p className="text-muted-foreground">
+              {!contextReady ? "Inicializando sistema..." : "Dashboard ejecutivo y reportes del sistema"}
+            </p>
           </div>
         </div>
         
