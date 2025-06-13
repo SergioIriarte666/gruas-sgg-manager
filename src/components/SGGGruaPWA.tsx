@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,8 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, Download, Share, Eye, CheckSquare, GripVertical } from 'lucide-react';
+import { Camera, Download, Share, Eye, CheckSquare, Users, Truck, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useGruas } from '@/hooks/useGruas';
+import { useOperadores } from '@/hooks/useOperadores';
+import { useTiposServicio } from '@/hooks/useTiposServicio';
 import jsPDF from 'jspdf';
 
 interface CapturedImage {
@@ -14,12 +18,6 @@ interface CapturedImage {
   file: File;
   preview: string;
   timestamp: Date;
-}
-
-interface DragItem {
-  id: string;
-  name: string;
-  type: 'grua' | 'operador' | 'tipoServicio';
 }
 
 // Equipamiento completo del vehículo para verificación
@@ -65,28 +63,14 @@ const EQUIPAMIENTO_VEHICULO = [
   'Tapa de combustible'
 ];
 
-// Mock data for drag and drop
-const MOCK_GRUAS: DragItem[] = [
-  { id: 'grua-1', name: 'ABC123 - Ford F-150 (Liviana)', type: 'grua' },
-  { id: 'grua-2', name: 'DEF456 - Mercedes Actros (Pesada)', type: 'grua' },
-  { id: 'grua-3', name: 'GHI789 - Volvo FH (Semipesada)', type: 'grua' }
-];
-
-const MOCK_OPERADORES: DragItem[] = [
-  { id: 'op-1', name: 'Juan Pérez - 12.345.678-9', type: 'operador' },
-  { id: 'op-2', name: 'María González - 98.765.432-1', type: 'operador' },
-  { id: 'op-3', name: 'Carlos López - 11.222.333-4', type: 'operador' }
-];
-
-const MOCK_TIPOS_SERVICIO: DragItem[] = [
-  { id: 'ts-1', name: 'Grúa de Rescate', type: 'tipoServicio' },
-  { id: 'ts-2', name: 'Traslado de Vehículo', type: 'tipoServicio' },
-  { id: 'ts-3', name: 'Asistencia en Ruta', type: 'tipoServicio' }
-];
-
 export default function SGGGruaPWA() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Hooks for real data
+  const { data: gruas = [] } = useGruas();
+  const { data: operadores = [] } = useOperadores();
+  const { data: tiposServicio = [] } = useTiposServicio();
   
   // Form data state
   const [formData, setFormData] = useState({
@@ -97,9 +81,9 @@ export default function SGGGruaPWA() {
     patente: '',
     ubicacionOrigen: '',
     ubicacionDestino: '',
-    grua: '',
-    operador: '',
-    tipoServicio: '',
+    gruaId: '',
+    operadorId: '',
+    tipoServicioId: '',
     observaciones: '',
     kmInicial: '',
     kmFinal: '',
@@ -114,13 +98,10 @@ export default function SGGGruaPWA() {
   // Damage images state
   const [damageImages, setDamageImages] = useState<CapturedImage[]>([]);
 
-  // Drag and drop state
-  const [draggedItem, setDraggedItem] = useState<DragItem | null>(null);
-  const [dropZones, setDropZones] = useState({
-    grua: '',
-    operador: '',
-    tipoServicio: ''
-  });
+  // Selection modal states
+  const [showGruaSelection, setShowGruaSelection] = useState(false);
+  const [showOperadorSelection, setShowOperadorSelection] = useState(false);
+  const [showTipoServicioSelection, setShowTipoServicioSelection] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -148,45 +129,42 @@ export default function SGGGruaPWA() {
     setEquipmentVerification({});
   };
 
-  // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, item: DragItem) => {
-    setDraggedItem(item);
-    e.dataTransfer.effectAllowed = 'move';
+  // Selection handlers
+  const handleGruaSelect = (gruaId: string) => {
+    handleInputChange('gruaId', gruaId);
+    setShowGruaSelection(false);
+    toast({
+      title: "Grúa seleccionada",
+      description: "Grúa asignada correctamente"
+    });
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+  const handleOperadorSelect = (operadorId: string) => {
+    handleInputChange('operadorId', operadorId);
+    setShowOperadorSelection(false);
+    toast({
+      title: "Operador seleccionado",
+      description: "Operador asignado correctamente"
+    });
   };
 
-  const handleDrop = (e: React.DragEvent, dropZone: 'grua' | 'operador' | 'tipoServicio') => {
-    e.preventDefault();
-    
-    if (draggedItem && draggedItem.type === dropZone) {
-      setDropZones(prev => ({
-        ...prev,
-        [dropZone]: draggedItem.name
-      }));
-      
-      // Update form data
-      handleInputChange(dropZone, draggedItem.name);
-      
-      toast({
-        title: "Elemento asignado",
-        description: `${draggedItem.name} asignado correctamente`
-      });
-    }
-    
-    setDraggedItem(null);
+  const handleTipoServicioSelect = (tipoId: string) => {
+    handleInputChange('tipoServicioId', tipoId);
+    setShowTipoServicioSelection(false);
+    toast({
+      title: "Tipo de servicio seleccionado",
+      description: "Tipo de servicio asignado correctamente"
+    });
   };
 
-  const clearDropZone = (zone: 'grua' | 'operador' | 'tipoServicio') => {
-    setDropZones(prev => ({
-      ...prev,
-      [zone]: ''
-    }));
-    handleInputChange(zone, '');
+  const clearSelection = (field: 'gruaId' | 'operadorId' | 'tipoServicioId') => {
+    handleInputChange(field, '');
   };
+
+  // Get selected items for display
+  const selectedGrua = gruas.find(g => g.id === formData.gruaId);
+  const selectedOperador = operadores.find(o => o.id === formData.operadorId);
+  const selectedTipoServicio = tiposServicio.find(t => t.id === formData.tipoServicioId);
 
   const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -245,96 +223,211 @@ export default function SGGGruaPWA() {
       const pdf = new jsPDF();
       let yPosition = 20;
 
-      // Header
-      pdf.setFontSize(18);
+      // Professional Header
+      pdf.setFillColor(0, 0, 0);
+      pdf.rect(0, 0, 210, 30, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('DETALLES PARA REPORTE CLIENTE - SGG GRÚA', 20, yPosition);
-      yPosition += 15;
-
-      // Basic info
+      pdf.text('SGG GRÚA - REPORTE CLIENTE', 20, 15);
+      
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Fecha: ${formData.fecha}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Cliente: ${formData.cliente}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Vehículo: ${formData.marcaVehiculo} ${formData.modeloVehiculo}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Patente: ${formData.patente}`, 20, yPosition);
-      yPosition += 15;
+      pdf.text(`Generado: ${new Date().toLocaleDateString('es-CL')} ${new Date().toLocaleTimeString('es-CL')}`, 20, 25);
+      
+      yPosition = 45;
 
-      // Service Assignment
+      // Reset text color
+      pdf.setTextColor(0, 0, 0);
+
+      // Client and Vehicle Information Section
+      pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('ASIGNACIÓN DEL SERVICIO:', 20, yPosition);
+      pdf.text('INFORMACIÓN DEL SERVICIO', 20, yPosition);
       yPosition += 10;
+
+      pdf.setFontSize(11);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Grúa: ${dropZones.grua || formData.grua}`, 20, yPosition);
+      
+      // Two column layout
+      const leftColumn = 20;
+      const rightColumn = 110;
+      
+      pdf.text(`Fecha: ${formData.fecha}`, leftColumn, yPosition);
+      pdf.text(`Cliente: ${formData.cliente}`, rightColumn, yPosition);
       yPosition += 8;
-      pdf.text(`Operador: ${dropZones.operador || formData.operador}`, 20, yPosition);
+      
+      pdf.text(`Vehículo: ${formData.marcaVehiculo} ${formData.modeloVehiculo}`, leftColumn, yPosition);
+      pdf.text(`Patente: ${formData.patente}`, rightColumn, yPosition);
       yPosition += 8;
-      pdf.text(`Tipo de Servicio: ${dropZones.tipoServicio || formData.tipoServicio}`, 20, yPosition);
+      
+      pdf.text(`Origen: ${formData.ubicacionOrigen}`, leftColumn, yPosition);
+      yPosition += 8;
+      pdf.text(`Destino: ${formData.ubicacionDestino}`, leftColumn, yPosition);
       yPosition += 15;
 
-      // Kilómetros
+      // Service Assignment Section
+      pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('KILÓMETROS:', 20, yPosition);
+      pdf.text('ASIGNACIÓN DEL SERVICIO', 20, yPosition);
       yPosition += 10;
+
+      pdf.setFontSize(11);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`KM Inicial: ${formData.kmInicial}`, 20, yPosition);
+      
+      if (selectedGrua) {
+        pdf.text(`Grúa: ${selectedGrua.patente} - ${selectedGrua.marca} ${selectedGrua.modelo} (${selectedGrua.tipo})`, leftColumn, yPosition);
+        yPosition += 8;
+      }
+      
+      if (selectedOperador) {
+        pdf.text(`Operador: ${selectedOperador.nombreCompleto} - ${selectedOperador.rut}`, leftColumn, yPosition);
+        yPosition += 8;
+      }
+      
+      if (selectedTipoServicio) {
+        pdf.text(`Tipo de Servicio: ${selectedTipoServicio.nombre}`, leftColumn, yPosition);
+        yPosition += 8;
+      }
+      yPosition += 10;
+
+      // Kilometers Section
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DATOS DEL SERVICIO', 20, yPosition);
+      yPosition += 10;
+
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`KM Inicial: ${formData.kmInicial}`, leftColumn, yPosition);
+      pdf.text(`KM Final: ${formData.kmFinal}`, rightColumn, yPosition);
       yPosition += 8;
-      pdf.text(`KM Final: ${formData.kmFinal}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`KM Vehículo: ${formData.kmVehiculo}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Nivel Combustible: ${formData.nivelCombustible}`, 20, yPosition);
+      pdf.text(`KM Vehículo: ${formData.kmVehiculo}`, leftColumn, yPosition);
+      pdf.text(`Nivel Combustible: ${formData.nivelCombustible}`, rightColumn, yPosition);
       yPosition += 15;
 
-      // Equipamiento verificado
+      // Equipment Section
       const equipmentPresente = EQUIPAMIENTO_VEHICULO.filter(item => equipmentVerification[item]);
       
       if (equipmentPresente.length > 0) {
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('EQUIPAMIENTO VERIFICADO:', 20, yPosition);
+        pdf.text('EQUIPAMIENTO VERIFICADO', 20, yPosition);
         yPosition += 10;
+        
+        pdf.setFontSize(10);
         pdf.setFont('helvetica', 'normal');
-        equipmentPresente.forEach(item => {
-          if (yPosition > 270) {
+        
+        // Create three columns for equipment
+        const cols = 3;
+        const colWidth = 60;
+        let currentCol = 0;
+        let tempY = yPosition;
+        
+        equipmentPresente.forEach((item, index) => {
+          const x = leftColumn + (currentCol * colWidth);
+          
+          if (tempY > 270) {
             pdf.addPage();
-            yPosition = 20;
+            tempY = 20;
           }
-          pdf.text(`✓ ${item}`, 30, yPosition);
-          yPosition += 6;
+          
+          pdf.text(`✓ ${item}`, x, tempY);
+          
+          currentCol++;
+          if (currentCol >= cols) {
+            currentCol = 0;
+            tempY += 6;
+          }
         });
-        yPosition += 10;
+        
+        yPosition = tempY + 15;
       }
 
-      // Tipo de asistencia
+      // Detailed Assistance Type
       if (formData.tipoAsistenciaDetallado) {
         if (yPosition > 250) {
           pdf.addPage();
           yPosition = 20;
         }
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('TIPO DE ASISTENCIA DETALLADO:', 20, yPosition);
+        pdf.text('TIPO DE ASISTENCIA DETALLADO', 20, yPosition);
         yPosition += 8;
+        pdf.setFontSize(11);
         pdf.setFont('helvetica', 'normal');
         const splitAsistencia = pdf.splitTextToSize(formData.tipoAsistenciaDetallado, 170);
         pdf.text(splitAsistencia, 20, yPosition);
-        yPosition += splitAsistencia.length * 6 + 10;
+        yPosition += splitAsistencia.length * 6 + 15;
       }
 
-      // Damage section
+      // Images Section
       if (damageImages.length > 0) {
-        if (yPosition > 250) {
+        if (yPosition > 200) {
           pdf.addPage();
           yPosition = 20;
         }
+        
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('DAÑOS Y CONDICIONES:', 20, yPosition);
-        yPosition += 10;
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`Total de fotografías de daños: ${damageImages.length}`, 20, yPosition);
-        yPosition += 10;
+        pdf.text('FOTOGRAFÍAS DE DAÑOS Y CONDICIONES', 20, yPosition);
+        yPosition += 15;
+
+        // Add images in a grid
+        let imageX = 20;
+        let imageY = yPosition;
+        const imageWidth = 80;
+        const imageHeight = 60;
+        const imagesPerRow = 2;
+        let imageCount = 0;
+
+        for (const image of damageImages) {
+          if (imageY + imageHeight > 280) {
+            pdf.addPage();
+            imageY = 20;
+            imageX = 20;
+          }
+
+          try {
+            // Convert image to base64 and add to PDF
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            await new Promise((resolve) => {
+              img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx?.drawImage(img, 0, 0);
+                const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+                
+                pdf.addImage(dataURL, 'JPEG', imageX, imageY, imageWidth, imageHeight);
+                
+                // Add caption
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`Foto ${imageCount + 1} - ${image.timestamp.toLocaleString('es-CL')}`, imageX, imageY + imageHeight + 5);
+                
+                resolve(true);
+              };
+              img.src = image.preview;
+            });
+
+            imageCount++;
+            
+            if (imageCount % imagesPerRow === 0) {
+              imageY += imageHeight + 15;
+              imageX = 20;
+            } else {
+              imageX += imageWidth + 10;
+            }
+          } catch (error) {
+            console.error('Error adding image to PDF:', error);
+          }
+        }
+        
+        yPosition = imageY + imageHeight + 20;
       }
 
       // Observations
@@ -343,12 +436,25 @@ export default function SGGGruaPWA() {
           pdf.addPage();
           yPosition = 20;
         }
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('OBSERVACIONES:', 20, yPosition);
+        pdf.text('OBSERVACIONES', 20, yPosition);
         yPosition += 8;
+        pdf.setFontSize(11);
         pdf.setFont('helvetica', 'normal');
         const splitObservations = pdf.splitTextToSize(formData.observaciones, 170);
         pdf.text(splitObservations, 20, yPosition);
+      }
+
+      // Footer
+      const pageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(128, 128, 128);
+        pdf.text(`Página ${i} de ${pageCount}`, 20, 290);
+        pdf.text('SGG Grúa - Sistema de Gestión de Grúas', 150, 290);
       }
 
       // Save PDF
@@ -419,7 +525,7 @@ export default function SGGGruaPWA() {
 
   const isFormValid = () => {
     return formData.cliente && formData.marcaVehiculo && formData.patente && 
-           (formData.grua || dropZones.grua) && (formData.operador || dropZones.operador);
+           formData.gruaId && formData.operadorId;
   };
 
   return (
@@ -501,133 +607,106 @@ export default function SGGGruaPWA() {
               </CardContent>
             </Card>
 
-            {/* Service Assignment with Drag and Drop */}
+            {/* Service Assignment with Selection Buttons */}
             <Card className="bg-black border-primary/20">
               <CardHeader>
                 <CardTitle className="text-primary">Asignación del Servicio</CardTitle>
                 <p className="text-primary/70 text-sm">
-                  Arrastra y suelta los elementos desde el panel lateral
+                  Selecciona los recursos para el servicio
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
-                  {/* Grúa Drop Zone */}
+                  {/* Grúa Selection */}
                   <div>
                     <Label className="text-primary">Grúa *</Label>
-                    <div
-                      className={`min-h-[60px] border-2 border-dashed rounded-lg p-4 transition-colors ${
-                        draggedItem?.type === 'grua' 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-primary/30'
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, 'grua')}
-                    >
-                      {dropZones.grua || formData.grua ? (
+                    {selectedGrua ? (
+                      <div className="border-2 border-dashed border-green-500 rounded-lg p-4 bg-green-500/10">
                         <div className="flex items-center justify-between">
-                          <span className="text-primary">{dropZones.grua || formData.grua}</span>
+                          <span className="text-primary font-medium">
+                            {selectedGrua.patente} - {selectedGrua.marca} {selectedGrua.modelo} ({selectedGrua.tipo})
+                          </span>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => clearDropZone('grua')}
-                            className="text-primary border-primary/30"
+                            onClick={() => clearSelection('gruaId')}
+                            className="text-primary border-primary/30 hover:bg-red-500/20"
                           >
                             ✕
                           </Button>
                         </div>
-                      ) : (
-                        <div className="text-primary/50 text-center">
-                          Arrastra una grúa aquí o escribe la identificación
-                        </div>
-                      )}
-                    </div>
-                    {!dropZones.grua && (
-                      <Input
-                        value={formData.grua}
-                        onChange={(e) => handleInputChange('grua', e.target.value)}
-                        placeholder="Identificación de grúa"
-                        className="bg-black border-primary/30 text-primary mt-2"
-                      />
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => setShowGruaSelection(true)}
+                        variant="outline"
+                        className="w-full border-2 border-dashed border-primary/30 text-primary hover:border-green-500 hover:bg-green-500/10"
+                      >
+                        <Truck className="h-4 w-4 mr-2" />
+                        Seleccionar Grúa
+                      </Button>
                     )}
                   </div>
 
-                  {/* Operador Drop Zone */}
+                  {/* Operador Selection */}
                   <div>
                     <Label className="text-primary">Operador *</Label>
-                    <div
-                      className={`min-h-[60px] border-2 border-dashed rounded-lg p-4 transition-colors ${
-                        draggedItem?.type === 'operador' 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-primary/30'
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, 'operador')}
-                    >
-                      {dropZones.operador || formData.operador ? (
+                    {selectedOperador ? (
+                      <div className="border-2 border-dashed border-green-500 rounded-lg p-4 bg-green-500/10">
                         <div className="flex items-center justify-between">
-                          <span className="text-primary">{dropZones.operador || formData.operador}</span>
+                          <span className="text-primary font-medium">
+                            {selectedOperador.nombreCompleto} - {selectedOperador.rut}
+                          </span>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => clearDropZone('operador')}
-                            className="text-primary border-primary/30"
+                            onClick={() => clearSelection('operadorId')}
+                            className="text-primary border-primary/30 hover:bg-red-500/20"
                           >
                             ✕
                           </Button>
                         </div>
-                      ) : (
-                        <div className="text-primary/50 text-center">
-                          Arrastra un operador aquí o escribe el nombre
-                        </div>
-                      )}
-                    </div>
-                    {!dropZones.operador && (
-                      <Input
-                        value={formData.operador}
-                        onChange={(e) => handleInputChange('operador', e.target.value)}
-                        placeholder="Nombre del operador"
-                        className="bg-black border-primary/30 text-primary mt-2"
-                      />
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => setShowOperadorSelection(true)}
+                        variant="outline"
+                        className="w-full border-2 border-dashed border-primary/30 text-primary hover:border-green-500 hover:bg-green-500/10"
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        Seleccionar Operador
+                      </Button>
                     )}
                   </div>
 
-                  {/* Tipo de Servicio Drop Zone */}
+                  {/* Tipo de Servicio Selection */}
                   <div>
                     <Label className="text-primary">Tipo de Servicio</Label>
-                    <div
-                      className={`min-h-[60px] border-2 border-dashed rounded-lg p-4 transition-colors ${
-                        draggedItem?.type === 'tipoServicio' 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-primary/30'
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, 'tipoServicio')}
-                    >
-                      {dropZones.tipoServicio || formData.tipoServicio ? (
+                    {selectedTipoServicio ? (
+                      <div className="border-2 border-dashed border-green-500 rounded-lg p-4 bg-green-500/10">
                         <div className="flex items-center justify-between">
-                          <span className="text-primary">{dropZones.tipoServicio || formData.tipoServicio}</span>
+                          <span className="text-primary font-medium">
+                            {selectedTipoServicio.nombre}
+                          </span>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => clearDropZone('tipoServicio')}
-                            className="text-primary border-primary/30"
+                            onClick={() => clearSelection('tipoServicioId')}
+                            className="text-primary border-primary/30 hover:bg-red-500/20"
                           >
                             ✕
                           </Button>
                         </div>
-                      ) : (
-                        <div className="text-primary/50 text-center">
-                          Arrastra un tipo de servicio aquí o escribe el tipo
-                        </div>
-                      )}
-                    </div>
-                    {!dropZones.tipoServicio && (
-                      <Input
-                        value={formData.tipoServicio}
-                        onChange={(e) => handleInputChange('tipoServicio', e.target.value)}
-                        placeholder="Tipo de servicio"
-                        className="bg-black border-primary/30 text-primary mt-2"
-                      />
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => setShowTipoServicioSelection(true)}
+                        variant="outline"
+                        className="w-full border-2 border-dashed border-primary/30 text-primary hover:border-green-500 hover:bg-green-500/10"
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Seleccionar Tipo de Servicio
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -770,7 +849,6 @@ export default function SGGGruaPWA() {
               </CardContent>
             </Card>
 
-            {/* Tipo de Asistencia Detallado */}
             <Card className="bg-black border-primary/20">
               <CardHeader>
                 <CardTitle className="text-primary">Tipo de Asistencia Detallado</CardTitle>
@@ -785,7 +863,6 @@ export default function SGGGruaPWA() {
               </CardContent>
             </Card>
 
-            {/* Damage and Conditions Section */}
             <Card className="bg-black border-primary/20">
               <CardHeader>
                 <CardTitle className="text-primary flex items-center gap-2">
@@ -838,7 +915,6 @@ export default function SGGGruaPWA() {
               </CardContent>
             </Card>
 
-            {/* Observations */}
             <Card className="bg-black border-primary/20">
               <CardHeader>
                 <CardTitle className="text-primary">Observaciones</CardTitle>
@@ -853,7 +929,6 @@ export default function SGGGruaPWA() {
               </CardContent>
             </Card>
 
-            {/* Action Buttons */}
             <Card className="bg-black border-primary/20">
               <CardContent className="pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -887,67 +962,125 @@ export default function SGGGruaPWA() {
             </Card>
           </div>
 
-          {/* Drag and Drop Sidebar */}
+          {/* Selection Panels */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Grúas */}
-            <Card className="bg-black border-primary/20">
-              <CardHeader>
-                <CardTitle className="text-primary text-sm">Grúas Disponibles</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {MOCK_GRUAS.map((grua) => (
-                  <div
-                    key={grua.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, grua)}
-                    className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30 cursor-grab active:cursor-grabbing hover:bg-primary/20 transition-colors"
-                  >
-                    <GripVertical className="h-4 w-4 text-primary/50" />
-                    <span className="text-primary text-sm">{grua.name}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {/* Grúas Selection Panel */}
+            {showGruaSelection && (
+              <Card className="bg-black border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-primary text-sm flex items-center justify-between">
+                    <span>Seleccionar Grúa</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowGruaSelection(false)}
+                      className="text-primary border-primary/30"
+                    >
+                      ✕
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+                  {gruas.filter(grua => grua.activo).map((grua) => (
+                    <Button
+                      key={grua.id}
+                      onClick={() => handleGruaSelect(grua.id)}
+                      variant="outline"
+                      className="w-full text-left justify-start p-3 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium">{grua.patente}</div>
+                        <div className="text-primary/70">{grua.marca} {grua.modelo} ({grua.tipo})</div>
+                      </div>
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Operadores */}
-            <Card className="bg-black border-primary/20">
-              <CardHeader>
-                <CardTitle className="text-primary text-sm">Operadores Disponibles</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {MOCK_OPERADORES.map((operador) => (
-                  <div
-                    key={operador.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, operador)}
-                    className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30 cursor-grab active:cursor-grabbing hover:bg-primary/20 transition-colors"
-                  >
-                    <GripVertical className="h-4 w-4 text-primary/50" />
-                    <span className="text-primary text-sm">{operador.name}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {/* Operadores Selection Panel */}
+            {showOperadorSelection && (
+              <Card className="bg-black border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-primary text-sm flex items-center justify-between">
+                    <span>Seleccionar Operador</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowOperadorSelection(false)}
+                      className="text-primary border-primary/30"
+                    >
+                      ✕
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+                  {operadores.filter(operador => operador.activo).map((operador) => (
+                    <Button
+                      key={operador.id}
+                      onClick={() => handleOperadorSelect(operador.id)}
+                      variant="outline"
+                      className="w-full text-left justify-start p-3 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium">{operador.nombreCompleto}</div>
+                        <div className="text-primary/70">{operador.rut}</div>
+                      </div>
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Tipos de Servicio */}
-            <Card className="bg-black border-primary/20">
-              <CardHeader>
-                <CardTitle className="text-primary text-sm">Tipos de Servicio</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {MOCK_TIPOS_SERVICIO.map((tipo) => (
-                  <div
-                    key={tipo.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, tipo)}
-                    className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30 cursor-grab active:cursor-grabbing hover:bg-primary/20 transition-colors"
-                  >
-                    <GripVertical className="h-4 w-4 text-primary/50" />
-                    <span className="text-primary text-sm">{tipo.name}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {/* Tipos de Servicio Selection Panel */}
+            {showTipoServicioSelection && (
+              <Card className="bg-black border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-primary text-sm flex items-center justify-between">
+                    <span>Seleccionar Tipo de Servicio</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowTipoServicioSelection(false)}
+                      className="text-primary border-primary/30"
+                    >
+                      ✕
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-64 overflow-y-auto">
+                  {tiposServicio.filter(tipo => tipo.activo).map((tipo) => (
+                    <Button
+                      key={tipo.id}
+                      onClick={() => handleTipoServicioSelect(tipo.id)}
+                      variant="outline"
+                      className="w-full text-left justify-start p-3 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      <div className="text-sm">
+                        <div className="font-medium">{tipo.nombre}</div>
+                        {tipo.descripcion && (
+                          <div className="text-primary/70 text-xs">{tipo.descripcion}</div>
+                        )}
+                      </div>
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Info Panel when no selection is active */}
+            {!showGruaSelection && !showOperadorSelection && !showTipoServicioSelection && (
+              <Card className="bg-black border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-primary text-sm">Información</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-primary/70 text-sm">
+                    Selecciona los botones en "Asignación del Servicio" para elegir grúa, operador y tipo de servicio.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
