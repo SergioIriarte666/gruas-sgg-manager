@@ -1,9 +1,9 @@
 
 import React from "react";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from '@/components/Layout/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SafeToaster } from '@/components/ui/safe-toaster';
