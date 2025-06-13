@@ -23,6 +23,23 @@ export default function Reportes() {
   const { toast } = useToast();
   const isReactReady = useReactReady();
 
+  // Early return if React is not ready
+  if (!isReactReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Skeleton className="h-16 w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only call hooks after React is ready
   const { data: servicios = [], isLoading: serviciosLoading } = useSafeServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
   const { data: gruas = [], isLoading: gruasLoading } = useGruas();
@@ -81,22 +98,6 @@ export default function Reportes() {
       });
     }
   };
-
-  // Early return if React is not ready
-  if (!isReactReady) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <Skeleton className="h-16 w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Datos para la tabla de servicios recientes
   const serviciosRecientes = servicios
