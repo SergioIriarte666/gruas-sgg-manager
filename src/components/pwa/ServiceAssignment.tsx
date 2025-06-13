@@ -5,9 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Truck, Users, Settings, X } from 'lucide-react';
-import { useGruas } from '@/hooks/useGruas';
-import { useOperadores } from '@/hooks/useOperadores';
-import { useTiposServicio } from '@/hooks/useTiposServicio';
+import { useSafePWAData } from '@/hooks/useSafePWAData';
 
 interface ServiceAssignmentProps {
   gruaId: string;
@@ -28,9 +26,7 @@ export function ServiceAssignment({
   onTipoServicioSelect,
   onClearSelection
 }: ServiceAssignmentProps) {
-  const { data: gruas = [] } = useGruas();
-  const { data: operadores = [] } = useOperadores();
-  const { data: tiposServicio = [] } = useTiposServicio();
+  const { gruas, operadores, tiposServicio, isUsingFallbackData } = useSafePWAData();
 
   const selectedGrua = gruas.find(g => g.id === gruaId);
   const selectedOperador = operadores.find(o => o.id === operadorId);
@@ -41,7 +37,10 @@ export function ServiceAssignment({
       <CardHeader>
         <CardTitle className="text-primary">Asignación del Servicio</CardTitle>
         <p className="text-primary/70 text-sm">
-          Selecciona los recursos para el servicio (arrastra y suelta o selecciona)
+          Selecciona los recursos para el servicio
+          {isUsingFallbackData && (
+            <span className="text-orange-300"> (datos offline)</span>
+          )}
         </p>
       </CardHeader>
       <CardContent className="space-y-6">

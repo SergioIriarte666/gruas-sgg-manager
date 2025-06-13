@@ -1,4 +1,3 @@
-
 import React, { useState, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,15 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, Share } from 'lucide-react';
+import { Download, Share, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useGruas } from '@/hooks/useGruas';
-import { useOperadores } from '@/hooks/useOperadores';
-import { useTiposServicio } from '@/hooks/useTiposServicio';
 import { generateClientReportPDF } from '@/utils/pdfClientGenerator';
 import { EquipmentChecklist } from '@/components/EquipmentChecklist';
 import { DamageImageCapture } from '@/components/pwa/DamageImageCapture';
 import { ServiceAssignment } from '@/components/pwa/ServiceAssignment';
+import { useSafePWAData } from '@/hooks/useSafePWAData';
+import { useConnectivity } from '@/hooks/useConnectivity';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CapturedImage {
   id: string;
@@ -27,18 +26,28 @@ interface CapturedImage {
 function SGGGruaPWAContent() {
   const { toast } = useToast();
   
-  // Hooks for real data - now safely wrapped
-  const { data: gruas = [], isLoading: gruasLoading } = useGruas();
-  const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
-  const { data: tiposServicio = [], isLoading: tiposServicioLoading } = useTiposServicio();
+  // Use our new safe data fetching hook
+  const { 
+    gruas, 
+    operadores, 
+    tiposServicio, 
+    isLoading, 
+    isUsingFallbackData,
+    contextReady,
+    isFullyConnected
+  } = useSafePWAData();
   
-  // Show loading state while data is being fetched
-  if (gruasLoading || operadoresLoading || tiposServicioLoading) {
+  const { retryConnection } = useConnectivity();
+  
+  // Show loading state while context or data is being prepared
+  if (!contextReady || isLoading) {
     return (
       <div className="min-h-screen bg-black text-primary p-4 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-primary/70">Cargando datos...</p>
+          <p className="text-primary/70">
+            {!contextReady ? 'Inicializando aplicación...' : 'Cargando datos...'}
+          </p>
         </div>
       </div>
     );
@@ -132,7 +141,9 @@ function SGGGruaPWAContent() {
 
       toast({
         title: "PDF generado exitosamente",
-        description: "El reporte cliente se ha descargado correctamente"
+        description: isUsingFallbackData 
+          ? "El reporte se generó en modo offline con datos locales"
+          : "El reporte cliente se ha descargado correctamente"
       });
 
       return pdf.output('blob');
@@ -192,15 +203,42 @@ function SGGGruaPWAContent() {
   return (
     <div className="min-h-screen bg-black text-primary p-4">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
+        {/* Header with connection status */}
         <Card className="bg-black border-primary/20">
           <CardHeader>
-            <CardTitle className="text-2xl text-primary text-center">
+            <CardTitle className="text-2xl text-primary text-center flex items-center justify-center gap-2">
               🚛 DETALLES PARA REPORTE CLIENTE
+              {isFullyConnected ? (
+                <Wifi className="h-5 w-5 text-green-500" />
+              ) : (
+                <WifiOff className="h-5 w-5 text-orange-500" />
+              )}
             </CardTitle>
             <p className="text-center text-primary/70">
               Sistema de Gestión de Grúas - Modo PWA
             </p>
+            
+            {/* Connection status alert */}
+            {isUsingFallbackData && (
+              <Alert className="border-orange-200 bg-orange-50/10">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <AlertDescription className="text-orange-300">
+                  <div className="flex items-center justify-between">
+                    <span>
+                      Funcionando en modo offline con datos locales
+                    </span>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={retryConnection}
+                      className="text-orange-300 border-orange-300/30 hover:bg-orange-300/10"
+                    >
+                      Reconectar
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
           </CardHeader>
         </Card>
 
@@ -437,6 +475,12 @@ function SGGGruaPWAContent() {
                 Complete los campos obligatorios (*) para continuar
               </p>
             )}
+            
+            {isUsingFallbackData && (
+              <p className="text-center text-orange-300/70 text-sm mt-2">
+                Modo offline: Las funciones de PDF y WhatsApp están disponibles
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -444,14 +488,14 @@ function SGGGruaPWAContent() {
   );
 }
 
-// Error boundary component
+// Error boundary component with enhanced recovery
 class SGGGruaPWAErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean }
+  { hasError: boolean; errorCount: number }
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorCount: 0 };
   }
 
   static getDerivedStateFromError(_: Error) {
@@ -460,25 +504,45 @@ class SGGGruaPWAErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('SGGGruaPWA Error:', error, errorInfo);
+    this.setState(prev => ({ errorCount: prev.errorCount + 1 }));
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false });
+  };
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-black text-primary p-4 flex items-center justify-center">
-          <div className="text-center">
+          <div className="text-center max-w-md">
+            <AlertTriangle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-primary mb-4">
-              Error cargando la aplicación
+              Error en la aplicación PWA
             </h2>
-            <p className="text-primary/70 mb-4">
-              Hay un problema con la conexión a la base de datos.
+            <p className="text-primary/70 mb-6">
+              {this.state.errorCount > 1 
+                ? 'Error persistente detectado. Se recomienda recargar la página.'
+                : 'Ocurrió un error temporal. Puedes intentar nuevamente o recargar la página.'
+              }
             </p>
-            <Button 
-              onClick={() => window.location.reload()} 
-              className="bg-primary text-black hover:bg-primary/90"
-            >
-              Recargar página
-            </Button>
+            <div className="space-y-3">
+              {this.state.errorCount <= 1 && (
+                <Button 
+                  onClick={this.handleRetry}
+                  className="bg-primary text-black hover:bg-primary/90 w-full"
+                >
+                  Intentar nuevamente
+                </Button>
+              )}
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                className="border-primary/30 text-primary hover:bg-primary/10 w-full"
+              >
+                Recargar página
+              </Button>
+            </div>
           </div>
         </div>
       );
@@ -488,7 +552,7 @@ class SGGGruaPWAErrorBoundary extends React.Component<
   }
 }
 
-// Main component with error boundary and suspense
+// Main component with enhanced error boundary and suspense
 export default function SGGGruaPWA() {
   return (
     <SGGGruaPWAErrorBoundary>
@@ -497,7 +561,7 @@ export default function SGGGruaPWA() {
           <div className="min-h-screen bg-black text-primary p-4 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-primary/70">Cargando aplicación...</p>
+              <p className="text-primary/70">Cargando aplicación PWA...</p>
             </div>
           </div>
         }
