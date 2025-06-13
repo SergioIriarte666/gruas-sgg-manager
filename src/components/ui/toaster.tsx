@@ -1,5 +1,6 @@
 
-import { useToast } from "@/hooks/use-toast"
+import React from "react"
+import { useToast } from "@/hooks/use-safe-toast"
 import {
   Toast,
   ToastClose,
@@ -9,13 +10,12 @@ import {
   ToastViewport,
 } from "@/components/ui/toast"
 
-function ToasterComponent() {
-  console.log("ToasterComponent: Attempting to render...");
+export function Toaster() {
+  console.log("Toaster: Starting render...");
   
-  // Simple early return if React isn't ready
   try {
     const { toasts } = useToast();
-    console.log("ToasterComponent: useToast successful, toasts:", toasts);
+    console.log("Toaster: Got toasts:", toasts);
 
     return (
       <ToastProvider>
@@ -37,9 +37,12 @@ function ToasterComponent() {
       </ToastProvider>
     )
   } catch (error) {
-    console.error('ToasterComponent: Error in useToast:', error);
-    return null;
+    console.error('Toaster: Error rendering:', error);
+    // Return empty ToastProvider in case of error
+    return (
+      <ToastProvider>
+        <ToastViewport />
+      </ToastProvider>
+    );
   }
 }
-
-export const Toaster = ToasterComponent;
