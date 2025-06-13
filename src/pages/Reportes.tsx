@@ -18,17 +18,15 @@ import { useSafeServicios } from "@/hooks/useSafeServicios";
 import { useSafeClientes } from "@/hooks/useSafeClientes";
 import { useSafeGruas } from "@/hooks/useSafeGruas";
 import { useSafeOperadores } from "@/hooks/useSafeOperadores";
-import { useQueryContextReady } from "@/hooks/useQueryContextReady";
 
 export default function Reportes() {
-  const { isReady: contextReady } = useQueryContextReady();
   const { toast } = useToast();
 
-  // Only call hooks if context is ready
-  const { data: servicios = [], isLoading: serviciosLoading } = contextReady ? useSafeServicios() : { data: [], isLoading: false };
-  const { data: clientes = [], isLoading: clientesLoading } = contextReady ? useSafeClientes() : { data: [], isLoading: false };
-  const { data: gruas = [], isLoading: gruasLoading } = contextReady ? useSafeGruas() : { data: [], isLoading: false };
-  const { data: operadores = [], isLoading: operadoresLoading } = contextReady ? useSafeOperadores() : { data: [], isLoading: false };
+  // Always call hooks - they handle the context readiness internally
+  const { data: servicios = [], isLoading: serviciosLoading } = useSafeServicios();
+  const { data: clientes = [], isLoading: clientesLoading } = useSafeClientes();
+  const { data: gruas = [], isLoading: gruasLoading } = useSafeGruas();
+  const { data: operadores = [], isLoading: operadoresLoading } = useSafeOperadores();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -79,16 +77,14 @@ export default function Reportes() {
     }
   };
 
-  // Show loading while context is not ready or data is loading
-  if (!contextReady || serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
+  // Show loading while any data is loading
+  if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-primary">Reportes y Estadísticas</h1>
-            <p className="text-muted-foreground">
-              {!contextReady ? "Inicializando sistema..." : "Dashboard ejecutivo y reportes del sistema"}
-            </p>
+            <p className="text-muted-foreground">Cargando datos...</p>
           </div>
         </div>
         
