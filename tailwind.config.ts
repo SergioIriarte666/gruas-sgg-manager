@@ -26,10 +26,10 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: '#6da813',
+					DEFAULT: '#7FFF00',
 					foreground: 'hsl(var(--primary-foreground))',
-					dark: '#5a8c0e',
-					light: '#84c41a'
+					dark: '#32CD32',
+					light: '#9AFF9A'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -97,12 +97,24 @@ export default {
 						opacity: '1',
 						transform: 'translateY(0)'
 					}
+				},
+				'chartreuse-glow': {
+					'0%': {
+						boxShadow: '0 0 5px #7FFF00'
+					},
+					'50%': {
+						boxShadow: '0 0 20px #7FFF00, 0 0 30px #32CD32'
+					},
+					'100%': {
+						boxShadow: '0 0 5px #7FFF00'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.3s ease-out'
+				'fade-in': 'fade-in 0.3s ease-out',
+				'chartreuse-glow': 'chartreuse-glow 2s ease-in-out infinite'
 			}
 		}
 	},

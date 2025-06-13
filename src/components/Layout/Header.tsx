@@ -36,20 +36,20 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
   };
 
   return (
-    <header className="border-b border-border bg-gradient-to-r from-background via-background to-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 shadow-sm">
+    <header className="border-b border-primary/20 bg-gradient-to-r from-background via-background to-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 shadow-lg shadow-primary/10">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Left side - Menu button + Title */}
           <div className="flex items-center gap-4">
             {showMenuButton && (
-              <SidebarTrigger className="hover:bg-primary/10 transition-colors" />
+              <SidebarTrigger className="hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-200 border border-primary/20 hover:border-primary/40" />
             )}
             
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-primary bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-primary-light to-primary bg-clip-text text-transparent drop-shadow-lg">
                 {getPageTitle()}
               </h1>
-              <Badge variant="outline" className="hidden sm:flex bg-primary/10 text-primary border-primary/20 font-medium">
+              <Badge variant="outline" className="hidden sm:flex bg-gradient-to-r from-primary/20 to-primary-light/20 text-primary border-primary/30 font-medium shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all duration-200">
                 SGG Manager
               </Badge>
             </div>
@@ -78,10 +78,10 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
               variant="ghost"
               size="icon"
               asChild
-              className="relative hover:bg-primary/10 transition-colors group"
+              className="relative hover:bg-primary/10 hover:shadow-lg hover:shadow-primary/20 transition-all duration-200 group border border-primary/20 hover:border-primary/40"
             >
               <Link to="/settings">
-                <Settings className="h-5 w-5 group-hover:rotate-90 transition-transform duration-300" />
+                <Settings className="h-5 w-5 group-hover:rotate-90 group-hover:text-primary transition-all duration-300 group-hover:drop-shadow-lg group-hover:drop-shadow-primary/50" />
               </Link>
             </Button>
           </div>
