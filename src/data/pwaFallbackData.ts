@@ -8,8 +8,7 @@ export const fallbackGruas: Grua[] = [
     patente: 'OFFLINE-01',
     marca: 'Mercedes-Benz',
     modelo: 'Atego',
-    tipo: 'Plataforma',
-    capacidad: 3500,
+    tipo: 'Mediana',
     activo: true,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -22,7 +21,7 @@ export const fallbackOperadores: Operador[] = [
     nombreCompleto: 'Operador Offline',
     rut: '12345678-9',
     telefono: '+56912345678',
-    email: 'offline@example.com',
+    numeroLicencia: 'A1-12345',
     activo: true,
     createdAt: new Date(),
     updatedAt: new Date()
