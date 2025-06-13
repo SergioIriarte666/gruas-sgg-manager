@@ -10,9 +10,22 @@ import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useReportExport } from "@/hooks/useReportExport";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { ReportesLoadingSkeleton } from "@/components/reportes/ReportesLoadingSkeleton";
 
 export function ReportesContent() {
-  // Use regular hooks since parent ensures context is ready
+  const [isReady, setIsReady] = useState(false);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // Simple check to ensure QueryClient is properly initialized
+    if (queryClient) {
+      console.log('QueryClient is available');
+      setIsReady(true);
+    }
+  }, [queryClient]);
+
   const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
   const { data: gruas = [], isLoading: gruasLoading } = useGruas();
@@ -39,8 +52,8 @@ export function ReportesContent() {
       servicio.valor
     ]);
 
-  if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
-    return null; // Let parent handle loading state
+  if (!isReady || serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
+    return <ReportesLoadingSkeleton />;
   }
 
   return (
