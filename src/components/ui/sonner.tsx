@@ -1,10 +1,21 @@
-import { useTheme } from "next-themes"
+
 import { Toaster as Sonner, toast } from "sonner"
+import { withReactReady } from "@/hooks/useSafeHooks"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+function ToasterComponent({ ...props }: ToasterProps) {
+  // Safe theme handling - provide fallback for theme
+  let theme = "system";
+  
+  try {
+    // Try to use next-themes only if available
+    const { useTheme } = require("next-themes");
+    const themeResult = useTheme();
+    theme = themeResult?.theme || "system";
+  } catch (error) {
+    console.warn('next-themes not available, using system theme');
+  }
 
   return (
     <Sonner
@@ -26,4 +37,5 @@ const Toaster = ({ ...props }: ToasterProps) => {
   )
 }
 
-export { Toaster, toast }
+export const Toaster = withReactReady(ToasterComponent);
+export { toast }

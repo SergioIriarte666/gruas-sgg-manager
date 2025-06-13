@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePWA } from '@/hooks/usePWA';
 import { usePWAConfig } from '@/contexts/PWAContext';
 import { useToast } from '@/hooks/use-toast';
+import { withReactReady } from '@/hooks/useSafeHooks';
 import { cn } from '@/lib/utils';
 
 interface PWAUpdatePromptProps {
@@ -15,14 +16,34 @@ interface PWAUpdatePromptProps {
   className?: string;
 }
 
-export function PWAUpdatePrompt({ 
+function PWAUpdatePromptComponent({ 
   position = 'bottom', 
   autoShow = true,
   className 
 }: PWAUpdatePromptProps) {
-  const { config } = usePWAConfig();
-  const { canInstall, canUpdate, installPWA, updatePWA } = usePWA();
-  const { toast } = useToast();
+  // Safe hook calls with error boundaries
+  let config: any = {};
+  let canInstall = false;
+  let canUpdate = false;
+  let installPWA = async () => false;
+  let updatePWA = async () => false;
+  let toastFn: any;
+
+  try {
+    const { config: pwaConfig } = usePWAConfig();
+    const pwaState = usePWA();
+    config = pwaConfig;
+    canInstall = pwaState.canInstall;
+    canUpdate = pwaState.canUpdate;
+    installPWA = pwaState.installPWA;
+    updatePWA = pwaState.updatePWA;
+    const { toast } = useToast();
+    toastFn = toast;
+  } catch (error) {
+    console.error('Error in PWAUpdatePrompt hooks:', error);
+    // Return null if hooks fail to initialize
+    return null;
+  }
   
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
@@ -59,16 +80,20 @@ export function PWAUpdatePrompt({
     
     if (success) {
       setShowInstallPrompt(false);
-      toast({
-        title: "¡Aplicación instalada!",
-        description: "SGG Grúa Manager se ha instalado correctamente.",
-      });
+      if (toastFn) {
+        toastFn({
+          title: "¡Aplicación instalada!",
+          description: "SGG Grúa Manager se ha instalado correctamente.",
+        });
+      }
     } else {
-      toast({
-        title: "Error de instalación",
-        description: "No se pudo instalar la aplicación.",
-        variant: "destructive",
-      });
+      if (toastFn) {
+        toastFn({
+          title: "Error de instalación",
+          description: "No se pudo instalar la aplicación.",
+          variant: "destructive",
+        });
+      }
     }
     setIsLoading(false);
   };
@@ -79,16 +104,20 @@ export function PWAUpdatePrompt({
     
     if (success) {
       setShowUpdatePrompt(false);
-      toast({
-        title: "¡Aplicación actualizada!",
-        description: "La aplicación se ha actualizado correctamente.",
-      });
+      if (toastFn) {
+        toastFn({
+          title: "¡Aplicación actualizada!",
+          description: "La aplicación se ha actualizado correctamente.",
+        });
+      }
     } else {
-      toast({
-        title: "Error de actualización",
-        description: "No se pudo actualizar la aplicación.",
-        variant: "destructive",
-      });
+      if (toastFn) {
+        toastFn({
+          title: "Error de actualización",
+          description: "No se pudo actualizar la aplicación.",
+          variant: "destructive",
+        });
+      }
     }
     setIsLoading(false);
   };
@@ -231,3 +260,5 @@ export function PWAUpdatePrompt({
 
   return null;
 }
+
+export const PWAUpdatePrompt = withReactReady(PWAUpdatePromptComponent);
