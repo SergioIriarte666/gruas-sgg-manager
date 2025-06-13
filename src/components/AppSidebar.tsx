@@ -47,9 +47,17 @@ const maestrosItems = [{
   icon: Wrench
 }];
 
+const configItems = [{
+  title: "Configuración",
+  url: "/settings",
+  icon: Settings
+}];
+
 export function AppSidebar() {
   const location = useLocation();
-  return <Sidebar>
+  
+  return (
+    <Sidebar>
       <SidebarContent className="bg-black">
         <div className="p-4">
           <div className="flex items-center space-x-2">
@@ -65,14 +73,16 @@ export function AppSidebar() {
           <SidebarGroupLabel>Gestión Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainMenuItems.map(item => <SidebarMenuItem key={item.title}>
+              {mainMenuItems.map(item => (
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location.pathname === item.url} className="transition-colors">
                     <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                </SidebarMenuItem>)}
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -81,14 +91,34 @@ export function AppSidebar() {
           <SidebarGroupLabel>Datos Maestros</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {maestrosItems.map(item => <SidebarMenuItem key={item.title}>
+              {maestrosItems.map(item => (
+                <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={location.pathname === item.url} className="transition-colors">
                     <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                </SidebarMenuItem>)}
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {configItems.map(item => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.url} className="transition-colors">
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -101,5 +131,6 @@ export function AppSidebar() {
           </p>
         </div>
       </SidebarFooter>
-    </Sidebar>;
+    </Sidebar>
+  );
 }

@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Settings, Menu } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { PWAContainer, PWAOfflineIndicator } from '@/components/pwa';
 
 interface HeaderProps {
@@ -28,6 +29,8 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
       '/reportes': 'Reportes',
       '/settings': 'Configuración',
       '/pwa-grua': 'PWA Grúa',
+      '/migraciones': 'Migraciones',
+      '/migracion-nueva': 'Nueva Migración',
     };
     return titles[path] || 'SGG Grúa Manager';
   };
@@ -39,14 +42,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
           {/* Left side - Menu button + Title */}
           <div className="flex items-center gap-4">
             {showMenuButton && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onMenuClick}
-                className="md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
+              <SidebarTrigger className="md:hidden" />
             )}
             
             <div className="flex items-center gap-3">
