@@ -1,5 +1,4 @@
 
-
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -252,34 +251,24 @@ function ReportesContent() {
 export default function Reportes() {
   const [isQueryClientReady, setIsQueryClientReady] = useState(false);
   
+  // Call useQueryClient at the top level (correct hook usage)
+  const queryClient = useQueryClient();
+  
   useEffect(() => {
-    // Check if we can access the QueryClient without errors
-    let mounted = true;
-    
-    const checkQueryClient = () => {
-      try {
-        // Try to access the query client
-        const queryClient = useQueryClient();
-        if (queryClient && mounted) {
-          console.log('QueryClient is ready');
-          setIsQueryClientReady(true);
-        }
-      } catch (error) {
-        console.log('QueryClient not ready yet, retrying...');
-        // Retry after a short delay
-        if (mounted) {
-          setTimeout(checkQueryClient, 50);
-        }
-      }
-    };
-    
-    // Start checking
-    checkQueryClient();
-    
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    // Simply check if the queryClient exists
+    if (queryClient) {
+      console.log('QueryClient is ready');
+      setIsQueryClientReady(true);
+    } else {
+      console.log('QueryClient not ready yet...');
+      // Retry after a short delay if not ready
+      const timer = setTimeout(() => {
+        setIsQueryClientReady(true); // Assume ready after timeout
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [queryClient]);
 
   // Show loading state while QueryClient initializes
   if (!isQueryClientReady) {
@@ -288,4 +277,3 @@ export default function Reportes() {
 
   return <ReportesContent />;
 }
-
