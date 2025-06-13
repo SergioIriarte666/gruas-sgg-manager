@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, Download, Share, Eye, CheckSquare } from 'lucide-react';
+import { Camera, Download, Share, Eye, CheckSquare, GripVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 
@@ -14,6 +14,12 @@ interface CapturedImage {
   file: File;
   preview: string;
   timestamp: Date;
+}
+
+interface DragItem {
+  id: string;
+  name: string;
+  type: 'grua' | 'operador' | 'tipoServicio';
 }
 
 // Equipamiento completo del vehículo para verificación
@@ -59,6 +65,25 @@ const EQUIPAMIENTO_VEHICULO = [
   'Tapa de combustible'
 ];
 
+// Mock data for drag and drop
+const MOCK_GRUAS: DragItem[] = [
+  { id: 'grua-1', name: 'ABC123 - Ford F-150 (Liviana)', type: 'grua' },
+  { id: 'grua-2', name: 'DEF456 - Mercedes Actros (Pesada)', type: 'grua' },
+  { id: 'grua-3', name: 'GHI789 - Volvo FH (Semipesada)', type: 'grua' }
+];
+
+const MOCK_OPERADORES: DragItem[] = [
+  { id: 'op-1', name: 'Juan Pérez - 12.345.678-9', type: 'operador' },
+  { id: 'op-2', name: 'María González - 98.765.432-1', type: 'operador' },
+  { id: 'op-3', name: 'Carlos López - 11.222.333-4', type: 'operador' }
+];
+
+const MOCK_TIPOS_SERVICIO: DragItem[] = [
+  { id: 'ts-1', name: 'Grúa de Rescate', type: 'tipoServicio' },
+  { id: 'ts-2', name: 'Traslado de Vehículo', type: 'tipoServicio' },
+  { id: 'ts-3', name: 'Asistencia en Ruta', type: 'tipoServicio' }
+];
+
 export default function SGGGruaPWA() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,6 +114,14 @@ export default function SGGGruaPWA() {
   // Damage images state
   const [damageImages, setDamageImages] = useState<CapturedImage[]>([]);
 
+  // Drag and drop state
+  const [draggedItem, setDraggedItem] = useState<DragItem | null>(null);
+  const [dropZones, setDropZones] = useState({
+    grua: '',
+    operador: '',
+    tipoServicio: ''
+  });
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -113,6 +146,46 @@ export default function SGGGruaPWA() {
 
   const handleDeselectAllEquipment = () => {
     setEquipmentVerification({});
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, item: DragItem) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropZone: 'grua' | 'operador' | 'tipoServicio') => {
+    e.preventDefault();
+    
+    if (draggedItem && draggedItem.type === dropZone) {
+      setDropZones(prev => ({
+        ...prev,
+        [dropZone]: draggedItem.name
+      }));
+      
+      // Update form data
+      handleInputChange(dropZone, draggedItem.name);
+      
+      toast({
+        title: "Elemento asignado",
+        description: `${draggedItem.name} asignado correctamente`
+      });
+    }
+    
+    setDraggedItem(null);
+  };
+
+  const clearDropZone = (zone: 'grua' | 'operador' | 'tipoServicio') => {
+    setDropZones(prev => ({
+      ...prev,
+      [zone]: ''
+    }));
+    handleInputChange(zone, '');
   };
 
   const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +261,18 @@ export default function SGGGruaPWA() {
       pdf.text(`Vehículo: ${formData.marcaVehiculo} ${formData.modeloVehiculo}`, 20, yPosition);
       yPosition += 8;
       pdf.text(`Patente: ${formData.patente}`, 20, yPosition);
+      yPosition += 15;
+
+      // Service Assignment
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ASIGNACIÓN DEL SERVICIO:', 20, yPosition);
+      yPosition += 10;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Grúa: ${dropZones.grua || formData.grua}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Operador: ${dropZones.operador || formData.operador}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Tipo de Servicio: ${dropZones.tipoServicio || formData.tipoServicio}`, 20, yPosition);
       yPosition += 15;
 
       // Kilómetros
@@ -334,12 +419,12 @@ export default function SGGGruaPWA() {
 
   const isFormValid = () => {
     return formData.cliente && formData.marcaVehiculo && formData.patente && 
-           formData.grua && formData.operador;
+           (formData.grua || dropZones.grua) && (formData.operador || dropZones.operador);
   };
 
   return (
     <div className="min-h-screen bg-black text-primary p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <Card className="bg-black border-primary/20">
           <CardHeader>
@@ -352,359 +437,519 @@ export default function SGGGruaPWA() {
           </CardHeader>
         </Card>
 
-        {/* Basic Vehicle Information */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary">Información del Vehículo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="fecha" className="text-primary">Fecha</Label>
-                <Input
-                  id="fecha"
-                  type="date"
-                  value={formData.fecha}
-                  onChange={(e) => handleInputChange('fecha', e.target.value)}
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="cliente" className="text-primary">Cliente *</Label>
-                <Input
-                  id="cliente"
-                  value={formData.cliente}
-                  onChange={(e) => handleInputChange('cliente', e.target.value)}
-                  placeholder="Nombre del cliente"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="marcaVehiculo" className="text-primary">Marca Vehículo *</Label>
-                <Input
-                  id="marcaVehiculo"
-                  value={formData.marcaVehiculo}
-                  onChange={(e) => handleInputChange('marcaVehiculo', e.target.value)}
-                  placeholder="Marca del vehículo"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="modeloVehiculo" className="text-primary">Modelo Vehículo</Label>
-                <Input
-                  id="modeloVehiculo"
-                  value={formData.modeloVehiculo}
-                  onChange={(e) => handleInputChange('modeloVehiculo', e.target.value)}
-                  placeholder="Modelo del vehículo"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="patente" className="text-primary">Patente *</Label>
-                <Input
-                  id="patente"
-                  value={formData.patente}
-                  onChange={(e) => handleInputChange('patente', e.target.value)}
-                  placeholder="Patente del vehículo"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Detalles para Reporte Cliente - Kilómetros */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary">Detalles para Reporte Cliente</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="kmInicial" className="text-primary">KM Inicial</Label>
-                <Input
-                  id="kmInicial"
-                  type="number"
-                  value={formData.kmInicial}
-                  onChange={(e) => handleInputChange('kmInicial', e.target.value)}
-                  placeholder="0"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="kmFinal" className="text-primary">KM Final</Label>
-                <Input
-                  id="kmFinal"
-                  type="number"
-                  value={formData.kmFinal}
-                  onChange={(e) => handleInputChange('kmFinal', e.target.value)}
-                  placeholder="0"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="kmVehiculo" className="text-primary">KM Vehículo</Label>
-                <Input
-                  id="kmVehiculo"
-                  type="number"
-                  value={formData.kmVehiculo}
-                  onChange={(e) => handleInputChange('kmVehiculo', e.target.value)}
-                  placeholder="0"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="nivelCombustible" className="text-primary">Nivel Combustible</Label>
-                <Select value={formData.nivelCombustible} onValueChange={(value) => handleInputChange('nivelCombustible', value)}>
-                  <SelectTrigger className="bg-black border-primary/30 text-primary">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-primary/30">
-                    <SelectItem value="1/4">1/4</SelectItem>
-                    <SelectItem value="2/4">2/4</SelectItem>
-                    <SelectItem value="3/4">3/4</SelectItem>
-                    <SelectItem value="4/4">4/4</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Location Information */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary">Ubicaciones</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="ubicacionOrigen" className="text-primary">Ubicación Origen</Label>
-              <Input
-                id="ubicacionOrigen"
-                value={formData.ubicacionOrigen}
-                onChange={(e) => handleInputChange('ubicacionOrigen', e.target.value)}
-                placeholder="Dirección de origen"
-                className="bg-black border-primary/30 text-primary"
-              />
-            </div>
-            <div>
-              <Label htmlFor="ubicacionDestino" className="text-primary">Ubicación Destino</Label>
-              <Input
-                id="ubicacionDestino"
-                value={formData.ubicacionDestino}
-                onChange={(e) => handleInputChange('ubicacionDestino', e.target.value)}
-                placeholder="Dirección de destino"
-                className="bg-black border-primary/30 text-primary"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Service Assignment */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary">Asignación del Servicio</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="grua" className="text-primary">Grúa *</Label>
-                <Input
-                  id="grua"
-                  value={formData.grua}
-                  onChange={(e) => handleInputChange('grua', e.target.value)}
-                  placeholder="Identificación de grúa"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="operador" className="text-primary">Operador *</Label>
-                <Input
-                  id="operador"
-                  value={formData.operador}
-                  onChange={(e) => handleInputChange('operador', e.target.value)}
-                  placeholder="Nombre del operador"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-              <div>
-                <Label htmlFor="tipoServicio" className="text-primary">Tipo de Servicio</Label>
-                <Input
-                  id="tipoServicio"
-                  value={formData.tipoServicio}
-                  onChange={(e) => handleInputChange('tipoServicio', e.target.value)}
-                  placeholder="Tipo de servicio"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Verificación de Equipamiento */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary flex items-center gap-2">
-              <CheckSquare className="h-5 w-5" />
-              Verificación de Equipamiento ({Object.values(equipmentVerification).filter(Boolean).length}/{EQUIPAMIENTO_VEHICULO.length})
-            </CardTitle>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSelectAllEquipment}
-                variant="outline"
-                size="sm"
-                className="text-primary border-primary/30 hover:bg-primary/10"
-              >
-                ✓ Seleccionar Todo
-              </Button>
-              <Button
-                onClick={handleDeselectAllEquipment}
-                variant="outline"
-                size="sm"
-                className="text-primary border-primary/30 hover:bg-primary/10"
-              >
-                ✗ Deseleccionar Todo
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              {EQUIPAMIENTO_VEHICULO.map(item => (
-                <div key={item} className="flex items-center space-x-2 p-2 rounded border border-primary/20 hover:bg-primary/5">
-                  <input
-                    type="checkbox"
-                    id={`equipment-${item}`}
-                    checked={equipmentVerification[item] || false}
-                    onChange={() => handleEquipmentToggle(item)}
-                    className="border-primary"
-                  />
-                  <label
-                    htmlFor={`equipment-${item}`}
-                    className="text-sm text-primary cursor-pointer flex-1"
-                  >
-                    {item}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tipo de Asistencia Detallado */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary">Tipo de Asistencia Detallado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={formData.tipoAsistenciaDetallado}
-              onChange={(e) => handleInputChange('tipoAsistenciaDetallado', e.target.value)}
-              placeholder="Descripción específica del tipo de asistencia"
-              className="bg-black border-primary/30 text-primary min-h-[100px]"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Damage and Conditions Section */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Daños y Condiciones ({damageImages.length}/6)
-            </CardTitle>
-            <p className="text-primary/70 text-sm">
-              Capture hasta 6 fotografías para documentar daños y condiciones del vehículo
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={openCamera}
-              disabled={damageImages.length >= 6}
-              className="w-full bg-primary text-black hover:bg-primary/90 disabled:opacity-50"
-              size="lg"
-            >
-              <Camera className="h-5 w-5 mr-2" />
-              {damageImages.length >= 6 ? 'Límite Alcanzado' : 'Capturar Daños'}
-            </Button>
-            
-            {damageImages.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {damageImages.map((image, index) => (
-                  <div key={image.id} className="relative group">
-                    <img
-                      src={image.preview}
-                      alt={`Daño ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border border-primary/30"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Vehicle Information */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary">Información del Vehículo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="fecha" className="text-primary">Fecha</Label>
+                    <Input
+                      id="fecha"
+                      type="date"
+                      value={formData.fecha}
+                      onChange={(e) => handleInputChange('fecha', e.target.value)}
+                      className="bg-black border-primary/30 text-primary"
                     />
-                    <div className="absolute top-2 left-2 bg-primary text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                      {index + 1}
+                  </div>
+                  <div>
+                    <Label htmlFor="cliente" className="text-primary">Cliente *</Label>
+                    <Input
+                      id="cliente"
+                      value={formData.cliente}
+                      onChange={(e) => handleInputChange('cliente', e.target.value)}
+                      placeholder="Nombre del cliente"
+                      className="bg-black border-primary/30 text-primary"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="marcaVehiculo" className="text-primary">Marca Vehículo *</Label>
+                    <Input
+                      id="marcaVehiculo"
+                      value={formData.marcaVehiculo}
+                      onChange={(e) => handleInputChange('marcaVehiculo', e.target.value)}
+                      placeholder="Marca del vehículo"
+                      className="bg-black border-primary/30 text-primary"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="modeloVehiculo" className="text-primary">Modelo Vehículo</Label>
+                    <Input
+                      id="modeloVehiculo"
+                      value={formData.modeloVehiculo}
+                      onChange={(e) => handleInputChange('modeloVehiculo', e.target.value)}
+                      placeholder="Modelo del vehículo"
+                      className="bg-black border-primary/30 text-primary"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="patente" className="text-primary">Patente *</Label>
+                    <Input
+                      id="patente"
+                      value={formData.patente}
+                      onChange={(e) => handleInputChange('patente', e.target.value)}
+                      placeholder="Patente del vehículo"
+                      className="bg-black border-primary/30 text-primary"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Service Assignment with Drag and Drop */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary">Asignación del Servicio</CardTitle>
+                <p className="text-primary/70 text-sm">
+                  Arrastra y suelta los elementos desde el panel lateral
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Grúa Drop Zone */}
+                  <div>
+                    <Label className="text-primary">Grúa *</Label>
+                    <div
+                      className={`min-h-[60px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+                        draggedItem?.type === 'grua' 
+                          ? 'border-primary bg-primary/10' 
+                          : 'border-primary/30'
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, 'grua')}
+                    >
+                      {dropZones.grua || formData.grua ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-primary">{dropZones.grua || formData.grua}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => clearDropZone('grua')}
+                            className="text-primary border-primary/30"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-primary/50 text-center">
+                          Arrastra una grúa aquí o escribe la identificación
+                        </div>
+                      )}
                     </div>
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => removeImage(image.id)}
+                    {!dropZones.grua && (
+                      <Input
+                        value={formData.grua}
+                        onChange={(e) => handleInputChange('grua', e.target.value)}
+                        placeholder="Identificación de grúa"
+                        className="bg-black border-primary/30 text-primary mt-2"
+                      />
+                    )}
+                  </div>
+
+                  {/* Operador Drop Zone */}
+                  <div>
+                    <Label className="text-primary">Operador *</Label>
+                    <div
+                      className={`min-h-[60px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+                        draggedItem?.type === 'operador' 
+                          ? 'border-primary bg-primary/10' 
+                          : 'border-primary/30'
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, 'operador')}
+                    >
+                      {dropZones.operador || formData.operador ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-primary">{dropZones.operador || formData.operador}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => clearDropZone('operador')}
+                            className="text-primary border-primary/30"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-primary/50 text-center">
+                          Arrastra un operador aquí o escribe el nombre
+                        </div>
+                      )}
+                    </div>
+                    {!dropZones.operador && (
+                      <Input
+                        value={formData.operador}
+                        onChange={(e) => handleInputChange('operador', e.target.value)}
+                        placeholder="Nombre del operador"
+                        className="bg-black border-primary/30 text-primary mt-2"
+                      />
+                    )}
+                  </div>
+
+                  {/* Tipo de Servicio Drop Zone */}
+                  <div>
+                    <Label className="text-primary">Tipo de Servicio</Label>
+                    <div
+                      className={`min-h-[60px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+                        draggedItem?.type === 'tipoServicio' 
+                          ? 'border-primary bg-primary/10' 
+                          : 'border-primary/30'
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, 'tipoServicio')}
+                    >
+                      {dropZones.tipoServicio || formData.tipoServicio ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-primary">{dropZones.tipoServicio || formData.tipoServicio}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => clearDropZone('tipoServicio')}
+                            className="text-primary border-primary/30"
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-primary/50 text-center">
+                          Arrastra un tipo de servicio aquí o escribe el tipo
+                        </div>
+                      )}
+                    </div>
+                    {!dropZones.tipoServicio && (
+                      <Input
+                        value={formData.tipoServicio}
+                        onChange={(e) => handleInputChange('tipoServicio', e.target.value)}
+                        placeholder="Tipo de servicio"
+                        className="bg-black border-primary/30 text-primary mt-2"
+                      />
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Detalles para Reporte Cliente - Kilómetros */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary">Detalles para Reporte Cliente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label htmlFor="kmInicial" className="text-primary">KM Inicial</Label>
+                    <Input
+                      id="kmInicial"
+                      type="number"
+                      value={formData.kmInicial}
+                      onChange={(e) => handleInputChange('kmInicial', e.target.value)}
+                      placeholder="0"
+                      className="bg-black border-primary/30 text-primary"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="kmFinal" className="text-primary">KM Final</Label>
+                    <Input
+                      id="kmFinal"
+                      type="number"
+                      value={formData.kmFinal}
+                      onChange={(e) => handleInputChange('kmFinal', e.target.value)}
+                      placeholder="0"
+                      className="bg-black border-primary/30 text-primary"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="kmVehiculo" className="text-primary">KM Vehículo</Label>
+                    <Input
+                      id="kmVehiculo"
+                      type="number"
+                      value={formData.kmVehiculo}
+                      onChange={(e) => handleInputChange('kmVehiculo', e.target.value)}
+                      placeholder="0"
+                      className="bg-black border-primary/30 text-primary"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nivelCombustible" className="text-primary">Nivel Combustible</Label>
+                    <Select value={formData.nivelCombustible} onValueChange={(value) => handleInputChange('nivelCombustible', value)}>
+                      <SelectTrigger className="bg-black border-primary/30 text-primary">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black border-primary/30">
+                        <SelectItem value="1/4">1/4</SelectItem>
+                        <SelectItem value="2/4">2/4</SelectItem>
+                        <SelectItem value="3/4">3/4</SelectItem>
+                        <SelectItem value="4/4">4/4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Location Information */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary">Ubicaciones</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="ubicacionOrigen" className="text-primary">Ubicación Origen</Label>
+                  <Input
+                    id="ubicacionOrigen"
+                    value={formData.ubicacionOrigen}
+                    onChange={(e) => handleInputChange('ubicacionOrigen', e.target.value)}
+                    placeholder="Dirección de origen"
+                    className="bg-black border-primary/30 text-primary"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="ubicacionDestino" className="text-primary">Ubicación Destino</Label>
+                  <Input
+                    id="ubicacionDestino"
+                    value={formData.ubicacionDestino}
+                    onChange={(e) => handleInputChange('ubicacionDestino', e.target.value)}
+                    placeholder="Dirección de destino"
+                    className="bg-black border-primary/30 text-primary"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Verificación de Equipamiento */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary flex items-center gap-2">
+                  <CheckSquare className="h-5 w-5" />
+                  Verificación de Equipamiento ({Object.values(equipmentVerification).filter(Boolean).length}/{EQUIPAMIENTO_VEHICULO.length})
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSelectAllEquipment}
+                    variant="outline"
+                    size="sm"
+                    className="text-primary border-primary/30 hover:bg-primary/10"
+                  >
+                    ✓ Seleccionar Todo
+                  </Button>
+                  <Button
+                    onClick={handleDeselectAllEquipment}
+                    variant="outline"
+                    size="sm"
+                    className="text-primary border-primary/30 hover:bg-primary/10"
+                  >
+                    ✗ Deseleccionar Todo
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {EQUIPAMIENTO_VEHICULO.map(item => (
+                    <div key={item} className="flex items-center space-x-2 p-2 rounded border border-primary/20 hover:bg-primary/5">
+                      <input
+                        type="checkbox"
+                        id={`equipment-${item}`}
+                        checked={equipmentVerification[item] || false}
+                        onChange={() => handleEquipmentToggle(item)}
+                        className="border-primary"
+                      />
+                      <label
+                        htmlFor={`equipment-${item}`}
+                        className="text-sm text-primary cursor-pointer flex-1"
                       >
-                        ✕
-                      </Button>
+                        {item}
+                      </label>
                     </div>
-                    <p className="text-xs text-primary/70 mt-1">
-                      Foto {index + 1} - {image.timestamp.toLocaleTimeString()}
-                    </p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tipo de Asistencia Detallado */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary">Tipo de Asistencia Detallado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={formData.tipoAsistenciaDetallado}
+                  onChange={(e) => handleInputChange('tipoAsistenciaDetallado', e.target.value)}
+                  placeholder="Descripción específica del tipo de asistencia"
+                  className="bg-black border-primary/30 text-primary min-h-[100px]"
+                />
+              </CardContent>
+            </Card>
+
+            {/* Damage and Conditions Section */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Daños y Condiciones ({damageImages.length}/6)
+                </CardTitle>
+                <p className="text-primary/70 text-sm">
+                  Capture hasta 6 fotografías para documentar daños y condiciones del vehículo
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  onClick={openCamera}
+                  disabled={damageImages.length >= 6}
+                  className="w-full bg-primary text-black hover:bg-primary/90 disabled:opacity-50"
+                  size="lg"
+                >
+                  <Camera className="h-5 w-5 mr-2" />
+                  {damageImages.length >= 6 ? 'Límite Alcanzado' : 'Capturar Daños'}
+                </Button>
+                
+                {damageImages.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {damageImages.map((image, index) => (
+                      <div key={image.id} className="relative group">
+                        <img
+                          src={image.preview}
+                          alt={`Daño ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border border-primary/30"
+                        />
+                        <div className="absolute top-2 left-2 bg-primary text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => removeImage(image.id)}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                        <p className="text-xs text-primary/70 mt-1">
+                          Foto {index + 1} - {image.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Observations */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary">Observaciones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={formData.observaciones}
+                  onChange={(e) => handleInputChange('observaciones', e.target.value)}
+                  placeholder="Observaciones adicionales sobre el inventario..."
+                  className="bg-black border-primary/30 text-primary min-h-[100px]"
+                />
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <Card className="bg-black border-primary/20">
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button
+                    onClick={generatePDF}
+                    disabled={!isFormValid()}
+                    className="bg-primary text-black hover:bg-primary/90 disabled:opacity-50"
+                    size="lg"
+                  >
+                    <Download className="h-5 w-5 mr-2" />
+                    Generar PDF
+                  </Button>
+                  
+                  <Button
+                    onClick={shareViaWhatsApp}
+                    disabled={!isFormValid()}
+                    className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                    size="lg"
+                  >
+                    <Share className="h-5 w-5 mr-2" />
+                    Enviar por WhatsApp
+                  </Button>
+                </div>
+                
+                {!isFormValid() && (
+                  <p className="text-center text-primary/70 text-sm mt-4">
+                    Complete los campos obligatorios (*) para continuar
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Drag and Drop Sidebar */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Grúas */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary text-sm">Grúas Disponibles</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {MOCK_GRUAS.map((grua) => (
+                  <div
+                    key={grua.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, grua)}
+                    className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30 cursor-grab active:cursor-grabbing hover:bg-primary/20 transition-colors"
+                  >
+                    <GripVertical className="h-4 w-4 text-primary/50" />
+                    <span className="text-primary text-sm">{grua.name}</span>
                   </div>
                 ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Observations */}
-        <Card className="bg-black border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-primary">Observaciones</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={formData.observaciones}
-              onChange={(e) => handleInputChange('observaciones', e.target.value)}
-              placeholder="Observaciones adicionales sobre el inventario..."
-              className="bg-black border-primary/30 text-primary min-h-[100px]"
-            />
-          </CardContent>
-        </Card>
+            {/* Operadores */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary text-sm">Operadores Disponibles</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {MOCK_OPERADORES.map((operador) => (
+                  <div
+                    key={operador.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, operador)}
+                    className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30 cursor-grab active:cursor-grabbing hover:bg-primary/20 transition-colors"
+                  >
+                    <GripVertical className="h-4 w-4 text-primary/50" />
+                    <span className="text-primary text-sm">{operador.name}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
 
-        {/* Action Buttons */}
-        <Card className="bg-black border-primary/20">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button
-                onClick={generatePDF}
-                disabled={!isFormValid()}
-                className="bg-primary text-black hover:bg-primary/90 disabled:opacity-50"
-                size="lg"
-              >
-                <Download className="h-5 w-5 mr-2" />
-                Generar PDF
-              </Button>
-              
-              <Button
-                onClick={shareViaWhatsApp}
-                disabled={!isFormValid()}
-                className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-                size="lg"
-              >
-                <Share className="h-5 w-5 mr-2" />
-                Enviar por WhatsApp
-              </Button>
-            </div>
-            
-            {!isFormValid() && (
-              <p className="text-center text-primary/70 text-sm mt-4">
-                Complete los campos obligatorios (*) para continuar
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            {/* Tipos de Servicio */}
+            <Card className="bg-black border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-primary text-sm">Tipos de Servicio</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {MOCK_TIPOS_SERVICIO.map((tipo) => (
+                  <div
+                    key={tipo.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, tipo)}
+                    className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/30 cursor-grab active:cursor-grabbing hover:bg-primary/20 transition-colors"
+                  >
+                    <GripVertical className="h-4 w-4 text-primary/50" />
+                    <span className="text-primary text-sm">{tipo.name}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
         {/* Hidden file input for camera */}
         <input
