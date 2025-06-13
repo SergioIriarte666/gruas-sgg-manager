@@ -15,18 +15,18 @@ function isReactReady(): boolean {
 
 // Simple hook to check if React is ready
 export function useReactReady() {
-  // Only call useState if React is ready
-  if (!isReactReady()) {
-    return false;
-  }
-
+  // Always call useState, regardless of React readiness
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    setIsReady(true);
+    // Only set to ready if React is actually ready
+    if (isReactReady()) {
+      setIsReady(true);
+    }
   }, []);
 
-  return isReady;
+  // Return false if React is not ready, otherwise return the state
+  return isReactReady() && isReady;
 }
 
 // Safe wrapper for any hook that might fail during initialization
