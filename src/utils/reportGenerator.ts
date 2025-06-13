@@ -55,7 +55,7 @@ const addCorporateHeader = (doc: jsPDF, title: string) => {
 };
 
 // Función helper para agregar footer
-const addFooter = (doc: jsPDF) => {
+const addFooter = (doc: jsPDF, pageNumber: number) => {
   const pageHeight = doc.internal.pageSize.height;
   const pageWidth = doc.internal.pageSize.width;
   
@@ -68,7 +68,7 @@ const addFooter = (doc: jsPDF) => {
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128); // gray-500
   doc.text('SGG - Sistema de Gestión de Grúas | Reporte Confidencial', 20, pageHeight - 15);
-  doc.text(`Página ${doc.internal.getCurrentPageInfo().pageNumber}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+  doc.text(`Página ${pageNumber}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
 };
 
 // Función helper para crear secciones con estilo
@@ -92,6 +92,7 @@ const addSection = (doc: jsPDF, title: string, yPos: number, content: () => numb
 export const generateServiciosReport = (servicios: Servicio[]) => {
   const doc = new jsPDF();
   let yPos = addCorporateHeader(doc, 'REPORTE DE SERVICIOS');
+  let pageNumber = 1;
   
   // Resumen ejecutivo
   yPos = addSection(doc, 'RESUMEN EJECUTIVO', yPos + 10, () => {
@@ -137,7 +138,9 @@ export const generateServiciosReport = (servicios: Servicio[]) => {
       
       servicios.slice(0, 20).forEach((servicio, index) => {
         if (currentY > 250) {
+          addFooter(doc, pageNumber);
           doc.addPage();
+          pageNumber++;
           addCorporateHeader(doc, 'REPORTE DE SERVICIOS (Continuación)');
           currentY = 80;
         }
@@ -156,9 +159,9 @@ export const generateServiciosReport = (servicios: Servicio[]) => {
         doc.text(`Fecha: ${new Date(servicio.fecha).toLocaleDateString('es-CL')}`, 30, currentY + 12);
         
         // Estado con color
-        const estadoColor = servicio.estado === 'facturado' ? [5, 150, 105] : 
+        const estadoColors = servicio.estado === 'facturado' ? [5, 150, 105] : 
                            servicio.estado === 'cerrado' ? [59, 130, 246] : [245, 158, 11];
-        doc.setTextColor(...estadoColor);
+        doc.setTextColor(estadoColors[0], estadoColors[1], estadoColors[2]);
         doc.text(`Estado: ${servicio.estado.toUpperCase()}`, 120, currentY + 6);
         
         // Valor con formato
@@ -175,13 +178,14 @@ export const generateServiciosReport = (servicios: Servicio[]) => {
     });
   }
   
-  addFooter(doc);
+  addFooter(doc, pageNumber);
   return doc;
 };
 
 export const generateFinancialReport = (servicios: Servicio[]) => {
   const doc = new jsPDF();
   let yPos = addCorporateHeader(doc, 'REPORTE FINANCIERO');
+  let pageNumber = 1;
   
   const ingresosTotales = servicios.reduce((acc, s) => acc + s.valor, 0);
   const serviciosFacturados = servicios.filter(s => s.estado === 'facturado');
@@ -262,13 +266,14 @@ export const generateFinancialReport = (servicios: Servicio[]) => {
     return currentY;
   });
   
-  addFooter(doc);
+  addFooter(doc, pageNumber);
   return doc;
 };
 
 export const generateClientesReport = (clientes: Cliente[], servicios: Servicio[]) => {
   const doc = new jsPDF();
   let yPos = addCorporateHeader(doc, 'REPORTE DE CLIENTES');
+  let pageNumber = 1;
   
   const clientesActivos = clientes.filter(c => c.activo).length;
   
@@ -320,7 +325,9 @@ export const generateClientesReport = (clientes: Cliente[], servicios: Servicio[
       
       topClientes.forEach((item, index) => {
         if (currentY > 250) {
+          addFooter(doc, pageNumber);
           doc.addPage();
+          pageNumber++;
           addCorporateHeader(doc, 'REPORTE DE CLIENTES (Continuación)');
           currentY = 80;
         }
@@ -345,7 +352,8 @@ export const generateClientesReport = (clientes: Cliente[], servicios: Servicio[
         doc.text(`Ingresos: $${item.ingresos.toLocaleString('es-CL')}`, 120, currentY + 6);
         
         doc.setFont(undefined, 'normal');
-        doc.setTextColor(item.cliente.activo ? [5, 150, 105] : [239, 68, 68]);
+        const statusColor = item.cliente.activo ? [5, 150, 105] : [239, 68, 68];
+        doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
         doc.text(`Estado: ${item.cliente.activo ? 'ACTIVO' : 'INACTIVO'}`, 120, currentY + 12);
         
         currentY += 22;
@@ -355,7 +363,7 @@ export const generateClientesReport = (clientes: Cliente[], servicios: Servicio[
     });
   }
   
-  addFooter(doc);
+  addFooter(doc, pageNumber);
   return doc;
 };
 
@@ -367,6 +375,7 @@ export const generateDashboardReport = (
 ) => {
   const doc = new jsPDF();
   let yPos = addCorporateHeader(doc, 'DASHBOARD EJECUTIVO');
+  let pageNumber = 1;
   
   const totalServicios = servicios.length;
   const ingresosTotales = servicios.reduce((acc, s) => acc + s.valor, 0);
@@ -404,7 +413,7 @@ export const generateDashboardReport = (
       doc.rect(x, y - 8, 80, 25, 'S');
       
       doc.setFont(undefined, 'bold');
-      doc.setTextColor(...metric.color);
+      doc.setTextColor(metric.color[0], metric.color[1], metric.color[2]);
       doc.text(metric.value, x + 40, y + 2, { align: 'center' });
       
       doc.setFont(undefined, 'normal');
@@ -466,7 +475,7 @@ export const generateDashboardReport = (
     distribucion.forEach(item => {
       const percentage = totalServicios > 0 ? ((item.count / totalServicios) * 100).toFixed(1) : '0';
       
-      doc.setTextColor(...item.color);
+      doc.setTextColor(item.color[0], item.color[1], item.color[2]);
       doc.text(`• ${item.estado}: ${item.count} (${percentage}%)`, 30, currentY);
       currentY += 8;
     });
@@ -474,6 +483,6 @@ export const generateDashboardReport = (
     return currentY;
   });
   
-  addFooter(doc);
+  addFooter(doc, pageNumber);
   return doc;
 };
