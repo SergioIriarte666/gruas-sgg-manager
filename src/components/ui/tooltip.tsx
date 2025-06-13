@@ -1,5 +1,6 @@
 
 import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
 
 import { cn } from "@/lib/utils"
 
@@ -16,25 +17,33 @@ const Tooltip = ({ children, ...props }: any) => {
 
 const TooltipTrigger = React.forwardRef<
   HTMLElement,
-  React.HTMLAttributes<HTMLElement>
->(({ className, children, ...props }, ref) => {
-  console.log('TooltipTrigger: Rendering as simple div');
+  React.HTMLAttributes<HTMLElement> & {
+    asChild?: boolean
+  }
+>(({ className, children, asChild = false, ...props }, ref) => {
+  console.log('TooltipTrigger: Rendering as simple element');
+  const Comp = asChild ? Slot : "div"
+  
   return (
-    <div
+    <Comp
       ref={ref as any}
       className={className}
       {...props}
     >
       {children}
-    </div>
+    </Comp>
   );
 });
 TooltipTrigger.displayName = "TooltipTrigger";
 
 const TooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, sideOffset = 4, children, ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & {
+    sideOffset?: number
+    side?: "top" | "right" | "bottom" | "left"
+    align?: "start" | "center" | "end"
+  }
+>(({ className, sideOffset = 4, side, align, children, ...props }, ref) => {
   console.log('TooltipContent: Not rendering tooltip content to prevent errors');
   // Return null to prevent rendering tooltip content
   return null;
