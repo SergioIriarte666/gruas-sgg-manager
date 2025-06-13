@@ -17,7 +17,6 @@ import { useSafeServicios } from "@/hooks/useSafeServicios";
 import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 function ReportesLoadingSkeleton() {
@@ -252,32 +251,13 @@ export default function Reportes() {
   const [isContextReady, setIsContextReady] = useState(false);
   
   useEffect(() => {
-    // Use a more robust check for QueryClient context
-    const checkContext = () => {
-      try {
-        // Try to access the QueryClient context directly
-        const queryClient = useQueryClient();
-        if (queryClient) {
-          console.log('QueryClient context is available');
-          setIsContextReady(true);
-          return true;
-        }
-      } catch (error) {
-        console.log('QueryClient context not ready:', error);
-        return false;
-      }
-      return false;
-    };
-
-    // Try immediately
-    if (!checkContext()) {
-      // If not ready, wait a bit and try again
-      const timer = setTimeout(() => {
-        setIsContextReady(true); // Force ready after timeout
-      }, 200);
-      
-      return () => clearTimeout(timer);
-    }
+    // Simple delay to ensure QueryClient context is ready
+    const timer = setTimeout(() => {
+      console.log('Context should be ready now');
+      setIsContextReady(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   if (!isContextReady) {
