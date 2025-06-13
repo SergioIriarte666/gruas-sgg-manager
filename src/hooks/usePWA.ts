@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 
 interface PWAState {
@@ -19,10 +18,28 @@ interface BeforeInstallPromptEvent extends Event {
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
 export function usePWA() {
+  // Early return with safe defaults if not in browser context
+  if (typeof window === 'undefined') {
+    return {
+      isInstallable: false,
+      isInstalled: false,
+      isOnline: false,
+      hasUpdate: false,
+      canInstall: false,
+      canUpdate: false,
+      swVersion: null,
+      installPWA: async () => false,
+      updatePWA: async () => false,
+      checkForUpdates: async () => false,
+      cacheUrls: async () => false,
+      getSWVersion: async () => {},
+    };
+  }
+
   const [state, setState] = useState<PWAState>({
     isInstallable: false,
     isInstalled: false,
-    isOnline: navigator.onLine,
+    isOnline: navigator?.onLine || false,
     hasUpdate: false,
     canInstall: false,
     canUpdate: false,

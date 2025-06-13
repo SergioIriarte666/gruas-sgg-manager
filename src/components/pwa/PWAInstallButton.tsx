@@ -19,9 +19,22 @@ export function PWAInstallButton({
   className, 
   showText = true 
 }: PWAInstallButtonProps) {
-  const isEnabled = usePWAComponent('showInstallButton');
-  const { canInstall, installPWA } = usePWA();
-  const { toast } = useToast();
+  // Safe hook calls with error boundaries
+  let isEnabled = false;
+  let pwaHookResult = null;
+  let toastHook = null;
+
+  try {
+    isEnabled = usePWAComponent('showInstallButton');
+    pwaHookResult = usePWA();
+    toastHook = useToast();
+  } catch (error) {
+    console.error('Error in PWAInstallButton hooks:', error);
+    return null;
+  }
+
+  const { canInstall, installPWA } = pwaHookResult || { canInstall: false, installPWA: async () => false };
+  const { toast } = toastHook || { toast: () => {} };
 
   if (!isEnabled || !canInstall) {
     return null;
