@@ -11,14 +11,61 @@ import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useReportExport } from "@/hooks/useReportExport";
 import { ReportesLoadingSkeleton } from "@/components/reportes/ReportesLoadingSkeleton";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 export function ReportesContent() {
   console.log('ReportesContent: Starting to render...');
   
-  const { data: servicios = [], isLoading: serviciosLoading, error: serviciosError } = useServicios();
-  const { data: clientes = [], isLoading: clientesLoading, error: clientesError } = useClientes();
-  const { data: gruas = [], isLoading: gruasLoading, error: gruasError } = useGruas();
-  const { data: operadores = [], isLoading: operadoresLoading, error: operadoresError } = useOperadores();
+  const queryClient = useQueryClient();
+  const [isQueryClientReady, setIsQueryClientReady] = useState(false);
+
+  // Verificar que React Query esté completamente inicializado
+  useEffect(() => {
+    console.log('ReportesContent: Checking QueryClient status...');
+    if (queryClient) {
+      console.log('ReportesContent: QueryClient is available');
+      setIsQueryClientReady(true);
+    } else {
+      console.error('ReportesContent: QueryClient not available');
+    }
+  }, [queryClient]);
+
+  // Mostrar loading mientras verificamos el contexto
+  if (!isQueryClientReady) {
+    console.log('ReportesContent: QueryClient not ready, showing skeleton...');
+    return <ReportesLoadingSkeleton />;
+  }
+
+  // Intentar usar los hooks con manejo de errores robusto
+  let serviciosQuery, clientesQuery, gruasQuery, operadoresQuery;
+  
+  try {
+    serviciosQuery = useServicios();
+    clientesQuery = useClientes();
+    gruasQuery = useGruas();
+    operadoresQuery = useOperadores();
+  } catch (error) {
+    console.error('ReportesContent: Error initializing hooks:', error);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h3 className="text-lg font-medium mb-2">Error de Inicialización</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            No se pudo inicializar correctamente el sistema de consultas
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Recargar Página
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { data: servicios = [], isLoading: serviciosLoading, error: serviciosError } = serviciosQuery;
+  const { data: clientes = [], isLoading: clientesLoading, error: clientesError } = clientesQuery;
+  const { data: gruas = [], isLoading: gruasLoading, error: gruasError } = gruasQuery;
+  const { data: operadores = [], isLoading: operadoresLoading, error: operadoresError } = operadoresQuery;
 
   const { handleExportReport } = useReportExport(servicios, clientes, gruas, operadores);
 
@@ -51,7 +98,7 @@ export function ReportesContent() {
   if (serviciosError || clientesError || gruasError || operadoresError) {
     console.error('ReportesContent: Error loading data:', { serviciosError, clientesError, gruasError, operadoresError });
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h3 className="text-lg font-medium mb-2">Error al cargar datos</h3>
           <p className="text-sm text-muted-foreground mb-4">
