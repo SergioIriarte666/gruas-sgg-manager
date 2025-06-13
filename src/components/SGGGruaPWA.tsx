@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,15 +23,28 @@ interface CapturedImage {
   timestamp: Date;
 }
 
-export default function SGGGruaPWA() {
+// Safe wrapper component to handle React Query context
+function SGGGruaPWAContent() {
   const { toast } = useToast();
   
-  // Hooks for real data
-  const { data: gruas = [] } = useGruas();
-  const { data: operadores = [] } = useOperadores();
-  const { data: tiposServicio = [] } = useTiposServicio();
+  // Hooks for real data - now safely wrapped
+  const { data: gruas = [], isLoading: gruasLoading } = useGruas();
+  const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
+  const { data: tiposServicio = [], isLoading: tiposServicioLoading } = useTiposServicio();
   
-  // Form data state (removed time fields)
+  // Show loading state while data is being fetched
+  if (gruasLoading || operadoresLoading || tiposServicioLoading) {
+    return (
+      <div className="min-h-screen bg-black text-primary p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-primary/70">Cargando datos...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Form data state
   const [formData, setFormData] = useState({
     fecha: new Date().toISOString().split('T')[0],
     cliente: '',
@@ -428,5 +441,69 @@ export default function SGGGruaPWA() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// Error boundary component
+class SGGGruaPWAErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('SGGGruaPWA Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-black text-primary p-4 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-primary mb-4">
+              Error cargando la aplicación
+            </h2>
+            <p className="text-primary/70 mb-4">
+              Hay un problema con la conexión a la base de datos.
+            </p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="bg-primary text-black hover:bg-primary/90"
+            >
+              Recargar página
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Main component with error boundary and suspense
+export default function SGGGruaPWA() {
+  return (
+    <SGGGruaPWAErrorBoundary>
+      <Suspense 
+        fallback={
+          <div className="min-h-screen bg-black text-primary p-4 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-primary/70">Cargando aplicación...</p>
+            </div>
+          </div>
+        }
+      >
+        <SGGGruaPWAContent />
+      </Suspense>
+    </SGGGruaPWAErrorBoundary>
   );
 }
