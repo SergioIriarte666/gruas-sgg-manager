@@ -5,15 +5,15 @@ import { Download, FileText, BarChart3 } from "lucide-react";
 import { ResumenEjecutivo } from "@/components/reportes/ResumenEjecutivo";
 import { AnalisisDetallado } from "@/components/reportes/AnalisisDetallado";
 import { TablaReporte } from "@/components/reportes/TablaReporte";
-import { useSafeServicios } from "@/hooks/useSafeServicios";
+import { useServicios } from "@/hooks/useServicios";
 import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useReportExport } from "@/hooks/useReportExport";
 
 export function ReportesContent() {
-  // Use safe hooks to prevent context errors
-  const { data: servicios = [], isLoading: serviciosLoading } = useSafeServicios();
+  // Use regular hooks since parent ensures context is ready
+  const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
   const { data: gruas = [], isLoading: gruasLoading } = useGruas();
   const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
