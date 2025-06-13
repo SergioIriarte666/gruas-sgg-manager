@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,11 +6,13 @@ import { Plus, Search, Truck, Users, FileText, Calendar, CheckCircle, Eye, Edit,
 import { EstadisticasCard } from "@/components/EstadisticasCard";
 import { FormularioServicio } from "@/components/FormularioServicio";
 import { ServicioDetailsModal } from "@/components/ServicioDetailsModal";
-import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
-import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
+import { useSafeServicios, useSafeEstadisticasServicios } from "@/hooks/useSafeServicios";
+import { useSafeUpdateServicioEstado } from "@/hooks/useSafeUpdateServicioEstado";
 import { formatSafeDate } from "@/lib/utils";
+import { useReactReady } from "@/hooks/useSafeHooks";
 
 export default function Servicios() {
+  const isReactReady = useReactReady();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNewForm, setShowNewForm] = useState(false);
@@ -20,9 +21,20 @@ export default function Servicios() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showReports, setShowReports] = useState(false);
 
-  const { data: servicios = [], isLoading } = useServicios();
-  const { data: estadisticas } = useEstadisticasServicios();
-  const updateServicioEstado = useUpdateServicioEstado();
+  const { data: servicios = [], isLoading } = useSafeServicios();
+  const { data: estadisticas } = useSafeEstadisticasServicios();
+  const updateServicioEstado = useSafeUpdateServicioEstado();
+
+  // Show loading state if React is not ready
+  if (!isReactReady) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-muted-foreground">Inicializando servicios...</div>
+        </div>
+      </div>
+    );
+  }
 
   // Filtrar servicios según búsqueda y estado
   const serviciosFiltrados = servicios.filter(servicio => {
