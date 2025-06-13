@@ -13,12 +13,10 @@ import {
 import { ResumenEjecutivo } from "@/components/reportes/ResumenEjecutivo";
 import { AnalisisDetallado } from "@/components/reportes/AnalisisDetallado";
 import { TablaReporte } from "@/components/reportes/TablaReporte";
-import { useServicios } from "@/hooks/useServicios";
+import { useSafeServicios } from "@/hooks/useSafeServicios";
 import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
-import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 
 function ReportesLoadingSkeleton() {
   return (
@@ -46,8 +44,8 @@ function ReportesLoadingSkeleton() {
 function ReportesContent() {
   const { toast } = useToast();
 
-  // Use regular hooks consistently - now safe to call
-  const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
+  // Use safe hooks to prevent context errors
+  const { data: servicios = [], isLoading: serviciosLoading } = useSafeServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
   const { data: gruas = [], isLoading: gruasLoading } = useGruas();
   const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
@@ -249,31 +247,5 @@ function ReportesContent() {
 }
 
 export default function Reportes() {
-  const [isQueryClientReady, setIsQueryClientReady] = useState(false);
-  
-  // Call useQueryClient at the top level (correct hook usage)
-  const queryClient = useQueryClient();
-  
-  useEffect(() => {
-    // Simply check if the queryClient exists
-    if (queryClient) {
-      console.log('QueryClient is ready');
-      setIsQueryClientReady(true);
-    } else {
-      console.log('QueryClient not ready yet...');
-      // Retry after a short delay if not ready
-      const timer = setTimeout(() => {
-        setIsQueryClientReady(true); // Assume ready after timeout
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [queryClient]);
-
-  // Show loading state while QueryClient initializes
-  if (!isQueryClientReady) {
-    return <ReportesLoadingSkeleton />;
-  }
-
   return <ReportesContent />;
 }
