@@ -11,9 +11,9 @@ import { ServicioDetailsModal } from "@/components/ServicioDetailsModal";
 import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
 import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 import { formatSafeDate } from "@/lib/utils";
-import { useReactReady } from "@/hooks/useSafeHooks";
+import { withReactReady } from "@/hooks/useSafeHooks";
 
-function IndexContent() {
+function IndexComponent() {
   const [showNewForm, setShowNewForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedServicio, setSelectedServicio] = useState<any>(null);
@@ -387,18 +387,4 @@ function IndexContent() {
   );
 }
 
-export default function Index() {
-  const isReactReady = useReactReady();
-  
-  if (!isReactReady) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-muted-foreground">Inicializando aplicación...</div>
-        </div>
-      </div>
-    );
-  }
-
-  return <IndexContent />;
-}
+export default withReactReady(IndexComponent);

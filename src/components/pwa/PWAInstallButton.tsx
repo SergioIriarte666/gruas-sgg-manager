@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { usePWA } from '@/hooks/usePWA';
 import { usePWAComponent } from '@/contexts/PWAContext';
-import { useReactReady } from '@/hooks/useSafeHooks';
+import { withReactReady } from '@/hooks/useSafeHooks';
 
 interface PWAInstallButtonProps {
   variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link';
@@ -14,19 +14,12 @@ interface PWAInstallButtonProps {
   showText?: boolean;
 }
 
-export function PWAInstallButton({ 
+function PWAInstallButtonComponent({ 
   variant = 'default', 
   size = 'default', 
   className, 
   showText = true 
 }: PWAInstallButtonProps) {
-  const isReactReady = useReactReady();
-  
-  // Don't render anything until React is ready
-  if (!isReactReady) {
-    return null;
-  }
-
   // Safe hook calls with error boundaries
   let isEnabled = false;
   let canInstall = false;
@@ -90,3 +83,5 @@ export function PWAInstallButton({
     </Button>
   );
 }
+
+export const PWAInstallButton = withReactReady(PWAInstallButtonComponent);

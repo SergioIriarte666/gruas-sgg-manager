@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePWA } from '@/hooks/usePWA';
 import { usePWAComponent } from '@/contexts/PWAContext';
 import { cn } from '@/lib/utils';
-import { useReactReady } from '@/hooks/useSafeHooks';
+import { withReactReady } from '@/hooks/useSafeHooks';
 
 interface PWAUpdateButtonProps {
   variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link';
@@ -16,20 +16,13 @@ interface PWAUpdateButtonProps {
   animate?: boolean;
 }
 
-export function PWAUpdateButton({ 
+function PWAUpdateButtonComponent({ 
   variant = 'default', 
   size = 'default', 
   className, 
   showText = true,
   animate = true
 }: PWAUpdateButtonProps) {
-  const isReactReady = useReactReady();
-  
-  // Don't render anything until React is ready
-  if (!isReactReady) {
-    return null;
-  }
-
   // Safe hook calls with error boundaries
   let isEnabled = false;
   let canUpdate = false;
@@ -96,3 +89,5 @@ export function PWAUpdateButton({
     </Button>
   );
 }
+
+export const PWAUpdateButton = withReactReady(PWAUpdateButtonComponent);
