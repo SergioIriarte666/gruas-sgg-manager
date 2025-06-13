@@ -22,28 +22,54 @@ export function PWAUpdateButton({
   showText = true,
   animate = true
 }: PWAUpdateButtonProps) {
-  const isEnabled = usePWAComponent('showUpdatePrompt');
-  const { canUpdate, updatePWA } = usePWA();
-  const { toast } = useToast();
+  // Safe hook calls with error boundaries
+  let isEnabled = false;
+  let canUpdate = false;
+  let updatePWA = async () => false;
+  let toastFn: any;
+
+  try {
+    isEnabled = usePWAComponent('showUpdatePrompt');
+    const { canUpdate: canUpdateState, updatePWA: updatePWAFn } = usePWA();
+    canUpdate = canUpdateState;
+    updatePWA = updatePWAFn;
+    const { toast } = useToast();
+    toastFn = toast;
+  } catch (error) {
+    console.error('Error in PWAUpdateButton hooks:', error);
+    // Return null if hooks fail to initialize
+    return null;
+  }
 
   if (!isEnabled || !canUpdate) {
     return null;
   }
 
   const handleUpdate = async () => {
-    const success = await updatePWA();
-    
-    if (success) {
-      toast({
-        title: "¡Aplicación actualizada!",
-        description: "La aplicación se ha actualizado a la última versión.",
-      });
-    } else {
-      toast({
-        title: "Error de actualización",
-        description: "No se pudo actualizar la aplicación. Intenta nuevamente.",
-        variant: "destructive",
-      });
+    try {
+      const success = await updatePWA();
+      
+      if (success && toastFn) {
+        toastFn({
+          title: "¡Aplicación actualizada!",
+          description: "La aplicación se ha actualizado a la última versión.",
+        });
+      } else if (toastFn) {
+        toastFn({
+          title: "Error de actualización",
+          description: "No se pudo actualizar la aplicación. Intenta nuevamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error during PWA update:', error);
+      if (toastFn) {
+        toastFn({
+          title: "Error de actualización",
+          description: "No se pudo actualizar la aplicación. Intenta nuevamente.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
