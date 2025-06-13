@@ -33,11 +33,11 @@ function App() {
         <TooltipProvider>
           <BrowserRouter>
             <SidebarProvider defaultOpen={false}>
-              <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 text-foreground flex w-full">
+              <div className="min-h-screen bg-black text-primary flex w-full">
                 <AppSidebar />
                 <SidebarInset className="flex-1">
                   <Header showMenuButton />
-                  <main className="flex-1 p-4 bg-gradient-to-br from-background via-background/95 to-primary/10 backdrop-blur-sm">
+                  <main className="flex-1 p-4 bg-black">
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/gruas" element={<Gruas />} />

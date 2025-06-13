@@ -62,22 +62,22 @@ export function AppSidebar() {
   
   return (
     <Sidebar className="border-r-0">
-      <SidebarContent className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 border-r border-primary/20">
-        <div className="p-4 border-b border-primary/30 bg-gradient-to-r from-gray-900 to-gray-800">
+      <SidebarContent className="bg-black border-r border-primary/20">
+        <div className="p-4 border-b border-primary/30 bg-black">
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <Truck className="h-8 w-8 text-primary drop-shadow-lg animate-chartreuse-glow" />
+              <Truck className="h-8 w-8 text-primary drop-shadow-lg animate-lime-glow" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50"></div>
             </div>
             <div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent drop-shadow-sm">SGG</h1>
-              <p className="text-xs text-gray-300 font-medium">Sistema de Gestión de Grúas</p>
+              <h1 className="text-lg font-bold text-primary drop-shadow-sm">SGG</h1>
+              <p className="text-xs text-primary/70 font-medium">Sistema de Gestión de Grúas</p>
             </div>
           </div>
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-300 font-semibold tracking-wide border-b border-primary/20 pb-2">Gestión Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold tracking-wide border-b border-primary/20 pb-2">Gestión Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map(item => (
@@ -87,7 +87,7 @@ export function AppSidebar() {
                     isActive={location.pathname === item.url} 
                     className="transition-all duration-200 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary/20 data-[state=open]:bg-primary/20 group border-l-2 border-transparent hover:border-primary data-[active=true]:border-primary data-[active=true]:bg-primary/20"
                   >
-                    <Link to={item.url} className="flex items-center gap-3 text-gray-200 hover:text-primary data-[active=true]:text-primary">
+                    <Link to={item.url} className="flex items-center gap-3 text-primary hover:text-primary data-[active=true]:text-primary">
                       <item.icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 group-hover:drop-shadow-lg group-hover:drop-shadow-primary/50" />
                       <span className="font-medium">{item.title}</span>
                     </Link>
@@ -99,7 +99,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-300 font-semibold tracking-wide border-b border-primary/20 pb-2">Datos Maestros</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold tracking-wide border-b border-primary/20 pb-2">Datos Maestros</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {maestrosItems.map(item => (
@@ -109,7 +109,7 @@ export function AppSidebar() {
                     isActive={location.pathname === item.url} 
                     className="transition-all duration-200 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary/20 data-[state=open]:bg-primary/20 group border-l-2 border-transparent hover:border-primary data-[active=true]:border-primary data-[active=true]:bg-primary/20"
                   >
-                    <Link to={item.url} className="flex items-center gap-3 text-gray-200 hover:text-primary data-[active=true]:text-primary">
+                    <Link to={item.url} className="flex items-center gap-3 text-primary hover:text-primary data-[active=true]:text-primary">
                       <item.icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 group-hover:drop-shadow-lg group-hover:drop-shadow-primary/50" />
                       <span className="font-medium">{item.title}</span>
                     </Link>
@@ -121,7 +121,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-300 font-semibold tracking-wide border-b border-primary/20 pb-2">Sistema</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-primary font-semibold tracking-wide border-b border-primary/20 pb-2">Sistema</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {configItems.map(item => (
@@ -131,7 +131,7 @@ export function AppSidebar() {
                     isActive={location.pathname === item.url} 
                     className="transition-all duration-200 hover:bg-primary/20 hover:shadow-lg hover:shadow-primary/20 data-[state=open]:bg-primary/20 group border-l-2 border-transparent hover:border-primary data-[active=true]:border-primary data-[active=true]:bg-primary/20"
                   >
-                    <Link to={item.url} className="flex items-center gap-3 text-gray-200 hover:text-primary data-[active=true]:text-primary">
+                    <Link to={item.url} className="flex items-center gap-3 text-primary hover:text-primary data-[active=true]:text-primary">
                       <item.icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 group-hover:drop-shadow-lg group-hover:drop-shadow-primary/50" />
                       <span className="font-medium">{item.title}</span>
                     </Link>
@@ -143,10 +143,10 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="bg-gradient-to-t from-gray-900 to-gray-800 border-t border-primary/30">
+      <SidebarFooter className="bg-black border-t border-primary/30">
         <div className="p-4">
           <div className="flex items-center justify-center">
-            <p className="text-xs text-gray-400 text-center font-medium bg-gradient-to-r from-primary/70 to-primary-light/70 bg-clip-text text-transparent">
+            <p className="text-xs text-primary/70 text-center font-medium">
               SGG v1.0 - Sistema de Gestión de Grúas
             </p>
           </div>

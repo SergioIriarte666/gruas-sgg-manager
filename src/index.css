@@ -6,24 +6,24 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --background: 0 0% 0%;
+    --foreground: 83 100% 50%;
+    --card: 0 0% 0%;
+    --card-foreground: 83 100% 50%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 83 100% 50%;
     --primary: 83 100% 50%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 83 80% 60%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 83 100% 50%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 83 80% 60%;
+    --accent: 83 100% 50%;
     --accent-foreground: 0 0% 0%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+    --destructive-foreground: 83 100% 50%;
+    --border: 83 100% 50%;
+    --input: 0 0% 10%;
     --ring: 83 100% 50%;
     --radius: 0.75rem;
     --chart-1: 83 100% 50%;
@@ -31,27 +31,35 @@
     --chart-3: 83 60% 70%;
     --chart-4: 83 40% 80%;
     --chart-5: 83 20% 90%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 83 100% 50%;
+    --sidebar-primary: 83 100% 50%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 83 100% 50%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 83 100% 50%;
+    --sidebar-ring: 83 100% 50%;
   }
 
   .dark {
-    --background: 20 14.3% 4.1%;
-    --foreground: 0 0% 95%;
-    --card: 24 9.8% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 95%;
+    --background: 0 0% 0%;
+    --foreground: 83 100% 50%;
+    --card: 0 0% 0%;
+    --card-foreground: 83 100% 50%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 83 100% 50%;
     --primary: 83 100% 50%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 83 80% 60%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 83 100% 50%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 83 80% 60%;
+    --accent: 83 100% 50%;
     --accent-foreground: 0 0% 0%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 85.7% 97.3%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    --destructive-foreground: 83 100% 50%;
+    --border: 83 100% 50%;
+    --input: 0 0% 10%;
     --ring: 83 100% 50%;
     --chart-1: 83 100% 50%;
     --chart-2: 83 80% 60%;
@@ -123,7 +131,7 @@
 
 /* Offline indicator styles */
 .offline-indicator {
-  background: linear-gradient(90deg, #7FFF00, #32CD32);
+  background: #7FFF00;
   color: black;
 }
 
@@ -135,14 +143,14 @@
 
 /* Service Worker update notification */
 .sw-update-available {
-  background: linear-gradient(90deg, #7FFF00, #32CD32);
+  background: #7FFF00;
   color: black;
   animation: pulse 2s infinite;
 }
 
 /* Loading states */
 .loading-shimmer {
-  background: linear-gradient(90deg, #f0f0f0 25%, #7FFF00 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, #000000 25%, #7FFF00 50%, #000000 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -158,7 +166,7 @@
 
 /* PWA badge styles */
 .pwa-badge {
-  background: linear-gradient(135deg, #7FFF00, #32CD32);
+  background: #7FFF00;
   color: black;
   font-weight: 600;
   font-size: 0.75rem;
@@ -216,39 +224,39 @@
   }
 }
 
-/* Status badges with chartreuse theme */
+/* Status badges with lime green theme */
 .status-en-curso {
-  background: linear-gradient(135deg, #7FFF00, #32CD32);
+  background: #7FFF00;
   color: black;
   border-color: #7FFF00;
 }
 
 .status-cerrado {
-  background: linear-gradient(135deg, #4ade80, #22c55e);
+  background: #7FFF00;
   color: black;
-  border-color: #4ade80;
+  border-color: #7FFF00;
 }
 
 .status-facturado {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
-  color: white;
-  border-color: #60a5fa;
+  background: #7FFF00;
+  color: black;
+  border-color: #7FFF00;
 }
 
 .status-pendiente {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: #7FFF00;
   color: black;
-  border-color: #fbbf24;
+  border-color: #7FFF00;
 }
 
 .status-pagada {
-  background: linear-gradient(135deg, #7FFF00, #32CD32);
+  background: #7FFF00;
   color: black;
   border-color: #7FFF00;
 }
 
 .status-vencida {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-  border-color: #ef4444;
+  background: #7FFF00;
+  color: black;
+  border-color: #7FFF00;
 }
