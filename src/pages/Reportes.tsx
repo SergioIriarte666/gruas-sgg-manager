@@ -7,26 +7,30 @@ import { ReportesContent } from "@/components/reportes/ReportesContent";
 export default function Reportes() {
   const [isContextReady, setIsContextReady] = useState(false);
   
+  // Call useQueryClient at the top level
+  let queryClient;
+  try {
+    queryClient = useQueryClient();
+  } catch (error) {
+    console.log('QueryClient not available yet');
+    queryClient = null;
+  }
+  
   useEffect(() => {
     // Check if QueryClient context is available
     let retryCount = 0;
     const maxRetries = 10;
     
     const checkContext = () => {
-      try {
-        // Try to access QueryClient - if it throws, context isn't ready
-        const queryClient = useQueryClient();
-        if (queryClient) {
-          console.log('QueryClient context is ready');
-          setIsContextReady(true);
-          return;
-        }
-      } catch (error) {
-        console.log('QueryClient context not ready, retrying...', retryCount);
+      if (queryClient) {
+        console.log('QueryClient context is ready');
+        setIsContextReady(true);
+        return;
       }
       
       retryCount++;
       if (retryCount < maxRetries) {
+        console.log('QueryClient context not ready, retrying...', retryCount);
         setTimeout(checkContext, 100);
       } else {
         console.error('Failed to initialize QueryClient context after maximum retries');
@@ -37,7 +41,7 @@ export default function Reportes() {
     
     // Start checking after a small delay
     setTimeout(checkContext, 50);
-  }, []);
+  }, [queryClient]);
 
   if (!isContextReady) {
     return <ReportesLoadingSkeleton />;
