@@ -32,7 +32,7 @@ function App() {
       <PWAProvider initialConfig={PWAPresets.production}>
         <TooltipProvider>
           <BrowserRouter>
-            <SidebarProvider>
+            <SidebarProvider defaultOpen={false}>
               <div className="min-h-screen bg-background text-foreground flex w-full">
                 <AppSidebar />
                 <SidebarInset className="flex-1">

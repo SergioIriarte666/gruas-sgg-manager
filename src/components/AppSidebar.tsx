@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupConte
 import { Link, useLocation } from "react-router-dom";
 
 const mainMenuItems = [{
-  title: "Servicios",
+  title: "Dashboard",
   url: "/",
   icon: Home
 }, {
@@ -12,13 +12,17 @@ const mainMenuItems = [{
   url: "/pwa-grua",
   icon: Smartphone
 }, {
+  title: "Servicios",
+  url: "/servicios",
+  icon: FileText
+}, {
   title: "Cierres",
   url: "/cierres",
   icon: Calendar
 }, {
   title: "Facturas",
   url: "/facturas",
-  icon: FileText
+  icon: DollarSign
 }, {
   title: "Migración Masiva",
   url: "/migraciones",

@@ -42,7 +42,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
           {/* Left side - Menu button + Title */}
           <div className="flex items-center gap-4">
             {showMenuButton && (
-              <SidebarTrigger className="md:hidden hover:bg-primary/10 transition-colors" />
+              <SidebarTrigger className="hover:bg-primary/10 transition-colors" />
             )}
             
             <div className="flex items-center gap-3">
