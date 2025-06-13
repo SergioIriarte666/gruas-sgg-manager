@@ -1,4 +1,3 @@
-
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,11 +16,53 @@ import { useServicios } from "@/hooks/useServicios";
 import { useClientes } from "@/hooks/useClientes";
 import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 export default function Reportes() {
   const { toast } = useToast();
+  const [isContextReady, setIsContextReady] = useState(false);
+  
+  // Check if QueryClient context is available
+  const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    if (queryClient) {
+      setIsContextReady(true);
+    }
+  }, [queryClient]);
 
-  // Use regular hooks consistently
+  // Don't render hooks until context is ready
+  if (!isContextReady) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="bg-white border border-gray-300 p-4">
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-24" />
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-48" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <ReportesContent />;
+}
+
+function ReportesContent() {
+  const { toast } = useToast();
+
+  // Use regular hooks consistently - now safe to call
   const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
   const { data: gruas = [], isLoading: gruasLoading } = useGruas();
