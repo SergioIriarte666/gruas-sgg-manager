@@ -5,7 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Header } from '@/components/Layout/Header';
 import { AppSidebar } from '@/components/AppSidebar';
-import { SafeToaster } from '@/components/ui/safe-toaster';
+import { Toaster } from '@/components/ui/toaster';
 import { ContextErrorBoundary } from '@/components/ContextErrorBoundary';
 import Index from "./pages/Index";
 import Gruas from "./pages/Gruas";
@@ -30,7 +30,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-console.log("App.tsx: QueryClient created:", queryClient);
 
 function App() {
   console.log("App: Rendering...");
@@ -63,9 +62,8 @@ function App() {
                 </main>
               </SidebarInset>
             </div>
-            
-            <SafeToaster />
           </SidebarProvider>
+          <Toaster />
         </BrowserRouter>
       </QueryClientProvider>
     </ContextErrorBoundary>

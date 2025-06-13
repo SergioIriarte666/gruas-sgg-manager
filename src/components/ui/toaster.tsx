@@ -1,6 +1,6 @@
 
 import React from "react"
-import { useToast } from "@/hooks/use-safe-toast"
+import { useToast } from "@/hooks/use-toast"
 import {
   Toast,
   ToastClose,
@@ -37,7 +37,6 @@ export function Toaster() {
     )
   } catch (error) {
     console.error('Toaster: Error rendering:', error);
-    // Return just the viewport in case of error
     return <ToastViewport />;
   }
 }

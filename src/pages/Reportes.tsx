@@ -1,6 +1,6 @@
 
 import { ErrorBoundary } from "react-error-boundary";
-import { SafeReportesContent } from "@/components/reportes/SafeReportesContent";
+import { ReportesContent } from "@/components/reportes/ReportesContent";
 import { Button } from "@/components/ui/button";
 
 function ReportesErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
@@ -17,7 +17,7 @@ function ReportesErrorFallback({ error, resetErrorBoundary }: { error: Error; re
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Error en el Sistema de Reportes</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Se produjo un error al cargar el módulo de reportes. Esto puede deberse a un problema de inicialización del contexto.
+            Se produjo un error al cargar el módulo de reportes.
           </p>
           <div className="space-y-2">
             <Button onClick={resetErrorBoundary} className="w-full">
@@ -38,7 +38,7 @@ function ReportesErrorFallback({ error, resetErrorBoundary }: { error: Error; re
 }
 
 export default function Reportes() {
-  console.log('Reportes page: Rendering with safe components...');
+  console.log('Reportes page: Rendering with simplified structure...');
   
   return (
     <ErrorBoundary
@@ -50,7 +50,7 @@ export default function Reportes() {
         console.log('Reportes: Resetting error boundary');
       }}
     >
-      <SafeReportesContent />
+      <ReportesContent />
     </ErrorBoundary>
   );
 }
