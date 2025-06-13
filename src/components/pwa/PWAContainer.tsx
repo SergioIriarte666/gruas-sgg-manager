@@ -5,6 +5,7 @@ import { PWAUpdateButton } from './PWAUpdateButton';
 import { PWAConnectionStatus } from './PWAConnectionStatus';
 import { PWANotificationButton } from './PWANotificationButton';
 import { PWAVersionInfo } from './PWAVersionInfo';
+import { withReactReady } from '@/hooks/useSafeHooks';
 import { cn } from '@/lib/utils';
 
 interface PWAContainerProps {
@@ -14,7 +15,7 @@ interface PWAContainerProps {
   showText?: boolean;
 }
 
-export function PWAContainer({ 
+function PWAContainerComponent({ 
   layout = 'horizontal', 
   spacing = 'normal', 
   className,
@@ -58,3 +59,5 @@ export function PWAContainer({
     </div>
   );
 }
+
+export const PWAContainer = withReactReady(PWAContainerComponent);

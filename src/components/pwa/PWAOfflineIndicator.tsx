@@ -4,6 +4,7 @@ import { WifiOff, Database } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePWA } from '@/hooks/usePWA';
 import { usePWAComponent, usePWAConfig } from '@/contexts/PWAContext';
+import { withReactReady } from '@/hooks/useSafeHooks';
 import { cn } from '@/lib/utils';
 
 interface PWAOfflineIndicatorProps {
@@ -11,13 +12,26 @@ interface PWAOfflineIndicatorProps {
   showIcon?: boolean;
 }
 
-export function PWAOfflineIndicator({ 
+function PWAOfflineIndicatorComponent({ 
   className, 
   showIcon = true 
 }: PWAOfflineIndicatorProps) {
-  const isEnabled = usePWAComponent('showOfflineIndicator');
-  const { config } = usePWAConfig();
-  const { isOnline } = usePWA();
+  // Safe hook calls with error boundaries
+  let isEnabled = false;
+  let isOnline = true;
+  let config: any = {};
+
+  try {
+    isEnabled = usePWAComponent('showOfflineIndicator');
+    const { config: pwaConfig } = usePWAConfig();
+    const { isOnline: onlineState } = usePWA();
+    config = pwaConfig;
+    isOnline = onlineState;
+  } catch (error) {
+    console.error('Error in PWAOfflineIndicator hooks:', error);
+    // Return null if hooks fail to initialize
+    return null;
+  }
 
   if (!isEnabled || isOnline) {
     return null;
@@ -42,3 +56,5 @@ export function PWAOfflineIndicator({
     </Alert>
   );
 }
+
+export const PWAOfflineIndicator = withReactReady(PWAOfflineIndicatorComponent);

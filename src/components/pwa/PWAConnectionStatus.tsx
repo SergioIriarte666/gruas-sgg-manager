@@ -4,6 +4,7 @@ import { Wifi, WifiOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { usePWA } from '@/hooks/usePWA';
 import { usePWAComponent } from '@/contexts/PWAContext';
+import { withReactReady } from '@/hooks/useSafeHooks';
 import { cn } from '@/lib/utils';
 
 interface PWAConnectionStatusProps {
@@ -11,12 +12,23 @@ interface PWAConnectionStatusProps {
   className?: string;
 }
 
-export function PWAConnectionStatus({ 
+function PWAConnectionStatusComponent({ 
   showText = true, 
   className 
 }: PWAConnectionStatusProps) {
-  const isEnabled = usePWAComponent('showConnectionStatus');
-  const { isOnline } = usePWA();
+  // Safe hook calls with error boundaries
+  let isEnabled = false;
+  let isOnline = false;
+
+  try {
+    isEnabled = usePWAComponent('showConnectionStatus');
+    const { isOnline: onlineState } = usePWA();
+    isOnline = onlineState;
+  } catch (error) {
+    console.error('Error in PWAConnectionStatus hooks:', error);
+    // Return null if hooks fail to initialize
+    return null;
+  }
 
   if (!isEnabled) {
     return null;
@@ -38,3 +50,5 @@ export function PWAConnectionStatus({
     </Badge>
   );
 }
+
+export const PWAConnectionStatus = withReactReady(PWAConnectionStatusComponent);
