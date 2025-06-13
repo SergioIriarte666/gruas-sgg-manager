@@ -11,9 +11,24 @@ import { useGruas } from "@/hooks/useGruas";
 import { useOperadores } from "@/hooks/useOperadores";
 import { useReportExport } from "@/hooks/useReportExport";
 import { ReportesLoadingSkeleton } from "@/components/reportes/ReportesLoadingSkeleton";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 export function ReportesContent() {
   console.log('ReportesContent: Starting to render...');
+  
+  const [isQueryReady, setIsQueryReady] = useState(false);
+  const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    // Ensure QueryClient is available before proceeding
+    if (queryClient) {
+      setIsQueryReady(true);
+    }
+  }, [queryClient]);
+  
+  // Don't call hooks until we're sure the context is ready
+  const shouldCallHooks = isQueryReady && queryClient;
   
   const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
   const { data: clientes = [], isLoading: clientesLoading } = useClientes();
@@ -40,6 +55,11 @@ export function ReportesContent() {
       servicio.estado,
       servicio.valor
     ]);
+
+  if (!shouldCallHooks) {
+    console.log('ReportesContent: QueryClient not ready yet...');
+    return <ReportesLoadingSkeleton />;
+  }
 
   if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
     console.log('ReportesContent: Still loading data...');
