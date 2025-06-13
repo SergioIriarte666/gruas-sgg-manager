@@ -62,11 +62,11 @@ function AppContent() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
-          
-          {/* Safe Toast notifications */}
-          <SafeToaster />
         </SidebarInset>
       </div>
+      
+      {/* Safe Toast notifications - moved outside SidebarInset to avoid conflicts */}
+      <SafeToaster />
     </SidebarProvider>
   );
 }
