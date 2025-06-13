@@ -1,11 +1,11 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Camera, Download, Share, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Camera, Download, Share, Eye, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { EquipmentChecklist, EQUIPMENT_ITEMS } from '@/components/EquipmentChecklist';
@@ -16,6 +16,25 @@ interface CapturedImage {
   preview: string;
   timestamp: Date;
 }
+
+// Equipamiento específico para el reporte
+const EQUIPAMIENTO_REPORTE = [
+  'Gato hidráulico',
+  'Extintor', 
+  'Llanta de repuesto',
+  'Documentación completa',
+  'Linterna emergencia',
+  'Herramientas básicas',
+  'Botiquín primeros auxilios',
+  'Llave de ruedas',
+  'Radio comunicaciones',
+  'Chaleco reflectante',
+  'Triángulos de seguridad',
+  'Cable de remolque',
+  'Manual del vehículo',
+  'GPS navegación',
+  'Conos de seguridad'
+];
 
 export default function SGGGruaPWA() {
   const { toast } = useToast();
@@ -34,11 +53,22 @@ export default function SGGGruaPWA() {
     grua: '',
     operador: '',
     tipoServicio: '',
-    observaciones: ''
+    observaciones: '',
+    horaAsignacion: '',
+    horaLlegada: '',
+    horaTermino: '',
+    kmInicial: '',
+    kmFinal: '',
+    kmVehiculo: '',
+    nivelCombustible: '',
+    tipoAsistenciaDetallado: ''
   });
 
-  // Equipment checklist state
+  // Equipment checklist state - para equipamiento general
   const [equipmentChecked, setEquipmentChecked] = useState<Record<string, boolean>>({});
+
+  // Equipment reporte state - para equipamiento específico del reporte
+  const [equipmentReporte, setEquipmentReporte] = useState<Record<string, boolean>>({});
 
   // Damage images state
   const [damageImages, setDamageImages] = useState<CapturedImage[]>([]);
@@ -57,6 +87,13 @@ export default function SGGGruaPWA() {
     }));
   };
 
+  const handleEquipmentReporteToggle = (item: string) => {
+    setEquipmentReporte(prev => ({
+      ...prev,
+      [item]: !prev[item]
+    }));
+  };
+
   const handleSelectAllEquipment = () => {
     const allSelected: Record<string, boolean> = {};
     EQUIPMENT_ITEMS.forEach(item => {
@@ -67,6 +104,18 @@ export default function SGGGruaPWA() {
 
   const handleDeselectAllEquipment = () => {
     setEquipmentChecked({});
+  };
+
+  const handleSelectAllReporte = () => {
+    const allSelected: Record<string, boolean> = {};
+    EQUIPAMIENTO_REPORTE.forEach(item => {
+      allSelected[item] = true;
+    });
+    setEquipmentReporte(allSelected);
+  };
+
+  const handleDeselectAllReporte = () => {
+    setEquipmentReporte({});
   };
 
   const handleImageCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,7 +178,7 @@ export default function SGGGruaPWA() {
       // Header
       pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('INVENTARIO DE VEHÍCULO - SGG GRÚA', 20, yPosition);
+      pdf.text('DETALLES PARA REPORTE CLIENTE - SGG GRÚA', 20, yPosition);
       yPosition += 15;
 
       // Basic info
@@ -142,65 +191,66 @@ export default function SGGGruaPWA() {
       pdf.text(`Vehículo: ${formData.marcaVehiculo} ${formData.modeloVehiculo}`, 20, yPosition);
       yPosition += 8;
       pdf.text(`Patente: ${formData.patente}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Kilometraje: ${formData.kilometraje}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Origen: ${formData.ubicacionOrigen}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Destino: ${formData.ubicacionDestino}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Grúa: ${formData.grua}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Operador: ${formData.operador}`, 20, yPosition);
-      yPosition += 8;
-      pdf.text(`Tipo de Servicio: ${formData.tipoServicio}`, 20, yPosition);
       yPosition += 15;
 
-      // Equipment section
-      const checkedEquipment = EQUIPMENT_ITEMS.filter(item => equipmentChecked[item.id]);
-      const uncheckedEquipment = EQUIPMENT_ITEMS.filter(item => !equipmentChecked[item.id]);
-      
+      // Detalles de tiempo
       pdf.setFont('helvetica', 'bold');
-      pdf.text('EQUIPAMIENTO VERIFICADO:', 20, yPosition);
+      pdf.text('DETALLES DE TIEMPO:', 20, yPosition);
       yPosition += 10;
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Total verificado: ${checkedEquipment.length}/${EQUIPMENT_ITEMS.length}`, 20, yPosition);
-      yPosition += 10;
+      pdf.text(`Hora Asignación: ${formData.horaAsignacion}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Hora Llegada: ${formData.horaLlegada}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Hora Término: ${formData.horaTermino}`, 20, yPosition);
+      yPosition += 15;
 
-      if (checkedEquipment.length > 0) {
+      // Kilómetros
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('KILÓMETROS:', 20, yPosition);
+      yPosition += 10;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`KM Inicial: ${formData.kmInicial}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`KM Final: ${formData.kmFinal}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`KM Vehículo: ${formData.kmVehiculo}`, 20, yPosition);
+      yPosition += 8;
+      pdf.text(`Nivel Combustible: ${formData.nivelCombustible}`, 20, yPosition);
+      yPosition += 15;
+
+      // Equipamiento presente
+      const equipmentPresente = EQUIPAMIENTO_REPORTE.filter(item => equipmentReporte[item]);
+      
+      if (equipmentPresente.length > 0) {
         pdf.setFont('helvetica', 'bold');
-        pdf.text('PRESENTE:', 20, yPosition);
-        yPosition += 8;
+        pdf.text('EQUIPAMIENTO PRESENTE:', 20, yPosition);
+        yPosition += 10;
         pdf.setFont('helvetica', 'normal');
-        checkedEquipment.forEach(item => {
+        equipmentPresente.forEach(item => {
           if (yPosition > 270) {
             pdf.addPage();
             yPosition = 20;
           }
-          pdf.text(`✓ ${item.name}`, 30, yPosition);
+          pdf.text(`✓ ${item}`, 30, yPosition);
           yPosition += 6;
         });
-        yPosition += 5;
+        yPosition += 10;
       }
 
-      if (uncheckedEquipment.length > 0) {
+      // Tipo de asistencia
+      if (formData.tipoAsistenciaDetallado) {
         if (yPosition > 250) {
           pdf.addPage();
           yPosition = 20;
         }
         pdf.setFont('helvetica', 'bold');
-        pdf.text('NO VERIFICADO/AUSENTE:', 20, yPosition);
+        pdf.text('TIPO DE ASISTENCIA DETALLADO:', 20, yPosition);
         yPosition += 8;
         pdf.setFont('helvetica', 'normal');
-        uncheckedEquipment.forEach(item => {
-          if (yPosition > 270) {
-            pdf.addPage();
-            yPosition = 20;
-          }
-          pdf.text(`✗ ${item.name}`, 30, yPosition);
-          yPosition += 6;
-        });
-        yPosition += 10;
+        const splitAsistencia = pdf.splitTextToSize(formData.tipoAsistenciaDetallado, 170);
+        pdf.text(splitAsistencia, 20, yPosition);
+        yPosition += splitAsistencia.length * 6 + 10;
       }
 
       // Damage section
@@ -233,7 +283,7 @@ export default function SGGGruaPWA() {
 
       // Save PDF
       const pdfBlob = pdf.output('blob');
-      const fileName = `inventario_${formData.patente || 'vehiculo'}_${Date.now()}.pdf`;
+      const fileName = `reporte_cliente_${formData.patente || 'vehiculo'}_${Date.now()}.pdf`;
       
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
@@ -245,7 +295,7 @@ export default function SGGGruaPWA() {
 
       toast({
         title: "PDF generado exitosamente",
-        description: "El inventario se ha descargado correctamente"
+        description: "El reporte cliente se ha descargado correctamente"
       });
 
       return pdfBlob;
@@ -264,16 +314,16 @@ export default function SGGGruaPWA() {
     const pdfBlob = await generatePDF();
     if (!pdfBlob) return;
 
-    const message = `Inventario de vehículo - ${formData.patente}\nFecha: ${formData.fecha}\nCliente: ${formData.cliente}`;
+    const message = `Reporte Cliente - ${formData.patente}\nFecha: ${formData.fecha}\nCliente: ${formData.cliente}`;
     
     if (navigator.share) {
       try {
-        const file = new File([pdfBlob], `inventario_${formData.patente}.pdf`, {
+        const file = new File([pdfBlob], `reporte_cliente_${formData.patente}.pdf`, {
           type: 'application/pdf'
         });
         
         await navigator.share({
-          title: 'Inventario de Vehículo',
+          title: 'Reporte Cliente',
           text: message,
           files: [file]
         });
@@ -309,7 +359,7 @@ export default function SGGGruaPWA() {
         <Card className="bg-black border-primary/20">
           <CardHeader>
             <CardTitle className="text-2xl text-primary text-center">
-              🚛 INVENTARIO DE VEHÍCULO
+              🚛 DETALLES PARA REPORTE CLIENTE
             </CardTitle>
             <p className="text-center text-primary/70">
               Sistema de Gestión de Grúas - Modo PWA
@@ -388,6 +438,100 @@ export default function SGGGruaPWA() {
           </CardContent>
         </Card>
 
+        {/* Detalles para Reporte Cliente - Tiempos */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Detalles para Reporte Cliente
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="horaAsignacion" className="text-primary">Hora Asignación</Label>
+                <Input
+                  id="horaAsignacion"
+                  type="time"
+                  value={formData.horaAsignacion}
+                  onChange={(e) => handleInputChange('horaAsignacion', e.target.value)}
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="horaLlegada" className="text-primary">Hora Llegada</Label>
+                <Input
+                  id="horaLlegada"
+                  type="time"
+                  value={formData.horaLlegada}
+                  onChange={(e) => handleInputChange('horaLlegada', e.target.value)}
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="horaTermino" className="text-primary">Hora Término</Label>
+                <Input
+                  id="horaTermino"
+                  type="time"
+                  value={formData.horaTermino}
+                  onChange={(e) => handleInputChange('horaTermino', e.target.value)}
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="kmInicial" className="text-primary">KM Inicial</Label>
+                <Input
+                  id="kmInicial"
+                  type="number"
+                  value={formData.kmInicial}
+                  onChange={(e) => handleInputChange('kmInicial', e.target.value)}
+                  placeholder="0"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="kmFinal" className="text-primary">KM Final</Label>
+                <Input
+                  id="kmFinal"
+                  type="number"
+                  value={formData.kmFinal}
+                  onChange={(e) => handleInputChange('kmFinal', e.target.value)}
+                  placeholder="0"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="kmVehiculo" className="text-primary">KM Vehículo</Label>
+                <Input
+                  id="kmVehiculo"
+                  type="number"
+                  value={formData.kmVehiculo}
+                  onChange={(e) => handleInputChange('kmVehiculo', e.target.value)}
+                  placeholder="0"
+                  className="bg-black border-primary/30 text-primary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="nivelCombustible" className="text-primary">Nivel Combustible</Label>
+                <Select value={formData.nivelCombustible} onValueChange={(value) => handleInputChange('nivelCombustible', value)}>
+                  <SelectTrigger className="bg-black border-primary/30 text-primary">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black border-primary/30">
+                    <SelectItem value="1/4">1/4</SelectItem>
+                    <SelectItem value="2/4">2/4</SelectItem>
+                    <SelectItem value="3/4">3/4</SelectItem>
+                    <SelectItem value="4/4">4/4</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Location Information */}
         <Card className="bg-black border-primary/20">
           <CardHeader>
@@ -458,7 +602,68 @@ export default function SGGGruaPWA() {
           </CardContent>
         </Card>
 
-        {/* Equipment Checklist Section */}
+        {/* Equipamiento Presente */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary">Equipamiento Presente</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSelectAllReporte}
+                variant="outline"
+                size="sm"
+                className="text-primary border-primary/30 hover:bg-primary/10"
+              >
+                ✓ Todo
+              </Button>
+              <Button
+                onClick={handleDeselectAllReporte}
+                variant="outline"
+                size="sm"
+                className="text-primary border-primary/30 hover:bg-primary/10"
+              >
+                ✗ Ninguno
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              {EQUIPAMIENTO_REPORTE.map(item => (
+                <div key={item} className="flex items-center space-x-2 p-2 rounded border border-primary/20 hover:bg-primary/5">
+                  <input
+                    type="checkbox"
+                    id={`reporte-${item}`}
+                    checked={equipmentReporte[item] || false}
+                    onChange={() => handleEquipmentReporteToggle(item)}
+                    className="border-primary"
+                  />
+                  <label
+                    htmlFor={`reporte-${item}`}
+                    className="text-sm text-primary cursor-pointer flex-1"
+                  >
+                    {item}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tipo de Asistencia Detallado */}
+        <Card className="bg-black border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-primary">Tipo de Asistencia Detallado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={formData.tipoAsistenciaDetallado}
+              onChange={(e) => handleInputChange('tipoAsistenciaDetallado', e.target.value)}
+              placeholder="Descripción específica del tipo de asistencia"
+              className="bg-black border-primary/30 text-primary min-h-[100px]"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Equipment Checklist Section - Mantener el original para inventario completo */}
         <EquipmentChecklist
           checkedItems={equipmentChecked}
           onItemToggle={handleEquipmentToggle}
