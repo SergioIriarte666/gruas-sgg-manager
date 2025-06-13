@@ -1,3 +1,4 @@
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,20 +21,34 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 export default function Reportes() {
-  const { toast } = useToast();
-  const [isContextReady, setIsContextReady] = useState(false);
-  
-  // Check if QueryClient context is available
-  const queryClient = useQueryClient();
+  const [isReactQueryReady, setIsReactQueryReady] = useState(false);
   
   useEffect(() => {
-    if (queryClient) {
-      setIsContextReady(true);
+    // Check if React Query context is available
+    try {
+      const queryClient = useQueryClient();
+      if (queryClient) {
+        setIsReactQueryReady(true);
+      }
+    } catch (error) {
+      console.log('React Query context not ready yet');
+      // Try again after a short delay
+      const timeout = setTimeout(() => {
+        try {
+          const queryClient = useQueryClient();
+          if (queryClient) {
+            setIsReactQueryReady(true);
+          }
+        } catch (e) {
+          console.log('React Query context still not ready');
+        }
+      }, 100);
+      return () => clearTimeout(timeout);
     }
-  }, [queryClient]);
+  }, []);
 
-  // Don't render hooks until context is ready
-  if (!isContextReady) {
+  // Show loading state while React Query context initializes
+  if (!isReactQueryReady) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
