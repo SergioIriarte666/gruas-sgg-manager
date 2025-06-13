@@ -4,7 +4,6 @@ import { Settings as SettingsIcon, Smartphone, Bell, Globe } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { PWAConfigPanel } from '@/components/pwa/PWAConfigPanel';
 
 export default function Settings() {
   return (
@@ -25,12 +24,8 @@ export default function Settings() {
         </div>
 
         {/* Tabs de configuración */}
-        <Tabs defaultValue="pwa" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="pwa" className="flex items-center gap-2">
-              <Smartphone className="h-4 w-4" />
-              PWA
-            </TabsTrigger>
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="notifications" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Notificaciones
@@ -40,11 +35,6 @@ export default function Settings() {
               General
             </TabsTrigger>
           </TabsList>
-
-          {/* Tab PWA - Panel completo de configuración PWA */}
-          <TabsContent value="pwa">
-            <PWAConfigPanel />
-          </TabsContent>
 
           {/* Tab Notificaciones */}
           <TabsContent value="notifications">
@@ -63,7 +53,7 @@ export default function Settings() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <h3 className="text-lg font-medium mb-2">Configuración de Notificaciones</h3>
-                    <p>Las configuraciones de notificaciones se encuentran en la sección PWA.</p>
+                    <p>Las configuraciones de notificaciones estarán disponibles próximamente.</p>
                   </div>
                 </div>
               </CardContent>

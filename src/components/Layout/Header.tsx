@@ -5,7 +5,6 @@ import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { PWAContainer, PWAOfflineIndicator } from '@/components/pwa';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -28,7 +27,6 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
       '/tipos-servicio': 'Tipos de Servicio',
       '/reportes': 'Reportes',
       '/settings': 'Configuración',
-      '/pwa-grua': 'PWA Grúa',
       '/migraciones': 'Migraciones',
       '/migracion-nueva': 'Nueva Migración',
     };
@@ -55,24 +53,8 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
             </div>
           </div>
 
-          {/* Right side - PWA Controls + Settings */}
+          {/* Right side - Settings */}
           <div className="flex items-center gap-2">
-            {/* PWA Container con controles compactos */}
-            <PWAContainer 
-              layout="horizontal" 
-              spacing="tight" 
-              showText={false}
-              className="hidden sm:flex"
-            />
-            
-            {/* PWA Container mobile (solo iconos) */}
-            <PWAContainer 
-              layout="horizontal" 
-              spacing="tight" 
-              showText={false}
-              className="flex sm:hidden"
-            />
-
             {/* Settings button */}
             <Button
               variant="ghost"
@@ -86,9 +68,6 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
             </Button>
           </div>
         </div>
-
-        {/* Offline indicator - aparece prominente cuando no hay conexión */}
-        <PWAOfflineIndicator className="mb-0" />
       </div>
     </header>
   );
