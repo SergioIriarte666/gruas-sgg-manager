@@ -19,7 +19,7 @@ function IndexComponent() {
   const [selectedServicio, setSelectedServicio] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Wrap hook calls in try-catch to handle initialization issues
+  // Safe hook calls with improved error handling
   let servicios: any[] = [];
   let isLoading = true;
   let estadisticas: any = {};
@@ -38,9 +38,11 @@ function IndexComponent() {
     console.log("Index: useEstadisticasServicios completed, estadisticas:", estadisticas);
     
     updateServicioEstado = useUpdateServicioEstado();
+    console.log("Index: All hooks called successfully");
   } catch (error) {
     console.error("Error in Index hooks:", error);
-    // Keep default values
+    // Keep default values and show loading state
+    isLoading = true;
   }
 
   const serviciosRecientes = servicios.slice(0, 5);
@@ -143,7 +145,10 @@ function IndexComponent() {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex justify-center items-center h-64">
-          <div className="text-muted-foreground">Cargando dashboard...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="text-muted-foreground">Cargando dashboard...</div>
+          </div>
         </div>
       </div>
     );

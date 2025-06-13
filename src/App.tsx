@@ -7,6 +7,8 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { PWAProvider, PWAPresets } from '@/contexts/PWAContext';
 import { Header } from '@/components/Layout/Header';
 import { AppSidebar } from '@/components/AppSidebar';
+import { SafeToaster } from '@/components/ui/safe-toaster';
+import SafeAppWrapper from '@/components/SafeAppWrapper';
 import Index from "./pages/Index";
 import Gruas from "./pages/Gruas";
 import Clientes from "./pages/Clientes";
@@ -60,6 +62,9 @@ function AppContent() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          
+          {/* Safe Toast notifications */}
+          <SafeToaster />
         </SidebarInset>
       </div>
     </SidebarProvider>
@@ -70,15 +75,17 @@ function App() {
   console.log("App: Rendering...");
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <PWAProvider initialConfig={PWAPresets.production}>
-        <TooltipProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
-      </PWAProvider>
-    </QueryClientProvider>
+    <SafeAppWrapper>
+      <QueryClientProvider client={queryClient}>
+        <PWAProvider initialConfig={PWAPresets.production}>
+          <TooltipProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
+        </PWAProvider>
+      </QueryClientProvider>
+    </SafeAppWrapper>
   );
 }
 
