@@ -1,6 +1,6 @@
 
 import React from "react"
-import { useSafeToast } from "@/hooks/use-safe-toast"
+import { useToast } from "@/hooks/use-safe-toast"
 import {
   Toast,
   ToastClose,
@@ -14,7 +14,7 @@ function SafeToasterComponent() {
   console.log("SafeToasterComponent: Starting render...");
   
   try {
-    const { toasts } = useSafeToast();
+    const { toasts } = useToast();
     console.log("SafeToasterComponent: Got toasts:", toasts);
 
     return (
