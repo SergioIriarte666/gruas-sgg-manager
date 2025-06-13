@@ -11,8 +11,9 @@ import { ServicioDetailsModal } from "@/components/ServicioDetailsModal";
 import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
 import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 import { formatSafeDate } from "@/lib/utils";
+import { useReactReady } from "@/hooks/useSafeHooks";
 
-export default function Index() {
+function IndexContent() {
   const [showNewForm, setShowNewForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedServicio, setSelectedServicio] = useState<any>(null);
@@ -384,4 +385,20 @@ export default function Index() {
       </div>
     </TooltipProvider>
   );
+}
+
+export default function Index() {
+  const isReactReady = useReactReady();
+  
+  if (!isReactReady) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-muted-foreground">Inicializando aplicación...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return <IndexContent />;
 }
