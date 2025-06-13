@@ -5,17 +5,8 @@ import { withReactReady } from "@/hooks/useSafeHooks"
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 function ToasterComponent({ ...props }: ToasterProps) {
-  // Safe theme handling - provide fallback for theme
-  let theme = "system";
-  
-  try {
-    // Try to use next-themes only if available
-    const { useTheme } = require("next-themes");
-    const themeResult = useTheme();
-    theme = themeResult?.theme || "system";
-  } catch (error) {
-    console.warn('next-themes not available, using system theme');
-  }
+  // Use static theme to avoid hook issues during initialization
+  const theme = "system";
 
   return (
     <Sonner
