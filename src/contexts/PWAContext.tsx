@@ -132,20 +132,27 @@ interface PWAProviderProps {
 }
 
 export function PWAProvider({ children, initialConfig = defaultConfig }: PWAProviderProps) {
-  const [config, setConfig] = useState<PWAConfig>(() => {
-    const saved = localStorage.getItem('pwa-config');
-    if (saved) {
-      try {
+  // Get initial config from localStorage or use provided initial config
+  const getInitialConfig = (): PWAConfig => {
+    try {
+      const saved = localStorage.getItem('pwa-config');
+      if (saved) {
         return { ...defaultConfig, ...JSON.parse(saved) };
-      } catch {
-        return initialConfig;
       }
+    } catch (error) {
+      console.warn('Error loading PWA config from localStorage:', error);
     }
     return initialConfig;
-  });
+  };
+
+  const [config, setConfig] = useState<PWAConfig>(getInitialConfig);
 
   useEffect(() => {
-    localStorage.setItem('pwa-config', JSON.stringify(config));
+    try {
+      localStorage.setItem('pwa-config', JSON.stringify(config));
+    } catch (error) {
+      console.warn('Error saving PWA config to localStorage:', error);
+    }
   }, [config]);
 
   const updateConfig = (newConfig: Partial<PWAConfig>) => {
@@ -166,23 +173,29 @@ export function PWAProvider({ children, initialConfig = defaultConfig }: PWAProv
 
   const resetConfig = () => {
     setConfig(defaultConfig);
-    localStorage.removeItem('pwa-config');
+    try {
+      localStorage.removeItem('pwa-config');
+    } catch (error) {
+      console.warn('Error removing PWA config from localStorage:', error);
+    }
   };
 
   const isComponentEnabled = (component: keyof PWAConfig) => {
     return config[component] as boolean;
   };
 
+  const contextValue: PWAContextType = {
+    config,
+    updateConfig,
+    enableComponent,
+    disableComponent,
+    toggleComponent,
+    resetConfig,
+    isComponentEnabled,
+  };
+
   return (
-    <PWAContext.Provider value={{
-      config,
-      updateConfig,
-      enableComponent,
-      disableComponent,
-      toggleComponent,
-      resetConfig,
-      isComponentEnabled,
-    }}>
+    <PWAContext.Provider value={contextValue}>
       {children}
     </PWAContext.Provider>
   );
