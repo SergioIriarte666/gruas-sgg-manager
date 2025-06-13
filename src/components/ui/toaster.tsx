@@ -5,20 +5,20 @@ import {
   Toast,
   ToastClose,
   ToastDescription,
-  ToastProvider,
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { SafeToastProvider } from "./safe-toast-provider"
 
 export function Toaster() {
-  console.log("Toaster: Starting render...");
+  console.log("Toaster: Starting render with SafeToastProvider...");
   
   try {
     const { toasts } = useToast();
     console.log("Toaster: Got toasts:", toasts);
 
     return (
-      <ToastProvider>
+      <SafeToastProvider>
         {toasts.map(function ({ id, title, description, action, ...props }) {
           return (
             <Toast key={id} {...props}>
@@ -34,15 +34,15 @@ export function Toaster() {
           )
         })}
         <ToastViewport />
-      </ToastProvider>
+      </SafeToastProvider>
     )
   } catch (error) {
     console.error('Toaster: Error rendering:', error);
-    // Return empty ToastProvider in case of error
+    // Return empty SafeToastProvider in case of error
     return (
-      <ToastProvider>
+      <SafeToastProvider>
         <ToastViewport />
-      </ToastProvider>
+      </SafeToastProvider>
     );
   }
 }

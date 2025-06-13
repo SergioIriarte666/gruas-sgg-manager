@@ -1,7 +1,6 @@
 
 import { ErrorBoundary } from "react-error-boundary";
-import { ReportesLoadingSkeleton } from "@/components/reportes/ReportesLoadingSkeleton";
-import { ReportesContent } from "@/components/reportes/ReportesContent";
+import { SafeReportesContent } from "@/components/reportes/SafeReportesContent";
 import { Button } from "@/components/ui/button";
 
 function ReportesErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
@@ -39,7 +38,7 @@ function ReportesErrorFallback({ error, resetErrorBoundary }: { error: Error; re
 }
 
 export default function Reportes() {
-  console.log('Reportes page: Rendering with simplified structure...');
+  console.log('Reportes page: Rendering with safe components...');
   
   return (
     <ErrorBoundary
@@ -51,7 +50,7 @@ export default function Reportes() {
         console.log('Reportes: Resetting error boundary');
       }}
     >
-      <ReportesContent />
+      <SafeReportesContent />
     </ErrorBoundary>
   );
 }
