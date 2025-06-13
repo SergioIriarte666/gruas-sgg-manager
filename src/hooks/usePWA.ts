@@ -42,9 +42,28 @@ export function usePWA() {
     };
   }
 
-  // Only initialize state if we're in the browser
-  const [state, setState] = useState<PWAState>(() => getDefaultState());
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  // Only initialize state if we're in the browser and React is available
+  let state: PWAState;
+  let setState: React.Dispatch<React.SetStateAction<PWAState>>;
+  let registration: ServiceWorkerRegistration | null;
+  let setRegistration: React.Dispatch<React.SetStateAction<ServiceWorkerRegistration | null>>;
+
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    [state, setState] = useState<PWAState>(() => getDefaultState());
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  } catch (error) {
+    console.warn('React hooks not available, returning default state');
+    return {
+      ...getDefaultState(),
+      installPWA: async () => false,
+      updatePWA: async () => false,
+      checkForUpdates: async () => false,
+      cacheUrls: async () => false,
+      getSWVersion: async () => {},
+    };
+  }
 
   // Detectar si está instalado como PWA
   const detectPWAInstall = useCallback(() => {
@@ -59,7 +78,7 @@ export function usePWA() {
     } catch (error) {
       console.warn('Error detecting PWA install:', error);
     }
-  }, []);
+  }, [setState]);
 
   // Obtener versión del Service Worker
   const getSWVersion = useCallback(async () => {
@@ -72,7 +91,7 @@ export function usePWA() {
         console.error('Error obteniendo versión SW:', error);
       }
     }
-  }, [registration]);
+  }, [registration, setState]);
 
   // Instalar PWA
   const installPWA = useCallback(async (): Promise<boolean> => {
@@ -98,7 +117,7 @@ export function usePWA() {
       console.error('Error instalando PWA:', error);
       return false;
     }
-  }, []);
+  }, [setState]);
 
   // Actualizar PWA
   const updatePWA = useCallback(async (): Promise<boolean> => {
@@ -126,7 +145,7 @@ export function usePWA() {
       console.error('Error actualizando PWA:', error);
       return false;
     }
-  }, [registration]);
+  }, [registration, setState]);
 
   // Verificar actualizaciones
   const checkForUpdates = useCallback(async (): Promise<boolean> => {
@@ -232,7 +251,7 @@ export function usePWA() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [detectPWAInstall]);
+  }, [detectPWAInstall, setState]);
 
   return {
     ...state,
