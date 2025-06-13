@@ -1,23 +1,23 @@
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
   // Check if we're in a safe React context
-  let isMobile = false;
-  let setIsMobile: (value: boolean) => void = () => {};
-
   try {
-    // Only call useState if React dispatcher is available
-    const [isMobileState, setIsMobileState] = useState<boolean>(false);
-    isMobile = isMobileState;
-    setIsMobile = setIsMobileState;
+    // Check if React's internal dispatcher is available
+    const ReactInternals = (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    if (!ReactInternals?.ReactCurrentDispatcher?.current) {
+      console.log('useIsMobile: React dispatcher not ready, returning default value');
+      return false;
+    }
   } catch (error) {
-    console.log('useIsMobile: React dispatcher not ready, returning default value');
-    // Return default value when React isn't ready
+    console.log('useIsMobile: React internals not available, returning default value');
     return false;
   }
+
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if we're in the browser
@@ -35,7 +35,7 @@ export function useIsMobile() {
     
     mql.addEventListener("change", onChange)
     return () => mql.removeEventListener("change", onChange)
-  }, [setIsMobile])
+  }, [])
 
   return isMobile
 }
