@@ -32,6 +32,22 @@ export const useSafeUpdateServicioEstado = () => {
         }
       });
     },
-    { mutate: () => {}, isPending: false }
+    { 
+      mutate: () => {},
+      mutateAsync: async () => undefined as any,
+      isPending: false,
+      isError: false,
+      isSuccess: false,
+      isIdle: true,
+      status: 'idle' as const,
+      data: undefined,
+      error: null,
+      variables: undefined,
+      context: undefined,
+      failureCount: 0,
+      failureReason: null,
+      reset: () => {},
+      submittedAt: 0
+    }
   );
 };
