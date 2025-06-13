@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 export interface PWAConfig {
   // Componentes Visibles
@@ -131,22 +132,29 @@ interface PWAProviderProps {
   initialConfig?: PWAConfig;
 }
 
-export function PWAProvider({ children, initialConfig = defaultConfig }: PWAProviderProps) {
-  // Get initial config from localStorage or use provided initial config
-  const getInitialConfig = (): PWAConfig => {
+function PWAProvider({ children, initialConfig = defaultConfig }: PWAProviderProps) {
+  // Initialize config state directly with defaultConfig first
+  const [config, setConfig] = useState<PWAConfig>(defaultConfig);
+
+  // Load saved config from localStorage after mount
+  useEffect(() => {
     try {
       const saved = localStorage.getItem('pwa-config');
       if (saved) {
-        return { ...defaultConfig, ...JSON.parse(saved) };
+        const parsedConfig = JSON.parse(saved);
+        setConfig({ ...defaultConfig, ...parsedConfig });
+      } else if (initialConfig !== defaultConfig) {
+        setConfig(initialConfig);
       }
     } catch (error) {
       console.warn('Error loading PWA config from localStorage:', error);
+      if (initialConfig !== defaultConfig) {
+        setConfig(initialConfig);
+      }
     }
-    return initialConfig;
-  };
+  }, [initialConfig]);
 
-  const [config, setConfig] = useState<PWAConfig>(getInitialConfig);
-
+  // Save config to localStorage when it changes
   useEffect(() => {
     try {
       localStorage.setItem('pwa-config', JSON.stringify(config));
@@ -201,7 +209,7 @@ export function PWAProvider({ children, initialConfig = defaultConfig }: PWAProv
   );
 }
 
-export function usePWAConfig() {
+function usePWAConfig() {
   const context = useContext(PWAContext);
   if (context === undefined) {
     throw new Error('usePWAConfig must be used within a PWAProvider');
@@ -209,7 +217,9 @@ export function usePWAConfig() {
   return context;
 }
 
-export function usePWAComponent(component: keyof PWAConfig) {
+function usePWAComponent(component: keyof PWAConfig) {
   const { isComponentEnabled } = usePWAConfig();
   return isComponentEnabled(component);
 }
+
+export { PWAProvider, usePWAConfig, usePWAComponent };
