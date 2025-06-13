@@ -11,16 +11,23 @@ import { ServicioDetailsModal } from "@/components/ServicioDetailsModal";
 import { useServicios, useEstadisticasServicios } from "@/hooks/useServicios";
 import { useUpdateServicioEstado } from "@/hooks/useUpdateServicioEstado";
 import { formatSafeDate } from "@/lib/utils";
-import { withReactReady } from "@/hooks/useSafeHooks";
 
-function IndexComponent() {
+function Index() {
+  console.log("Index component rendering...");
+  
   const [showNewForm, setShowNewForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedServicio, setSelectedServicio] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  console.log("Index: About to call useServicios...");
   const { data: servicios = [], isLoading } = useServicios();
+  console.log("Index: useServicios completed, servicios:", servicios);
+  
+  console.log("Index: About to call useEstadisticasServicios...");
   const { data: estadisticas } = useEstadisticasServicios();
+  console.log("Index: useEstadisticasServicios completed, estadisticas:", estadisticas);
+  
   const updateServicioEstado = useUpdateServicioEstado();
 
   const serviciosRecientes = servicios.slice(0, 5);
@@ -116,6 +123,8 @@ function IndexComponent() {
     a.download = `servicios_recientes_${new Date().toISOString().split('T')[0]}.xls`;
     a.click();
   };
+
+  console.log("Index: Rendering with isLoading:", isLoading);
 
   if (isLoading) {
     return (
@@ -387,4 +396,4 @@ function IndexComponent() {
   );
 }
 
-export default withReactReady(IndexComponent);
+export default Index;

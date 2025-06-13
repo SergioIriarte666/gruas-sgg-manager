@@ -25,6 +25,7 @@ import Migraciones from "./pages/Migraciones";
 import NotFound from "./pages/NotFound";
 import SGGGruaPWA from "./components/SGGGruaPWA";
 
+console.log("App.tsx: Creating QueryClient...");
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -33,8 +34,11 @@ const queryClient = new QueryClient({
     },
   },
 });
+console.log("App.tsx: QueryClient created:", queryClient);
 
 function AppContent() {
+  console.log("AppContent: Rendering...");
+  
   return (
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen bg-black text-primary flex w-full">
@@ -73,6 +77,8 @@ function AppContent() {
 }
 
 function App() {
+  console.log("App: Rendering...");
+  
   return (
     <QueryClientProvider client={queryClient}>
       <PWAProvider initialConfig={PWAPresets.production}>
