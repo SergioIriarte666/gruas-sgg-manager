@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,51 +25,60 @@ import Migraciones from "./pages/Migraciones";
 import NotFound from "./pages/NotFound";
 import SGGGruaPWA from "./components/SGGGruaPWA";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <PWAProvider initialConfig={PWAPresets.production}>
-        <TooltipProvider>
-          <BrowserRouter>
-            <SidebarProvider defaultOpen={false}>
-              <div className="min-h-screen bg-black text-primary flex w-full">
-                <AppSidebar />
-                <SidebarInset className="flex-1">
-                  <Header showMenuButton />
-                  <main className="flex-1 p-4 bg-black">
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/gruas" element={<Gruas />} />
-                      <Route path="/clientes" element={<Clientes />} />
-                      <Route path="/operadores" element={<Operadores />} />
-                      <Route path="/servicios" element={<Servicios />} />
-                      <Route path="/facturas" element={<Facturas />} />
-                      <Route path="/cierres" element={<Cierres />} />
-                      <Route path="/tipos-servicio" element={<TiposServicio />} />
-                      <Route path="/reportes" element={<Reportes />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/migracion-nueva" element={<MigracionNueva />} />
-                      <Route path="/migraciones" element={<Migraciones />} />
-                      <Route path="/pwa-grua" element={<SGGGruaPWA />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                  
-                  {/* PWA Update/Install Prompts */}
-                  <PWAUpdatePrompt position="bottom" autoShow />
-                  
-                  {/* Toast notifications */}
-                  <Toaster />
-                  <Sonner />
-                </SidebarInset>
-              </div>
-            </SidebarProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </PWAProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <PWAProvider initialConfig={PWAPresets.production}>
+          <TooltipProvider>
+            <BrowserRouter>
+              <SidebarProvider defaultOpen={false}>
+                <div className="min-h-screen bg-black text-primary flex w-full">
+                  <AppSidebar />
+                  <SidebarInset className="flex-1">
+                    <Header showMenuButton />
+                    <main className="flex-1 p-4 bg-black">
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/gruas" element={<Gruas />} />
+                        <Route path="/clientes" element={<Clientes />} />
+                        <Route path="/operadores" element={<Operadores />} />
+                        <Route path="/servicios" element={<Servicios />} />
+                        <Route path="/facturas" element={<Facturas />} />
+                        <Route path="/cierres" element={<Cierres />} />
+                        <Route path="/tipos-servicio" element={<TiposServicio />} />
+                        <Route path="/reportes" element={<Reportes />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/migracion-nueva" element={<MigracionNueva />} />
+                        <Route path="/migraciones" element={<Migraciones />} />
+                        <Route path="/pwa-grua" element={<SGGGruaPWA />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                    
+                    {/* PWA Update/Install Prompts */}
+                    <PWAUpdatePrompt position="bottom" autoShow />
+                    
+                    {/* Toast notifications */}
+                    <Toaster />
+                    <Sonner />
+                  </SidebarInset>
+                </div>
+              </SidebarProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </PWAProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 }
 
