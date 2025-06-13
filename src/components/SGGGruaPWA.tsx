@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Camera, Download, Share, Eye, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import { EquipmentChecklist, EQUIPMENT_ITEMS } from '@/components/EquipmentChecklist';
 
 interface CapturedImage {
   id: string;
@@ -47,7 +47,6 @@ export default function SGGGruaPWA() {
     marcaVehiculo: '',
     modeloVehiculo: '',
     patente: '',
-    kilometraje: '',
     ubicacionOrigen: '',
     ubicacionDestino: '',
     grua: '',
@@ -64,10 +63,7 @@ export default function SGGGruaPWA() {
     tipoAsistenciaDetallado: ''
   });
 
-  // Equipment checklist state - para equipamiento general
-  const [equipmentChecked, setEquipmentChecked] = useState<Record<string, boolean>>({});
-
-  // Equipment reporte state - para equipamiento específico del reporte
+  // Equipment reporte state - solo equipamiento específico del reporte
   const [equipmentReporte, setEquipmentReporte] = useState<Record<string, boolean>>({});
 
   // Damage images state
@@ -80,30 +76,11 @@ export default function SGGGruaPWA() {
     }));
   };
 
-  const handleEquipmentToggle = (itemId: string) => {
-    setEquipmentChecked(prev => ({
-      ...prev,
-      [itemId]: !prev[itemId]
-    }));
-  };
-
   const handleEquipmentReporteToggle = (item: string) => {
     setEquipmentReporte(prev => ({
       ...prev,
       [item]: !prev[item]
     }));
-  };
-
-  const handleSelectAllEquipment = () => {
-    const allSelected: Record<string, boolean> = {};
-    EQUIPMENT_ITEMS.forEach(item => {
-      allSelected[item.id] = true;
-    });
-    setEquipmentChecked(allSelected);
-  };
-
-  const handleDeselectAllEquipment = () => {
-    setEquipmentChecked({});
   };
 
   const handleSelectAllReporte = () => {
@@ -424,16 +401,6 @@ export default function SGGGruaPWA() {
                   className="bg-black border-primary/30 text-primary"
                 />
               </div>
-              <div>
-                <Label htmlFor="kilometraje" className="text-primary">Kilometraje</Label>
-                <Input
-                  id="kilometraje"
-                  value={formData.kilometraje}
-                  onChange={(e) => handleInputChange('kilometraje', e.target.value)}
-                  placeholder="Kilometraje actual"
-                  className="bg-black border-primary/30 text-primary"
-                />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -662,14 +629,6 @@ export default function SGGGruaPWA() {
             />
           </CardContent>
         </Card>
-
-        {/* Equipment Checklist Section - Mantener el original para inventario completo */}
-        <EquipmentChecklist
-          checkedItems={equipmentChecked}
-          onItemToggle={handleEquipmentToggle}
-          onSelectAll={handleSelectAllEquipment}
-          onDeselectAll={handleDeselectAllEquipment}
-        />
 
         {/* Damage and Conditions Section */}
         <Card className="bg-black border-primary/20">
