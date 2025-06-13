@@ -17,25 +17,47 @@ import { useEffect, useState } from "react";
 export function ReportesContent() {
   console.log('ReportesContent: Starting to render...');
   
-  const [isQueryReady, setIsQueryReady] = useState(false);
+  const [contextReady, setContextReady] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
+  
+  // Verificar que QueryClient esté disponible
   const queryClient = useQueryClient();
   
   useEffect(() => {
-    // Ensure QueryClient is available before proceeding
+    console.log('ReportesContent: Checking context readiness...');
     if (queryClient) {
-      setIsQueryReady(true);
+      console.log('ReportesContent: QueryClient available');
+      setContextReady(true);
     }
   }, [queryClient]);
   
-  // Don't call hooks until we're sure the context is ready
-  const shouldCallHooks = isQueryReady && queryClient;
-  
-  const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
-  const { data: clientes = [], isLoading: clientesLoading } = useClientes();
-  const { data: gruas = [], isLoading: gruasLoading } = useGruas();
-  const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
+  // Solo llamar hooks si el contexto está listo
+  const { data: servicios = [], isLoading: serviciosLoading, error: serviciosError } = contextReady 
+    ? useServicios() 
+    : { data: [], isLoading: true, error: null };
+    
+  const { data: clientes = [], isLoading: clientesLoading, error: clientesError } = contextReady 
+    ? useClientes() 
+    : { data: [], isLoading: true, error: null };
+    
+  const { data: gruas = [], isLoading: gruasLoading, error: gruasError } = contextReady 
+    ? useGruas() 
+    : { data: [], isLoading: true, error: null };
+    
+  const { data: operadores = [], isLoading: operadoresLoading, error: operadoresError } = contextReady 
+    ? useOperadores() 
+    : { data: [], isLoading: true, error: null };
 
-  const { handleExportReport } = useReportExport(servicios, clientes, gruas, operadores);
+  const { handleExportReport } = contextReady 
+    ? useReportExport(servicios, clientes, gruas, operadores)
+    : { handleExportReport: () => {} };
+
+  useEffect(() => {
+    if (contextReady && !serviciosLoading && !clientesLoading && !gruasLoading && !operadoresLoading) {
+      console.log('ReportesContent: All data loaded');
+      setDataReady(true);
+    }
+  }, [contextReady, serviciosLoading, clientesLoading, gruasLoading, operadoresLoading]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -56,17 +78,37 @@ export function ReportesContent() {
       servicio.valor
     ]);
 
-  if (!shouldCallHooks) {
-    console.log('ReportesContent: QueryClient not ready yet...');
+  // Mostrar loading si el contexto no está listo
+  if (!contextReady) {
+    console.log('ReportesContent: Context not ready, showing loading...');
     return <ReportesLoadingSkeleton />;
   }
 
-  if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
-    console.log('ReportesContent: Still loading data...');
+  // Mostrar loading si los datos están cargando
+  if (!dataReady) {
+    console.log('ReportesContent: Data not ready, showing loading...');
     return <ReportesLoadingSkeleton />;
   }
 
-  console.log('ReportesContent: All data loaded, rendering main content');
+  // Verificar errores
+  if (serviciosError || clientesError || gruasError || operadoresError) {
+    console.error('ReportesContent: Error loading data:', { serviciosError, clientesError, gruasError, operadoresError });
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h3 className="text-lg font-medium mb-2">Error al cargar datos</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            No se pudieron cargar los datos necesarios para generar los reportes
+          </p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('ReportesContent: All ready, rendering main content');
 
   return (
     <div className="min-h-screen bg-gray-50">
