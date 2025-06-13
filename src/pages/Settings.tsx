@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Settings as SettingsIcon, Smartphone, Bell, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Globe } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
