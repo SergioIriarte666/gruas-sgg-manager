@@ -1,113 +1,73 @@
 
-import React, { useState, useEffect } from "react"
+import React from "react"
 import { Toaster } from "@/components/ui/toaster"
 import { SafeToastProvider } from "@/components/ui/safe-toast-provider"
 
-// Enhanced React readiness check with multiple validations
-function isReactFullyStable(): boolean {
+// Comprehensive React readiness check
+function isReactFullyInitialized(): boolean {
   try {
-    // Check if we're in browser environment first
-    if (typeof window === 'undefined') {
+    // Basic environment check
+    if (typeof window === 'undefined' || typeof React === 'undefined') {
       return false;
     }
 
-    // Check React internals
+    // Check React internals exist
     const ReactInternals = (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
     if (!ReactInternals) {
       return false;
     }
 
-    // Check dispatcher
+    // Check current dispatcher
     const dispatcher = ReactInternals?.ReactCurrentDispatcher?.current;
     if (!dispatcher || dispatcher === null) {
       return false;
     }
 
-    // Check that essential hooks are available on the dispatcher
-    if (!dispatcher.useState || !dispatcher.useEffect || !dispatcher.useContext) {
+    // Verify essential hooks are available on dispatcher
+    const requiredHooks = ['useState', 'useEffect', 'useContext', 'useReducer'];
+    for (const hook of requiredHooks) {
+      if (typeof dispatcher[hook] !== 'function') {
+        return false;
+      }
+    }
+
+    // Check batch config exists
+    if (ReactInternals?.ReactCurrentBatchConfig === undefined) {
       return false;
     }
 
-    // Check batch config
-    const batchConfig = ReactInternals?.ReactCurrentBatchConfig;
-    if (batchConfig === undefined) {
-      return false;
-    }
-
-    // Additional check - try to access React's version
+    // Verify React version is available
     if (!React.version) {
       return false;
     }
 
     return true;
   } catch (error) {
-    console.warn('React stability check failed:', error);
+    console.warn('React initialization check failed:', error);
     return false;
   }
 }
 
+// Simple component that only renders when React is completely ready
 function SafeToasterComponent() {
-  console.log("SafeToasterComponent: Starting render...");
+  console.log("SafeToasterComponent: Checking React readiness...");
   
-  const [isReactReady, setIsReactReady] = useState(false);
-  const [hasChecked, setHasChecked] = useState(false);
-
-  useEffect(() => {
-    console.log("SafeToasterComponent: Effect running, checking React stability...");
-    
-    let mounted = true;
-    let checkCount = 0;
-    const maxChecks = 50; // Prevent infinite checking
-    
-    const checkReactStability = () => {
-      checkCount++;
-      console.log(`SafeToasterComponent: Check ${checkCount}, React stable:`, isReactFullyStable());
-      
-      if (!mounted) return;
-      
-      if (isReactFullyStable()) {
-        console.log("SafeToasterComponent: React is stable, enabling toaster");
-        setIsReactReady(true);
-        setHasChecked(true);
-      } else if (checkCount < maxChecks) {
-        // Check again in next tick
-        setTimeout(checkReactStability, 10);
-      } else {
-        console.warn("SafeToasterComponent: Max checks reached, giving up on toast system");
-        setHasChecked(true);
-      }
-    };
-
-    // Start checking
-    checkReactStability();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Don't render anything until we've checked
-  if (!hasChecked) {
-    console.log("SafeToasterComponent: Still checking React stability...");
+  // Do not use any React hooks until we're certain React is ready
+  if (!isReactFullyInitialized()) {
+    console.log("SafeToasterComponent: React not ready, returning null");
     return null;
   }
 
-  // If React isn't ready after checking, don't render toast system
-  if (!isReactReady) {
-    console.log("SafeToasterComponent: React not stable, skipping toast system");
-    return null;
-  }
-
+  console.log("SafeToasterComponent: React is ready, rendering toast system");
+  
   try {
-    console.log("SafeToasterComponent: Rendering with stable React");
     return (
       <SafeToastProvider>
         <Toaster />
       </SafeToastProvider>
-    )
+    );
   } catch (error) {
-    console.error('SafeToasterComponent: Error rendering:', error);
-    // Return nothing in case of error to prevent cascading failures
+    console.error('SafeToasterComponent: Error rendering toast system:', error);
     return null;
   }
 }
