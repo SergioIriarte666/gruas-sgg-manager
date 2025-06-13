@@ -167,21 +167,40 @@ function toast({ ...props }: Toast) {
   }
 }
 
-// Verificar si React está listo antes de usar hooks
-function isReactReady(): boolean {
+// Enhanced React readiness check
+function isReactStable(): boolean {
   try {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
     const ReactInternals = (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-    return ReactInternals?.ReactCurrentDispatcher?.current !== null;
+    if (!ReactInternals) {
+      return false;
+    }
+
+    const dispatcher = ReactInternals?.ReactCurrentDispatcher?.current;
+    if (!dispatcher || dispatcher === null) {
+      return false;
+    }
+
+    // Verify essential hooks are available
+    if (!dispatcher.useState || !dispatcher.useEffect) {
+      return false;
+    }
+
+    return true;
   } catch {
     return false;
   }
 }
 
 function useSafeToast() {
-  console.log("useSafeToast: Checking if React is ready...");
+  console.log("useSafeToast: Checking if React is stable...");
   
-  if (!isReactReady()) {
-    console.log("useSafeToast: React not ready, returning fallback");
+  // Always provide fallback if React isn't stable
+  if (!isReactStable()) {
+    console.log("useSafeToast: React not stable, returning fallback");
     return {
       toasts: [],
       toast,
@@ -190,7 +209,7 @@ function useSafeToast() {
   }
 
   try {
-    console.log("useSafeToast: React is ready, using useState");
+    console.log("useSafeToast: React is stable, using useState");
     const [state, setState] = React.useState<State>(memoryState)
 
     React.useEffect(() => {
