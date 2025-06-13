@@ -3,20 +3,24 @@ import React, { useState, useEffect } from "react"
 
 const MOBILE_BREAKPOINT = 768
 
-export function useIsMobile() {
-  // Check if we're in a safe React context
+// Check if React dispatcher is available
+function isReactDispatcherReady(): boolean {
   try {
-    // Check if React's internal dispatcher is available
     const ReactInternals = (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-    if (!ReactInternals?.ReactCurrentDispatcher?.current) {
-      console.log('useIsMobile: React dispatcher not ready, returning default value');
-      return false;
-    }
-  } catch (error) {
-    console.log('useIsMobile: React internals not available, returning default value');
+    return ReactInternals?.ReactCurrentDispatcher?.current !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function useIsMobile() {
+  // If React dispatcher is not ready, return false immediately without calling hooks
+  if (!isReactDispatcherReady()) {
+    console.log('useIsMobile: React dispatcher not ready, returning default value');
     return false;
   }
 
+  // Only call useState when React is properly initialized
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
   useEffect(() => {
