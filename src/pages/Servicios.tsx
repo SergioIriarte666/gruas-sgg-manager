@@ -21,8 +21,8 @@ export default function Servicios() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showReports, setShowReports] = useState(false);
 
-  const { data: servicios = [], isLoading } = useSafeServicios();
-  const { data: estadisticas } = useSafeEstadisticasServicios();
+  const { data: servicios = [], isLoading: serviciosLoading, isError: serviciosError } = useSafeServicios();
+  const { data: estadisticas, isLoading: estadisticasLoading } = useSafeEstadisticasServicios();
   const updateServicioEstado = useSafeUpdateServicioEstado();
 
   // Show loading state if React is not ready
@@ -31,6 +31,17 @@ export default function Servicios() {
       <div className="space-y-6 animate-fade-in">
         <div className="flex justify-center items-center h-64">
           <div className="text-muted-foreground">Inicializando servicios...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (serviciosError) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-destructive">Error al cargar servicios. Por favor, intenta de nuevo.</div>
         </div>
       </div>
     );
@@ -82,10 +93,12 @@ export default function Servicios() {
   };
 
   const handleFinalizarServicio = (servicioId: string) => {
-    updateServicioEstado.mutate({
-      id: servicioId,
-      estado: 'cerrado'
-    });
+    if (isReactReady) {
+      updateServicioEstado.mutate({
+        id: servicioId,
+        estado: 'cerrado'
+      });
+    }
   };
 
   const handleViewServicio = (servicio: any) => {
@@ -142,7 +155,7 @@ export default function Servicios() {
     setSelectedServicio(null);
   };
 
-  if (isLoading) {
+  if (serviciosLoading || estadisticasLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex justify-center items-center h-64">
