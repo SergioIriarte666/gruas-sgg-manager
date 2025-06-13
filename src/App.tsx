@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { PWAProvider, PWAPresets } from '@/contexts/PWAContext';
 import { Header } from '@/components/Layout/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SafeToaster } from '@/components/ui/safe-toaster';
@@ -22,7 +21,6 @@ import Settings from "./pages/Settings";
 import MigracionNueva from "./pages/MigracionNueva";
 import Migraciones from "./pages/Migraciones";
 import NotFound from "./pages/NotFound";
-import SGGGruaPWA from "./components/SGGGruaPWA";
 
 console.log("App.tsx: Creating QueryClient...");
 const queryClient = new QueryClient({
@@ -58,14 +56,12 @@ function AppContent() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/migracion-nueva" element={<MigracionNueva />} />
               <Route path="/migraciones" element={<Migraciones />} />
-              <Route path="/pwa-grua" element={<SGGGruaPWA />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </SidebarInset>
       </div>
       
-      {/* Safe Toast notifications - moved outside SidebarInset to avoid conflicts */}
       <SafeToaster />
     </SidebarProvider>
   );
@@ -77,13 +73,11 @@ function App() {
   return (
     <SafeAppWrapper>
       <QueryClientProvider client={queryClient}>
-        <PWAProvider initialConfig={PWAPresets.production}>
-          <TooltipProvider>
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </TooltipProvider>
-        </PWAProvider>
+        <TooltipProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
       </QueryClientProvider>
     </SafeAppWrapper>
   );

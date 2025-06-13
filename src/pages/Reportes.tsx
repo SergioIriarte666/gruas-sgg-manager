@@ -14,19 +14,18 @@ import { DistribucionServicios } from "@/components/reportes/DistribucionServici
 import { IngresosPorCliente } from "@/components/reportes/IngresosPorCliente";
 import { RecursosSistema } from "@/components/reportes/RecursosSistema";
 import { AccionesReportes } from "@/components/reportes/AccionesReportes";
-import { useSafeServicios } from "@/hooks/useSafeServicios";
-import { useSafeClientes } from "@/hooks/useSafeClientes";
-import { useSafeGruas } from "@/hooks/useSafeGruas";
-import { useSafeOperadores } from "@/hooks/useSafeOperadores";
+import { useServicios } from "@/hooks/useServicios";
+import { useClientes } from "@/hooks/useClientes";
+import { useGruas } from "@/hooks/useGruas";
+import { useOperadores } from "@/hooks/useOperadores";
 
 export default function Reportes() {
   const { toast } = useToast();
 
-  // Always call hooks - they handle the context readiness internally
-  const { data: servicios = [], isLoading: serviciosLoading } = useSafeServicios();
-  const { data: clientes = [], isLoading: clientesLoading } = useSafeClientes();
-  const { data: gruas = [], isLoading: gruasLoading } = useSafeGruas();
-  const { data: operadores = [], isLoading: operadoresLoading } = useSafeOperadores();
+  const { data: servicios = [], isLoading: serviciosLoading } = useServicios();
+  const { data: clientes = [], isLoading: clientesLoading } = useClientes();
+  const { data: gruas = [], isLoading: gruasLoading } = useGruas();
+  const { data: operadores = [], isLoading: operadoresLoading } = useOperadores();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CL', {
@@ -77,7 +76,6 @@ export default function Reportes() {
     }
   };
 
-  // Show loading while any data is loading
   if (serviciosLoading || clientesLoading || gruasLoading || operadoresLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
