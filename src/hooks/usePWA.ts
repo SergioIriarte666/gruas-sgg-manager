@@ -17,17 +17,22 @@ interface BeforeInstallPromptEvent extends Event {
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
+// Safe defaults for SSR/browser check
+const getDefaultState = (): PWAState => ({
+  isInstallable: false,
+  isInstalled: false,
+  isOnline: typeof window !== 'undefined' ? navigator?.onLine || false : false,
+  hasUpdate: false,
+  canInstall: false,
+  canUpdate: false,
+  swVersion: null,
+});
+
 export function usePWA() {
-  // Early return with safe defaults if not in browser context
+  // Browser check with early return
   if (typeof window === 'undefined') {
     return {
-      isInstallable: false,
-      isInstalled: false,
-      isOnline: false,
-      hasUpdate: false,
-      canInstall: false,
-      canUpdate: false,
-      swVersion: null,
+      ...getDefaultState(),
       installPWA: async () => false,
       updatePWA: async () => false,
       checkForUpdates: async () => false,
@@ -36,20 +41,14 @@ export function usePWA() {
     };
   }
 
-  const [state, setState] = useState<PWAState>({
-    isInstallable: false,
-    isInstalled: false,
-    isOnline: navigator?.onLine || false,
-    hasUpdate: false,
-    canInstall: false,
-    canUpdate: false,
-    swVersion: null,
-  });
+  const [state, setState] = useState<PWAState>(getDefaultState);
 
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   // Detectar si está instalado como PWA
   const detectPWAInstall = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInWebAppiOS = (window.navigator as any).standalone === true;
     const isPWA = isStandalone || isInWebAppiOS;
@@ -191,10 +190,37 @@ export function usePWA() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     // Detectar instalación PWA
     detectPWAInstall();
 
     // Registrar Service Worker
+    const registerSW = async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.register('/sw.js');
+          setRegistration(reg);
+          
+          // Detectar actualizaciones
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  setState(prev => ({ ...prev, hasUpdate: true, canUpdate: true }));
+                }
+              });
+            }
+          });
+
+          console.log('✅ Service Worker registrado exitosamente');
+        } catch (error) {
+          console.error('❌ Error registrando Service Worker:', error);
+        }
+      }
+    };
+
     registerSW();
 
     // Event listeners
@@ -232,15 +258,100 @@ export function usePWA() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [detectPWAInstall, registerSW]);
+  }, [detectPWAInstall]);
 
   return {
     ...state,
-    installPWA,
-    updatePWA,
-    checkForUpdates,
-    cacheUrls,
-    getSWVersion,
+    installPWA: useCallback(async (): Promise<boolean> => {
+      if (!deferredPrompt) {
+        console.warn('No hay prompt de instalación disponible');
+        return false;
+      }
+
+      try {
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+          console.log('✅ PWA instalada exitosamente');
+          setState(prev => ({ ...prev, canInstall: false, isInstalled: true }));
+          deferredPrompt = null;
+          return true;
+        } else {
+          console.log('❌ Instalación de PWA cancelada');
+          return false;
+        }
+      } catch (error) {
+        console.error('Error instalando PWA:', error);
+        return false;
+      }
+    }, []),
+    updatePWA: useCallback(async (): Promise<boolean> => {
+      if (!registration?.waiting) {
+        console.warn('No hay actualización disponible');
+        return false;
+      }
+
+      try {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        
+        await new Promise<void>((resolve) => {
+          const handleControllerChange = () => {
+            window.location.reload();
+            resolve();
+          };
+          navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+        });
+
+        setState(prev => ({ ...prev, hasUpdate: false, canUpdate: false }));
+        console.log('✅ PWA actualizada exitosamente');
+        return true;
+      } catch (error) {
+        console.error('Error actualizando PWA:', error);
+        return false;
+      }
+    }, [registration]),
+    checkForUpdates: useCallback(async (): Promise<boolean> => {
+      if (!registration) {
+        console.warn('No hay Service Worker registrado');
+        return false;
+      }
+
+      try {
+        await registration.update();
+        console.log('✅ Verificación de actualizaciones completada');
+        return true;
+      } catch (error) {
+        console.error('Error verificando actualizaciones:', error);
+        return false;
+      }
+    }, [registration]),
+    cacheUrls: useCallback(async (urls: string[]): Promise<boolean> => {
+      if (!('caches' in window)) {
+        console.warn('Cache API no disponible');
+        return false;
+      }
+
+      try {
+        const cache = await caches.open('user-cache');
+        await cache.addAll(urls);
+        console.log('✅ URLs cacheadas exitosamente:', urls);
+        return true;
+      } catch (error) {
+        console.error('Error cacheando URLs:', error);
+        return false;
+      }
+    }, []),
+    getSWVersion: useCallback(async () => {
+      if (registration?.active) {
+        try {
+          const version = '1.0.0';
+          setState(prev => ({ ...prev, swVersion: version }));
+        } catch (error) {
+          console.error('Error obteniendo versión SW:', error);
+        }
+      }
+    }, [registration]),
   };
 }
 
@@ -248,6 +359,8 @@ export function useIsPWA() {
   const [isPWA, setIsPWA] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInWebAppiOS = (window.navigator as any).standalone === true;
     setIsPWA(isStandalone || isInWebAppiOS);
@@ -286,7 +399,7 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.ready;
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: 'YOUR_VAPID_PUBLIC_KEY', // Reemplazar con key real
+        applicationServerKey: 'YOUR_VAPID_PUBLIC_KEY',
       });
       
       setSubscription(sub);
@@ -313,11 +426,12 @@ export function usePushNotifications() {
   }, [subscription]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     if ('Notification' in window) {
       setPermission(Notification.permission);
     }
 
-    // Verificar suscripción existente
     if ('serviceWorker' in navigator && 'PushManager' in window) {
       navigator.serviceWorker.ready.then(registration => {
         registration.pushManager.getSubscription().then(sub => {
