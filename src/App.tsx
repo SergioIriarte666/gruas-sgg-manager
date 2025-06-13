@@ -7,7 +7,6 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Header } from '@/components/Layout/Header';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SafeToaster } from '@/components/ui/safe-toaster';
-import SafeAppWrapper from '@/components/SafeAppWrapper';
 import { ContextErrorBoundary } from '@/components/ContextErrorBoundary';
 import Index from "./pages/Index";
 import Gruas from "./pages/Gruas";
@@ -38,43 +37,41 @@ function App() {
   console.log("App: Rendering...");
   
   return (
-    <SafeAppWrapper>
-      <ContextErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <TooltipProvider>
-              <SidebarProvider defaultOpen={false}>
-                <div className="min-h-screen bg-black text-primary flex w-full">
-                  <AppSidebar />
-                  <SidebarInset className="flex-1">
-                    <Header showMenuButton />
-                    <main className="flex-1 p-4 bg-black">
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/gruas" element={<Gruas />} />
-                        <Route path="/clientes" element={<Clientes />} />
-                        <Route path="/operadores" element={<Operadores />} />
-                        <Route path="/servicios" element={<Servicios />} />
-                        <Route path="/facturas" element={<Facturas />} />
-                        <Route path="/cierres" element={<Cierres />} />
-                        <Route path="/tipos-servicio" element={<TiposServicio />} />
-                        <Route path="/reportes" element={<Reportes />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/migracion-nueva" element={<MigracionNueva />} />
-                        <Route path="/migraciones" element={<Migraciones />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </main>
-                  </SidebarInset>
-                </div>
-                
-                <SafeToaster />
-              </SidebarProvider>
-            </TooltipProvider>
-          </BrowserRouter>
-        </QueryClientProvider>
-      </ContextErrorBoundary>
-    </SafeAppWrapper>
+    <ContextErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <TooltipProvider>
+            <SidebarProvider defaultOpen={false}>
+              <div className="min-h-screen bg-black text-primary flex w-full">
+                <AppSidebar />
+                <SidebarInset className="flex-1">
+                  <Header showMenuButton />
+                  <main className="flex-1 p-4 bg-black">
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/gruas" element={<Gruas />} />
+                      <Route path="/clientes" element={<Clientes />} />
+                      <Route path="/operadores" element={<Operadores />} />
+                      <Route path="/servicios" element={<Servicios />} />
+                      <Route path="/facturas" element={<Facturas />} />
+                      <Route path="/cierres" element={<Cierres />} />
+                      <Route path="/tipos-servicio" element={<TiposServicio />} />
+                      <Route path="/reportes" element={<Reportes />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/migracion-nueva" element={<MigracionNueva />} />
+                      <Route path="/migraciones" element={<Migraciones />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </main>
+                </SidebarInset>
+              </div>
+              
+              <SafeToaster />
+            </SidebarProvider>
+          </TooltipProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ContextErrorBoundary>
   );
 }
 
